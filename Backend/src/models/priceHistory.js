@@ -1,7 +1,7 @@
 import mongoose from "mongoose"
 
 const priceHistorySchema = new mongoose.Schema({
-    plansId: {
+    planId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Plans",
         required: true
