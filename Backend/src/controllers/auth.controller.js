@@ -1,11 +1,12 @@
 import {User} from "../models/user"
 import bcrypt from "bcryptjs"
 import { generateToken } from "../utils/jwt";
+import {validateRegister, validateLogin} from "../utils/validations.js"
 
 
 export const register = async(req, res) => {
     try {
-        validateSignUpData(req.body)
+        validateRegister(req.body)
         const {username, email, password} = req.body
 
         const existingUser = await User.findOne({
@@ -30,7 +31,7 @@ export const register = async(req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        res.status(201).json({
+        res.status(200).json({
             message: "User registered successfully",
             token,
             user: {
@@ -41,6 +42,40 @@ export const register = async(req, res) => {
         })
     } catch (err) {
         console.error("Error: ", err.message);
-        res.status(400).json(err.message);
+        res.status(401).json(err.message);
+    }
+}
+
+export const login = async(req, res) => {
+    try {
+        validateLogin(req.body);
+        const {email, password} = req.body;
+        
+        const userData = await User.findOne({email}).select('+password');
+        const verifyPassword = await bcrypt.compare(password, userData.password);
+
+        if(!userData || !verifyPassword) throw new Error("Invalid Email or Password");
+
+        const token = generateToken(userData);
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "None",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        })
+        
+        res.status(200).json({
+            message: "User Login Successfully",
+            token,
+            user: {
+                id: userData._id,
+                username: userData.username,
+                email: userData.email
+            }
+        })
+    } catch (err) {
+        console.error("Error: ", err.message)
+        res.status(401).json(err.message)
     }
 }
