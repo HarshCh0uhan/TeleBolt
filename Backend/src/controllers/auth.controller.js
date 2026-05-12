@@ -1,6 +1,6 @@
-import {User} from "../models/user"
+import {User} from "../models/user.js"
 import bcrypt from "bcryptjs"
-import { generateToken } from "../utils/jwt";
+import { generateToken } from "../utils/jwt.js";
 import {validateRegister, validateLogin} from "../utils/validations.js"
 
 
@@ -15,7 +15,7 @@ export const register = async(req, res) => {
 
         if(existingUser) throw new Error("User Already Exists");
 
-        const userData = User.create({
+        const userData = await User.create({
             username,
             email,
             password
@@ -52,9 +52,15 @@ export const login = async(req, res) => {
         const {email, password} = req.body;
         
         const userData = await User.findOne({email}).select('+password');
-        const verifyPassword = await bcrypt.compare(password, userData.password);
+        if(!userData) throw new Error("Invalid Email or Password");
 
-        if(!userData || !verifyPassword) throw new Error("Invalid Email or Password");
+        const verifyPassword = await bcrypt.compare(
+            password,
+            userData.password
+        );
+
+        if(!verifyPassword)
+            throw new Error("Invalid Email or Password");
 
         const token = generateToken(userData);
 

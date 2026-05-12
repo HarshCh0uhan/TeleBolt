@@ -1,4 +1,4 @@
-import {validator} from "express-validator"
+import validator from "validator";
 
 export const validateRegister = ({username, email, password}) => {
     if(!username || !email || !password) throw new Error("Fill All Entries");
