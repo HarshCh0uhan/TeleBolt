@@ -22,27 +22,59 @@ export const register = async(req, res) => {
         })
 
         const token = generateToken(userData)
-        console.log("Token Generated: ", token)
+        console.log("Token Generated")
 
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",    
-            sameSite: "None",   
+            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",  
             maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
-        res.status(200).json({
-            message: "User registered successfully",
-            token,
-            user: {
-                id: userData._id,
-                username: userData.username,
-                email: userData.email
-            }
+        }).status(201).json({
+            success: true,
+            message: "User registered successfully"
         })
     } catch (err) {
         console.error("Error: ", err.message);
-        res.status(401).json(err.message);
+        res.status(400).json(err.message);
+    }
+}
+
+export const registerAdmin = async (req, res) => {
+    try {
+        validateRegister(req.body);
+
+        const {username, email, password, adminSecretKey} = req.body;
+
+        if(!adminSecretKey || adminSecretKey !== process.env.ADMIN_SECRET_KEY) throw new Error("Invalid Secret Key!!!")
+
+        const existingAdmin = await User.findOne({
+            $or: [{email}, {username}]
+        })
+
+        if(existingAdmin) throw new Error("Admin Already Exist!!!")
+        
+        const admin = await User.create({
+            username,
+            email,
+            password, 
+            role: "admin"
+        })
+
+        const token = generateToken(admin)
+        console.log("Token Generated")
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        }).status(201).json({
+            success: true,
+            message: "Register Successful"
+        })
+    } catch (err) {
+        console.error("Error: ",err.message);
+        res.status(400).json(err.message)
     }
 }
 
@@ -67,21 +99,14 @@ export const login = async(req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "None",
+            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
             maxAge: 7 * 24 * 60 * 60 * 1000
-        })
-        
-        res.status(200).json({
-            message: "User Login Successfully",
-            token,
-            user: {
-                id: userData._id,
-                username: userData.username,
-                email: userData.email
-            }
+        }).status(200).json({
+            success: true,
+            message: "User Login Successfully"
         })
     } catch (err) {
         console.error("Error: ", err.message)
-        res.status(401).json(err.message)
+        res.status(400).json(err.message)
     }
 }
