@@ -1,7 +1,7 @@
 import {verifyToken} from "../utils/jwt.js"
 import {User} from "../models/user.js"
 
-const userAuth = async (req, res, next) => {
+export const userAuth = async (req, res, next) => {
     try {
         const token = req.cookies.token;
         if(!token) throw new Error("Please Login/Register");
@@ -21,4 +21,13 @@ const userAuth = async (req, res, next) => {
     }
 }
 
-export default userAuth
+export const isAdmin = (req, res, next) => {
+    try {
+        const {role} = req.user;
+        if(role !== 'admin') throw new Error("Not Authorized");
+        next();
+    } catch (err) {
+        console.log("Error: ", err.message);
+        res.status(403).json(err.message)
+    }
+}
