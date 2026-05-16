@@ -5,6 +5,7 @@ import {validateRegister, validateLogin} from "../utils/validations.js"
 
 
 export const register = async(req, res) => {
+    
     try {
         validateRegister(req.body)
         const {username, email, password} = req.body

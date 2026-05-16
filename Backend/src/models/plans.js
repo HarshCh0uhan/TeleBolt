@@ -32,6 +32,14 @@
         sms: {
             type: Number,
         },
+        isUnlimitedCalls: {
+            type: Boolean,
+            default: true
+        },
+        isUnlimitedSMS:{
+            type: Boolean,
+            default: false
+        },
         ottApps: [{
             type: String,
             enum: ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5", "Other"]
