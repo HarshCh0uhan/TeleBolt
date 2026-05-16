@@ -1,4 +1,6 @@
 import {Plans} from "../models/plans.js"
+import { yearlyPlan } from "../utils/yearlyPlan.js";
+import mongoose from "mongoose"
 
 export const getPlans = async (req, res) => {
     try {
@@ -29,14 +31,7 @@ export const getPlans = async (req, res) => {
         const plansData = await Plans.find(filter);
         if(plansData.length === 0) throw new Error("No Plans Exist");
 
-        const plansWithYearly = plansData.map((plan) => {
-            const multiplier = Math.ceil(365 / plan.validityDays)
-            return {
-                ...plan.toObject(),
-                yearlyCost: multiplier * plan.price,
-                yearlyData: multiplier * plan.totalData
-            }
-        })
+        const plansWithYearly = plansData.map((plan) => yearlyPlan(plan))
 
         res.status(200).json({
             success: true,
@@ -46,6 +41,29 @@ export const getPlans = async (req, res) => {
 
     } catch (err) {
         console.error("Error: ", err.message)
+        res.status(400).json(err.message)
+    }
+}
+
+export const getSinglePlan = async (req, res) => {
+    try {
+        const planId = req.params.id;
+
+        if(!mongoose.Types.ObjectId.isValid(planId)) throw new Error("Invalid Plan Id")
+
+        const planData = await Plans.findById(planId)
+
+        if(!planData) throw new Error("Plan does not exist")
+
+        const plansWithYearly = yearlyPlan(planData)
+
+        res.status(200).json({
+            success: true,
+            message: "Plan Fetched",
+            plan: plansWithYearly
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
         res.status(400).json(err.message)
     }
 }
