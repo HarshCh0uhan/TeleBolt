@@ -270,4 +270,3 @@ Airtel, Non-Daily, 299, 28, 0, 50, 100, Prime|Hotstar
 
 ## License
 
-MIT
