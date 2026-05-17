@@ -1,6 +1,6 @@
 import {Plans} from "../models/plans.js"
 import { yearlyPlan } from "../utils/yearlyPlan.js";
-import mongoose from "mongoose"
+import mongoose, { mongo } from "mongoose"
 
 export const getPlans = async (req, res) => {
     try {
@@ -61,6 +61,33 @@ export const getSinglePlan = async (req, res) => {
             success: true,
             message: "Plan Fetched",
             plan: plansWithYearly
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const comparePlans = async (req, res) => {
+    try {
+        if(!req.query.planIds) throw new Error("No Plan IDs provided")
+
+        const planIds = req.query.planIds.split(',');
+        
+        for(const planId of planIds){
+            if(!mongoose.Types.ObjectId.isValid(planId))
+                throw new Error("Inavalid Plan ID")
+        }
+
+        const plansData = await Plans.find({ _id: {$in: planIds}})
+        if(plansData.length === 0) throw new Error("No Plans Exist");
+
+        const plansWithYearly = plansData.map((plan) => yearlyPlan(plan));
+        
+        res.status(200).json({
+            success: true,
+            message: "Successfully fetched all compare plans",
+            comparePlans: plansWithYearly
         })
     } catch (err) {
         console.error("Error: ", err.message);
