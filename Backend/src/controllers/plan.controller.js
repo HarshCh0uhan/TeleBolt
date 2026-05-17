@@ -1,6 +1,6 @@
 import {Plans} from "../models/plans.js"
 import { yearlyPlan } from "../utils/yearlyPlan.js";
-import mongoose, { mongo } from "mongoose"
+import mongoose from "mongoose"
 
 export const getPlans = async (req, res) => {
     try {
