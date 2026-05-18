@@ -55,7 +55,7 @@ export const updatePlans = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Plan Update Successful",
-            plan: update
+            updatedPlan: update
         })
 
     } catch (err) {
@@ -65,5 +65,23 @@ export const updatePlans = async (req, res) => {
 }
 
 export const deletePlans = async (req, res) => {
-    
+    try {
+        const planId = req.params.id;
+        if(!mongoose.Types.ObjectId.isValid(planId))
+            throw new Error("Invalid Plan ID")
+
+        const isPlanExist = await Plans.findById(planId);
+        if(!isPlanExist) throw new Error("Plan does not exist")
+
+        const deletePlan = await Plans.findByIdAndDelete(planId);
+
+        res.status(200).json({
+            success: true,
+            message: "Plan Deleted Successfully",
+            deletedPlan: deletePlan
+        })
+    } catch (err) {
+        console.error(err.message);
+        res.status(400).json(err.message)
+    }
 }
