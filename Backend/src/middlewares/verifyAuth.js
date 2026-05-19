@@ -9,7 +9,7 @@ export const userAuth = async (req, res, next) => {
         const decode = verifyToken(token);
         if(!decode) throw new Error("Please Login/Register");
         
-        const user = await User.findOne(decode._id);
+        const user = await User.findOne({_id: decode._id});
         if(!user) throw new Error("User does not exist");
 
         req.user = user;

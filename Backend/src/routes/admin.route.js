@@ -8,4 +8,4 @@ adminRouter.post('/plans',userAuth, isAdmin, createPlans);
 adminRouter.put('/plans/:id',userAuth, isAdmin, updatePlans);
 adminRouter.delete('/plans/:id',userAuth, isAdmin, deletePlans);
 adminRouter.get('/detected',userAuth, isAdmin, detectedChanges);
-adminRouter.get('/approve/:id',userAuth, isAdmin, approveChange);
+adminRouter.put('/approve/:id',userAuth, isAdmin, approveChange);
