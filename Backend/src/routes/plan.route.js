@@ -1,5 +1,5 @@
 import express from "express"
-import { userAuth } from "../middlewares/verifyAuth.js";
+import { userAuth } from "../middlewares/verifyAuth.middleware.js";
 import { comparePlans, getPlans, getSinglePlan } from "../controllers/plan.controller.js";
 
 export const planRouter = express.Router();
