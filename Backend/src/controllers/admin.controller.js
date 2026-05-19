@@ -108,7 +108,7 @@ export const approveChange = async(req, res) => {
     try {
         const detectedChangeId = req.params.id
         if(!mongoose.Types.ObjectId.isValid(detectedChangeId))
-            throw new Error("Invalid Plan Id")
+            throw new Error("Invalid Id")
 
         const change = await DetectedChange.findById(detectedChangeId)
         if(!change) throw new Error("Change does not exist")
@@ -143,6 +143,24 @@ export const approveChange = async(req, res) => {
 
     } catch (err) {
         console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const rejectChange = async (req, res) => {
+    try {
+        const detectedChangeId = req.params.id
+        if(!mongoose.Types.ObjectId.isValid(detectedChangeId))
+            throw new Error("Invalid Id")
+
+        await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Rejected"})
+
+        res.status(200).json({
+            success: true,
+            message: "Change Rejected"
+        })
+    } catch (err) {
+        console.error("Error: ", err.message)
         res.status(400).json(err.message)
     }
 }
