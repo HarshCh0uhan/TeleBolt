@@ -52,7 +52,7 @@ export const updatePlans = async (req, res) => {
             updateData.totalData = updateData.dailyData * updateData.validityDays
         }
 
-        const update = await Plans.findByIdAndUpdate(planId, updateData, {new: true})
+        const update = await Plans.findByIdAndUpdate(planId, updateData, {returnDocument: 'after'})
         if(!update) throw new Error("Plan does not exist")
 
         res.status(200).json({
@@ -112,33 +112,32 @@ export const approveChange = async(req, res) => {
 
         const change = await DetectedChange.findById(detectedChangeId)
         if(!change) throw new Error("Change does not exist")
-        if(change.status !== 'Pending') throw new Error("Plan is not in pending state")
+        if(change.status !== 'Pending') throw new Error("Change is not in pending state")
                 
         const plan = await Plans.findById(change.planId);
         if(!plan) throw new Error("Plan does not exist")
             
         let newPlan
         let priceHistory
-        if(change.field === 'Price' && plan.price === change.oldValue){
-            newPlan = await Plans.findByIdAndUpdate(change.planId, {price: change.newValue})
+        if(change.field === 'Price'){
+            newPlan = await Plans.findByIdAndUpdate(change.planId, {price: change.newValue}, {returnDocument: 'after'})
             priceHistory = await PriceHistory.create({
                 planId: change.planId,
                 oldPrice: change.oldValue,
                 newPrice: change.newValue
             })
         }
-        else if(change.field === 'Validity Days' && plan.validityDays === change.oldValue){
-            newPlan = await Plans.findByIdAndUpdate(change.planId, {validityDays: change.newValue}, {new: true})
+        else if(change.field === 'ValidityDays'){
+            newPlan = await Plans.findByIdAndUpdate(change.planId, {validityDays: change.newValue}, {returnDocument: 'after'})
         }
         else throw new Error("Invalid Old Value")
 
-        await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Approved"}, {new: true})
+        await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Approved"}, {returnDocument: 'after'})
         
         res.status(200).json({
             success: true,
             message: "Changes Approve Successfuly",
-            newPlan,
-            priceHistory
+            newPlan
         })
 
     } catch (err) {
@@ -152,6 +151,10 @@ export const rejectChange = async (req, res) => {
         const detectedChangeId = req.params.id
         if(!mongoose.Types.ObjectId.isValid(detectedChangeId))
             throw new Error("Invalid Id")
+        
+        const change = await DetectedChange.findById(detectedChangeId)
+        if(!change) throw new Error("Change does not exist")
+        if(change.status !== 'Pending') throw new Error("Change is not in pending state")
 
         await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Rejected"})
 
