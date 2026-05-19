@@ -4,6 +4,6 @@ import { createPlans, deletePlans, updatePlans } from "../controllers/admin.cont
 
 export const adminRouter = express.Router();
 
-adminRouter.post('/admin/plans',userAuth, isAdmin, createPlans);
-adminRouter.put('/admin/plans/:id',userAuth, isAdmin, updatePlans);
-adminRouter.delete('/admin/plans/:id',userAuth, isAdmin, deletePlans);
+adminRouter.post('/plans',userAuth, isAdmin, createPlans);
+adminRouter.put('/plans/:id',userAuth, isAdmin, updatePlans);
+adminRouter.delete('/plans/:id',userAuth, isAdmin, deletePlans);
