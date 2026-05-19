@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 import {Plans} from "../models/plans.js"
 import { validatePlans } from "../utils/validations.js";
 import { DetectedChange } from "../models/detectedChange.js";
+import { PriceHistory } from "../models/priceHistory.js";
 
 export const createPlans = async (req, res) => {
     try {
-        
         validatePlans(req.body)
 
         const {operator, category, price, validityDays, dailyData, 
@@ -96,6 +96,49 @@ export const detectedChanges = async (req, res) => {
             success: true,
             message: "Changes Detected Successfully",
             detectedChanges: changes
+        })
+
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const approveChange = async(req, res) => {
+    try {
+        const detectedChangeId = req.params.id
+        if(!mongoose.Types.ObjectId.isValid(detectedChangeId))
+            throw new Error("Invalid Plan Id")
+
+        const change = await DetectedChange.findById(detectedChangeId)
+        if(!change) throw new Error("Change does not exist")
+        if(change.status !== 'Pending') throw new Error("Plan is not in pending state")
+                
+        const plan = await Plans.findById(change.planId);
+        if(!plan) throw new Error("Plan does not exist")
+            
+        let newPlan
+        let priceHistory
+        if(change.field === 'Price' && plan.price === change.oldValue){
+            newPlan = await Plans.findByIdAndUpdate(change.planId, {price: change.newValue})
+            priceHistory = await PriceHistory.create({
+                planId: change.planId,
+                oldPrice: change.oldValue,
+                newPrice: change.newValue
+            })
+        }
+        else if(change.field === 'Validity Days' && plan.validityDays === change.oldValue){
+            newPlan = await Plans.findByIdAndUpdate(change.planId, {validityDays: change.newValue}, {new: true})
+        }
+        else throw new Error("Invalid Old Value")
+
+        await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Approved"}, {new: true})
+        
+        res.status(200).json({
+            success: true,
+            message: "Changes Approve Successfuly",
+            newPlan,
+            priceHistory
         })
 
     } catch (err) {
