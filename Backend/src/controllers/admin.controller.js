@@ -47,10 +47,12 @@ export const updatePlans = async (req, res) => {
         const updateData = req.body;
         if(!mongoose.Types.ObjectId.isValid(planId)) throw new Error("Invalid Plan ID")
         
-        const isPlanExist = await Plans.findById(planId);
-        if(!isPlanExist) throw new Error("Plan does not exist")
+        if(updateData.dailyData && updateData.validityDays){
+            updateData.totalData = updateData.dailyData * updateData.validityDays
+        }
 
         const update = await Plans.findByIdAndUpdate(planId, updateData, {new: true})
+        if(!update) throw new Error("Plan does not exist")
 
         res.status(200).json({
             success: true,
@@ -70,15 +72,13 @@ export const deletePlans = async (req, res) => {
         if(!mongoose.Types.ObjectId.isValid(planId))
             throw new Error("Invalid Plan ID")
 
-        const isPlanExist = await Plans.findById(planId);
-        if(!isPlanExist) throw new Error("Plan does not exist")
-
+        
         const deletePlan = await Plans.findByIdAndDelete(planId);
+        if(!deletePlan) throw new Error("Plan does not exist")
 
         res.status(200).json({
             success: true,
-            message: "Plan Deleted Successfully",
-            deletedPlan: deletePlan
+            message: "Plan Deleted Successfully"
         })
     } catch (err) {
         console.error(err.message);
