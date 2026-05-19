@@ -4,6 +4,6 @@ import { comparePlans, getPlans, getSinglePlan } from "../controllers/plan.contr
 
 export const planRouter = express.Router();
 
-planRouter.get("/plans/compare", comparePlans);  
-planRouter.get("/plans/:id", getSinglePlan);  
-planRouter.get("/plans", getPlans);  
+planRouter.get("/compare", comparePlans);  
+planRouter.get("/:id", getSinglePlan);  
+planRouter.get("/", getPlans);  
