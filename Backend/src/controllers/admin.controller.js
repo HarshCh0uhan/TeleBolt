@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import {Plans} from "../models/plans.js"
 import { validatePlans } from "../utils/validations.js";
+import { DetectedChange } from "../models/detectedChange.js";
 
 export const createPlans = async (req, res) => {
     try {
@@ -82,6 +83,23 @@ export const deletePlans = async (req, res) => {
         })
     } catch (err) {
         console.error(err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const detectedChanges = async (req, res) => {
+    try {
+        const changes = await DetectedChange.find({status: 'Pending'})
+        if(changes.length === 0) throw new Error("No changes detected")
+
+        res.status(200).json({
+            success: true,
+            message: "Changes Detected Successfully",
+            detectedChanges: changes
+        })
+
+    } catch (err) {
+        console.error("Error: ", err.message);
         res.status(400).json(err.message)
     }
 }
