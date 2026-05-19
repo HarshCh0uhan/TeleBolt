@@ -54,7 +54,7 @@
 
     planSchema.pre('save', async function(){
         if(this.dailyData === undefined && this.totalData === undefined)
-            throw new Error("Either daily ata or total data must be provided")
+            throw new Error("Either daily data or total data must be provided")
     })
 
     export const Plans = mongoose.model("Plans", planSchema);
