@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import {Plans} from "../models/plans.js"
 import { validatePlans } from "../utils/validations.js";
 import { DetectedChange } from "../models/detectedChange.js";
+import { PriceHistory } from "../models/priceHistory.js";
 
 export const createPlans = async (req, res) => {
     try {
@@ -96,6 +97,45 @@ export const detectedChanges = async (req, res) => {
             success: true,
             message: "Changes Detected Successfully",
             detectedChanges: changes
+        })
+
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const approveChange = async(req, res) => {
+    try {
+        const detectedChangeId = req.params.id
+        if(!mongoose.Types.ObjectId.isValid(planId))
+            throw new Error("Invalid Plan Id")
+
+        const change = await DetectedChange.findById(detectedChangeId)
+        if(!change) throw new Error("Change does not exist")
+        if(change.status !== 'Pending') throw new Error("Plan is not in pending state")
+        
+        const plan = await Plans.findById(change.planId);
+        if(!plan) throw new Error("Pland does not exist")
+
+        if(change.field === 'Price' && change.oldValue === plan.price){
+            plan.price = change.newValue;
+            const priceHistory = await PriceHistory.create({
+                change.planId,
+                change.oldValue,
+                change.newValue
+            })
+        }
+        else if(change.field === 'ValidityDays' && change.oldValue === plan.validityDays)
+            plan.validityDays = change.newValue;
+
+        change.status = "Approved";
+
+        res.status(200).json({
+            success: true,
+            message: "Changes Approve Successfuly",
+            newPlan: plan,
+            priceHistory: priceHistory
         })
 
     } catch (err) {
