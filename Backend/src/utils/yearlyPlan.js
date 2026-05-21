@@ -1,3 +1,4 @@
+
 export const yearlyPlan = (plan) => {
     const multiplier = Math.ceil(365 / plan.validityDays)
     return {
