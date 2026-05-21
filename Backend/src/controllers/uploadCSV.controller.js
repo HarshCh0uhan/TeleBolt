@@ -1,6 +1,6 @@
 import fs from "fs"
 import csv from "csv-parser"
-import { Plans } from "../models/plans";
+import { Plans } from "../models/plans.js";
 
 const uploadCSV = async (req, res) => {
     try {
@@ -8,14 +8,14 @@ const uploadCSV = async (req, res) => {
         
         const result = []
 
-        await Promise((res, rej) => {
+        await new Promise((resolve, reject) => {
             fs.createReadStream(req.file.path)
             .pipe(csv())
             .on('data', (row) => {
                 result.push(row)
             })
-            .on('end', res)
-            .on('error', rej)
+            .on('end', resolve)
+            .on('error', reject)
         })
 
         let created = 0
@@ -26,12 +26,12 @@ const uploadCSV = async (req, res) => {
                 price: Number(row.price),
                 validityDays: Number(row.validityDays),
                 dailyData: row.dailyData ? Number(row.dailyData) : undefined,
-                totaldata: row.totalData ? Number(row.totalData) : undefined,
+                totalData: row.totalData ? Number(row.totalData) : undefined,
                 sms: row.sms ? Number(row.sms) : undefined,
-                isUnlimitedCalls: row.isUnlimitedCalls,
-                isUnlimitedSMS: row.isUnlimitedSMS,
-                ottApps: row.ottApps,
-                isActive: row.isActive
+                isUnlimitedCalls: row.isUnlimitedCalls === "true",
+                isUnlimitedSMS: row.isUnlimitedSMS === 'true',
+                ottApps: row.ottApps ? row.ottApps.split(',') : [],
+                isActive: row.isActive === 'true'
             })
             created++;
         }
