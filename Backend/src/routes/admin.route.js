@@ -2,6 +2,7 @@ import express from "express"
 import { isAdmin, userAuth } from "../middlewares/verifyAuth.middleware.js";
 import { approveChange, createPlans, deletePlans, detectedChanges, rejectChange, updatePlans } from "../controllers/admin.controller.js";
 import upload from "../middlewares/upload.middleware.js";
+import uploadCSV from "../controllers/uploadCSV.controller.js";
 
 
 export const adminRouter = express.Router();
