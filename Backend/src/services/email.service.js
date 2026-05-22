@@ -8,26 +8,29 @@ const transporter = nodemailer.createTransport({
     }
 })
 
-export const sendEmailAlert = async(changes) => {
+const sendEmailAlert = async(changes) => {
     await transporter.sendMail({
         from: process.env.EMAIL,
         to: process.env.ADMIN_EMAIL,
-        subject: `TeleBolt — ${changes.length} Plan Change(s) Detected`,
+        subject: `TeleBolt - Time to verify plans: check Jio, Airtel, Vi for changes`,
         html: `
-            <h2>Plan Changes Detected</h2>
-            <p>${changes.length} plan(s) have changed:</p>
+            <h2>Weekly Plan Verification Reminder</h2>
+            <p>Time to manually check if any telecom plans have changed.</p>
             <ul>
-                ${changes.map(c => `
-                    <li>
-                        Plan ID: ${c.planId} — 
-                        ${c.field} changed from 
-                        ${c.oldValue} to ${c.newValue}
-                    </li>
-                `).join('')}
+                <li>Check Jio plans</li>
+                <li>Check Airtel plans</li>
+                <li>Check Vi plans</li>
             </ul>
             <a href="${process.env.FRONTEND_URL}/admin/detected">
-                Review Changes →
+                Go to Admin Dashboard →
             </a>
         `
+    })
+}
+
+export const sendWeeklyReminder = async () => {
+    await sendEmailAlert({
+        type: "reminder",
+        message: "Weekly reminder to verify telecom plans manually"
     })
 }
