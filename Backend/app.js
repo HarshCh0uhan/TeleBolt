@@ -5,6 +5,7 @@ import {authRouter} from "./src/routes/auth.route.js"
 import cookieParser from "cookie-parser"
 import { planRouter } from "./src/routes/plan.route.js";
 import { adminRouter } from "./src/routes/admin.route.js";
+import './services/scheduler.service.js'
 
 dotenv.config();
 const app = express();  
