@@ -5,13 +5,23 @@ import {authRouter} from "./src/routes/auth.route.js"
 import cookieParser from "cookie-parser"
 import { planRouter } from "./src/routes/plan.route.js";
 import { adminRouter } from "./src/routes/admin.route.js";
-import './services/scheduler.service.js'
+import './src/services/scheduler.service.js'
+import cors from "cors"
 
 dotenv.config();
 const app = express();  
 
+
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true 
+}))
 app.use(express.json())
 app.use(cookieParser());
+
+app.get("/health", (req, res) => {
+    res.status(200).json({ status: "ok" })
+})
 
 app.use("/api/auth", authRouter);
 app.use("/api/plans", planRouter);
