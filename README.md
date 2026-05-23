@@ -1,166 +1,134 @@
 # TeleBolt ⚡
 
-TeleBolt is a MERN-stack telecom comparison platform that helps users discover the actual yearly cost of Indian telecom prepaid plans across operators like Jio, Airtel, Vi, and BSNL.
+> Compare Indian telecom prepaid plans by what they actually cost you per year — not how operators market them.
 
-Instead of only showing the original recharge price, TeleBolt normalizes plans into a 365-day cost model so users can understand the real yearly expense, total yearly data, OTT benefits, and value-for-money comparison.
-
-The platform is being built with a scalable architecture focused on:
-- accurate telecom plan comparison
-- admin-controlled moderation
-- future community contributions
-- lightweight telecom change monitoring
-- long-term extensibility
+Most telecom apps show you ₹199, ₹299, ₹749. TeleBolt shows you ₹3,588/yr, ₹4,788/yr, ₹8,988/yr — along with total yearly data, cost-per-GB, and OTT benefits across Jio, Airtel, Vi, and BSNL. Make the decision with real numbers.
 
 ---
 
-# 🚀 Vision
+## Getting Started
 
-Most telecom apps show plans exactly how operators market them.
+### Prerequisites
 
-Example:
-- ₹199 plan
-- ₹299 plan
-- ₹749 plan
+- Node.js v18+
+- MongoDB (local or Atlas)
+- npm or yarn
 
-But users rarely realize:
-- how much they will actually spend yearly
-- which operator is cheapest long-term
-- how much total data they truly receive
-- which plan gives best value per GB
+### Clone & Install
 
-TeleBolt solves this by converting recharge plans into:
-- yearly cost
-- yearly data value
-- yearly comparison metrics
+```bash
+git clone https://github.com/your-username/telebolt.git
+cd telebolt
 
-This allows users to make smarter recharge decisions instead of marketing-driven decisions.
+# Install backend dependencies
+cd backend && npm install
 
----
+# Install frontend dependencies
+cd ../frontend && npm install
+```
 
-# ✨ Core Features (MVP)
+### Environment Setup
 
-## Public Features
+Create a `.env` file in the `backend/` directory:
 
-- Compare telecom plans across operators
-- Filter plans by:
-  - yearly budget
-  - validity
-  - operator
-  - daily/non-daily data
-  - OTT benefits
-- View:
-  - actual yearly recharge cost
-  - total yearly data
-  - cost-per-GB analysis
-- Side-by-side plan comparison
-- Separate categories for:
-  - Daily Data Plans
-  - Non-Daily Data Plans
-  - OTT Plans
-  - Data Add-ons
-- Smart yearly normalization system
+```env
+PORT=5000
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+EMAIL=your_email@gmail.com
+EMAIL_PASS=your_app_password
+NODE_ENV=development
+```
 
----
+### Run Locally
 
-# 🛠 Admin Features
+```bash
+# Start backend (from /backend)
+npm run dev
 
-- Add/Edit/Delete plans
-- Bulk CSV upload system
-- Admin approval workflow
-- Price history tracking
-- Change moderation system
-- Secure JWT authentication
+# Start frontend (from /frontend)
+npm run dev
+```
+
+Backend runs on `http://localhost:5000`, frontend on `http://localhost:5173`.
 
 ---
 
-# 📡 Telecom Change Monitoring System
+## What Problem This Solves
 
-TeleBolt does NOT depend entirely on web scraping.
+Indian telecom operators market plans by recharge price and validity. A ₹199 plan valid for 24 days and a ₹239 plan valid for 28 days look comparable — but they're not once you annualize them.
 
-Instead, it uses a hybrid monitoring architecture.
+TeleBolt normalizes every plan into a 365-day model so you can compare:
 
-## How It Works
-
-### Source of Truth
-The TeleBolt database remains the primary trusted source.
-
-### Lightweight Monitoring Layer
-TeleBolt can optionally monitor publicly exposed telecom frontend JSON responses (discovered through browser network requests) to detect potential plan changes.
-
-These endpoints are NOT treated as official public APIs.
-
-They are only used as:
-- lightweight monitoring signals
-- change detection assistance
-- admin verification helpers
-
-### Why This Architecture?
-
-Relying entirely on unofficial telecom APIs is risky because:
-- endpoints can change anytime
-- rate limits may appear
-- bot protection may increase
-- response structures may change
-
-So TeleBolt uses:
-- manual admin verification
-- optional automated detection
-- approval-based updates
-
-This creates a safer and more maintainable architecture.
+- **Yearly cost** — actual money spent per year across recharges
+- **Yearly data** — total GB received, not just daily quota
+- **Cost per GB** — the only metric that truly measures data value
+- **OTT value** — which operator bundles subscriptions worth keeping
 
 ---
 
-# 🔔 Monitoring Workflow
+## Features
 
-```txt
-Telecom frontend JSON changes detected
-        ↓
-Potential change created
-        ↓
-Admin reviews change
-        ↓
-Approve or reject
-        ↓
-Database updates
+### For Users (Public, No Login Required)
+
+- Compare plans across Jio, Airtel, Vi, and BSNL
+- Filter by yearly budget, operator, validity, data type, and OTT benefits
+- View yearly cost, total yearly data, and cost-per-GB side by side
+- Plan categories: Daily Data, Non-Daily Data, OTT Plans, Data Add-ons
+- No account needed during MVP
+
+### For Admins
+
+- Add, edit, and delete plans
+- Bulk import via CSV upload
+- Approval-based plan change workflow
+- Price history tracking per plan
+- Secure JWT-based authentication
+
+### Telecom Change Monitoring
+
+TeleBolt uses a lightweight hybrid monitoring system rather than full scraping:
+
+- Optionally monitors publicly exposed telecom frontend JSON endpoints (discovered via browser network inspection) for plan changes
+- Flags potential changes for admin review — no automatic updates
+- Admins approve or reject before anything touches the database
+
+This keeps the system stable even when telecom endpoints change structure, add bot protection, or go offline.
+
+```
+Telecom frontend JSON change detected
+          ↓
+Potential change logged
+          ↓
+Admin reviews
+          ↓
+Approve or reject → database updated
 ```
 
 ---
 
-# 🧠 Architecture Philosophy
-
-TeleBolt is intentionally being built in phases to avoid feature explosion and overengineering during MVP development.
-
-The goal is:
-- ship a complete working product early
-- validate the core experience
-- expand safely over time
-
----
-
-# 🧱 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Frontend | React |
 | Backend | Node.js + Express |
 | Database | MongoDB + Mongoose |
-| Authentication | JWT + bcrypt |
-| Mobile App | React Native |
-| Email Service | Nodemailer |
+| Auth | JWT + bcrypt |
+| Mobile (planned) | React Native |
+| Email | Nodemailer |
 | Scheduling | node-cron |
 | CSV Import | multer + csv-parser |
-| Deployment | Vercel + Render |
-| Database Hosting | MongoDB Atlas Free Tier |
-
-All technologies used in the project are free-tier friendly.
+| Frontend deploy | Vercel |
+| Backend deploy | Render |
+| Database hosting | MongoDB Atlas (free tier) |
 
 ---
 
-# 📂 Project Structure
+## Project Structure
 
-```txt
-TeleBolt/
+```
+telebolt/
 ├── backend/
 │   └── src/
 │       ├── controllers/
@@ -180,186 +148,53 @@ TeleBolt/
 │       ├── context/
 │       └── api/
 │
-├── mobile/
-│   └── React Native App
-│
+├── mobile/           # React Native (planned)
 ├── .github/
-├── README.md
-└── package.json
+└── README.md
 ```
 
 ---
 
-# 🔐 Authentication
+## Current Status
 
-Current MVP authentication:
-- Admin authentication only
-- JWT-based authorization
+Backend is complete and in testing. Frontend is actively being built.
 
-Public users do NOT need accounts during MVP.
-
-Future versions may include:
-- user accounts
-- contribution system
-- bookmarks
-- alerts
-- trust scoring
-
----
-
-# 📊 Database Design Philosophy
-
-TeleBolt is designed with schema evolution in mind.
-
-The database structure is intentionally simple during MVP and will evolve gradually as new platform features are added.
-
-Future schema evolution may include:
-- contributor trust scores
-- moderation priority levels
-- contribution history
-- community reputation systems
-
-Migrations and schema evolution scripts will be used to safely evolve production data over time.
-
----
-
-# 🧪 Backend Status
-
-## Completed
-- Authentication system
-- Plan APIs
+**Done:**
+- Auth system (JWT)
+- Plan CRUD APIs
 - Admin APIs
-- CSV import system
+- CSV bulk import
 - Price history tracking
 - Detected change workflow
-- Email notification service
+- Email notifications
 - Cron scheduling
-- Database models
-- Validation utilities
+- All database models and validators
 
-## Current Stage
-- API testing
-- frontend development
+**In progress:**
+- Frontend (React)
+- API integration testing
 
-## Next Step
-- frontend completion
-- deployment
+**Up next:**
+- Frontend completion
+- Deployment
 - MVP launch
 
 ---
 
-# 🌐 Planned Frontend Features
+## Roadmap
 
-- Clean telecom dashboard UI
-- Operator-wise filtering
-- Budget sliders
-- Plan comparison UI
-- Yearly savings visualization
-- Responsive mobile-first design
+**V1 — MVP**
+Telecom plan comparison, yearly normalization, budget filtering, admin dashboard, CSV imports, price history, manual moderation, deployment.
 
----
+**V2 — Community**
+User accounts, community plan submissions, contributor tracking, duplicate detection, basic trust scoring, submission moderation queue.
 
-# 📱 Planned Mobile App
-
-React Native app with:
-- plan comparison
-- smart filters
-- yearly savings insights
-- future alerts and notifications
+**V3 — Platform**
+Advanced trust algorithms, contributor reputation and badges, spam detection, smart plan recommendations, AI-assisted comparison insights.
 
 ---
 
-# 🚀 Roadmap
-
-# V1 — MVP
-
-## Core Features
-- Telecom plan comparison
-- Yearly normalization
-- Budget filtering
-- Admin dashboard
-- CSV uploads
-- Price history tracking
-- Manual moderation workflow
-- Lightweight monitoring support
-- Deployment
-
----
-
-# V2 — Community Expansion
-
-## Planned Features
-- User accounts
-- Community plan submissions
-- New Plan submission workflow
-- Existing Plan Change workflow
-- Duplicate detection
-- Contributor tracking
-- Basic trust score system
-- Submission moderation queue
-
----
-
-# V3 — Advanced Platform Systems
-
-## Planned Features
-- Advanced hidden trust algorithms
-- Contributor reputation system
-- Priority-based moderation
-- Contributor badges
-- Spam detection systems
-- Smart plan recommendations
-- AI-assisted comparison insights
-- Personalized telecom suggestions
-
----
-
-# 🧠 Future Community Moderation Concept
-
-Future versions of TeleBolt may allow community-driven telecom updates.
-
-Example workflow:
-
-```txt
-User submits plan/change
-        ↓
-Submission enters moderation queue
-        ↓
-Admin reviews submission
-        ↓
-Approve or reject
-```
-
-A future trust-based moderation system may prioritize reliable contributors based on contribution quality and approval history.
-
----
-
-# 🎯 Why This Project Exists
-
-TeleBolt is being built to:
-- solve a real comparison problem
-- explore scalable backend architecture
-- practice production-grade MERN engineering
-- learn moderation system design
-- understand schema evolution and system scalability
-- build a deployable real-world product
-
----
-
-# ⚙️ Environment Variables
-
-```env
-PORT=
-MONGODB_URI=
-JWT_SECRET=
-EMAIL=
-EMAIL_PASS=
-NODE_ENV=
-```
-
----
-
-# 🚀 Deployment
+## Deployment
 
 | Service | Platform |
 |---|---|
@@ -367,39 +202,10 @@ NODE_ENV=
 | Backend | Render |
 | Database | MongoDB Atlas |
 
----
-
-# 📌 Current Development Focus
-
-Right now the project focus is:
-- stabilizing backend APIs
-- testing workflows
-- building frontend
-- shipping MVP cleanly
-
-The platform will expand gradually after deployment based on:
-- real usage
-- feedback
-- scalability needs
+All tiers used are free. The project is designed to run at zero cost during MVP.
 
 ---
 
-# 📜 License
+## License
 
-MIT License
-
----
-
-# 👨‍💻 Developer Notes
-
-TeleBolt is intentionally being built with:
-- scalable architecture
-- phased development
-- realistic production workflows
-- extensible database design
-- maintainable backend systems
-
-The project prioritizes:
-- correctness over automation
-- maintainability over shortcuts
-- extensibility over premature complexity
+MIT
