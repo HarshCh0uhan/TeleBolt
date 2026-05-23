@@ -32,12 +32,19 @@ cd ../frontend && npm install
 Create a `.env` file in the `backend/` directory:
 
 ```env
-PORT=5000
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-EMAIL=your_email@gmail.com
-EMAIL_PASS=your_app_password
+PORT=3000
 NODE_ENV=development
+ 
+MONGODB_URI=mongodb://localhost:27017/telebolt
+ 
+JWT_SECRET=your_jwt_secret_here
+ADMIN_SECRET_KEY=your_admin_secret_here
+ADMIN_EMAIL=admin@yourdomain.com
+ 
+EMAIL=your_email@gmail.com
+EMAIL_PASS=your_gmail_app_password
+ 
+FRONTEND_URL=http://localhost:5173
 ```
 
 ### Run Locally
@@ -153,31 +160,6 @@ telebolt/
 └── README.md
 ```
 
----
-
-## Current Status
-
-Backend is complete and in testing. Frontend is actively being built.
-
-**Done:**
-- Auth system (JWT)
-- Plan CRUD APIs
-- Admin APIs
-- CSV bulk import
-- Price history tracking
-- Detected change workflow
-- Email notifications
-- Cron scheduling
-- All database models and validators
-
-**In progress:**
-- Frontend (React)
-- API integration testing
-
-**Up next:**
-- Frontend completion
-- Deployment
-- MVP launch
 
 ---
 
