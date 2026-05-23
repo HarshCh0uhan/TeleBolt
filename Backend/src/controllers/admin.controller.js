@@ -4,6 +4,19 @@ import { validatePlans } from "../utils/validations.js";
 import { DetectedChange } from "../models/detectedChange.js";
 import { PriceHistory } from "../models/priceHistory.js";
 
+export const getAllPlans = async (req, res) => {
+     try {
+        const plans = await Plans.find() // no filter - returns everything
+        res.status(200).json({
+            success: true,
+            plans
+        })
+    } catch(err) {
+        console.error("Error: ", err.message)
+        res.status(400).json({ message: err.message })
+    }
+}
+
 export const createPlans = async (req, res) => {
     try {
         validatePlans(req.body)
