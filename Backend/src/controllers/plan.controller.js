@@ -7,7 +7,7 @@ export const getPlans = async (req, res) => {
         const {operator, category, minPrice, maxPrice, validityDays, ottApps,
         dailyData, minData, maxData, isActive, isUnlimitedCalls, isUnlimitedSMS} = req.query;
 
-        const filter ={}
+        const filter ={isActive: true}
 
         if(operator) filter.operator = operator
         if(category) filter.category = category
@@ -26,7 +26,6 @@ export const getPlans = async (req, res) => {
         }
         if(isUnlimitedCalls) filter.isUnlimitedCalls = isUnlimitedCalls === 'true'
         if(isUnlimitedSMS) filter.isUnlimitedSMS = isUnlimitedSMS === 'true'
-        if(isActive) filter.isActive = isActive === "true"
         
         const plansData = await Plans.find(filter);
         if(plansData.length === 0) throw new Error("No Plans Exist");
