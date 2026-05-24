@@ -74,6 +74,28 @@ TeleBolt normalizes every plan into a 365-day model so you can compare:
 
 ---
 
+## API Endpoints
+
+**Public:**
+```
+GET /api/plans          - List plans with filters
+GET /api/plans/:id      - Single plan
+GET /api/plans/compare  - Compare multiple plans
+```
+
+**Admin (requires auth):**
+```
+POST   /api/admin/plans        - Create plan
+PUT    /api/admin/plans/:id    - Update plan
+DELETE /api/admin/plans/:id    - Delete plan
+POST   /api/admin/upload-csv   - Bulk import
+GET    /api/admin/detected     - Pending changes
+POST   /api/admin/approve/:id  - Approve change
+POST   /api/admin/reject/:id   - Reject change
+```
+
+---
+
 ## Features
 
 ### For Users (Public, No Login Required)
@@ -111,6 +133,9 @@ Admin reviews
           ↓
 Approve or reject → database updated
 ```
+
+
+Community plan submissions with trust-based moderation
 
 ---
 
