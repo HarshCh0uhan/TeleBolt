@@ -7,6 +7,18 @@ Most telecom apps show you ₹199, ₹299, ₹749. TeleBolt shows you ₹3,588/y
 ---
 
 ## Getting Started
+## What Problem This Solves
+
+Indian telecom operators market plans by recharge price and validity. A ₹199 plan valid for 24 days and a ₹239 plan valid for 28 days look comparable — but they're not once you annualize them.
+
+TeleBolt normalizes every plan into a 365-day model so you can compare:
+
+- **Yearly cost** — actual money spent per year across recharges
+- **Yearly data** — total GB received, not just daily quota
+- **Cost per GB** — the only metric that truly measures data value
+- **OTT value** — which operator bundles subscriptions worth keeping
+
+---
 
 ### Prerequisites
 
@@ -61,18 +73,6 @@ Backend runs on `http://localhost:5000`, frontend on `http://localhost:5173`.
 
 ---
 
-## What Problem This Solves
-
-Indian telecom operators market plans by recharge price and validity. A ₹199 plan valid for 24 days and a ₹239 plan valid for 28 days look comparable — but they're not once you annualize them.
-
-TeleBolt normalizes every plan into a 365-day model so you can compare:
-
-- **Yearly cost** — actual money spent per year across recharges
-- **Yearly data** — total GB received, not just daily quota
-- **Cost per GB** — the only metric that truly measures data value
-- **OTT value** — which operator bundles subscriptions worth keeping
-
----
 
 ## API Endpoints
 
