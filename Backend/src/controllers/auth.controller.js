@@ -120,3 +120,16 @@ export const logout = async (req, res) => {
         message: "Logout Successful"
     })
 }
+
+export const getUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id)
+        res.status(200).json({
+            success: true,
+            user
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
