@@ -24,7 +24,7 @@ function App() {
       <Route path="/compare" element={<Compare/>} />
       <Route path="/login" element={<Login/>} />
       <Route path="/register" element={<Register/>} />
-      <Route path="/register-admin" element={<Register isAdmin/>} />
+      <Route path="/register-admin" element={<Register isAdminRegister/>} />
 
       {/* Protected Routes */}
       <Route path="/profile" element={
