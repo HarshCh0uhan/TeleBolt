@@ -53,11 +53,10 @@ const EyeSlashIcon = () => (
   </svg>
 );
 
-const Login = ({ isAdminLogin = false }) => {
+const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    adminSecretKey: "",
   });
 
   const [error, setError] = useState(null);
@@ -78,7 +77,7 @@ const Login = ({ isAdminLogin = false }) => {
 
     // TODO: validate form fields
 
-    // TODO: call login() or adminLogin() from AuthContext based on isAdminLogin prop
+    // TODO: call login() from AuthContext
     // TODO: handle loading state, errors, and success flow
   };
 
@@ -111,13 +110,11 @@ const Login = ({ isAdminLogin = false }) => {
 
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-[#121212] dark:text-white">
-              {isAdminLogin ? "Admin Login" : "Welcome Back"}
+              Welcome Back
             </h1>
 
             <p className="mt-3 text-sm text-gray-600 dark:text-white/70">
-              {isAdminLogin
-                ? "Sign in to manage the TeleBolt platform."
-                : "Sign in to continue comparing telecom plans smarter."}
+              Sign in to continue comparing telecom plans smarter.
             </p>
           </div>
 
@@ -178,28 +175,6 @@ const Login = ({ isAdminLogin = false }) => {
               </div>
             </motion.div>
 
-            {isAdminLogin && (
-              <motion.div variants={fieldVariants}>
-                <label
-                  htmlFor="adminSecretKey"
-                  className="mb-2 block text-sm font-medium text-[#121212] dark:text-white/80"
-                >
-                  Admin Secret Key
-                </label>
-
-                <input
-                  id="adminSecretKey"
-                  name="adminSecretKey"
-                  type="password"
-                  value={formData.adminSecretKey}
-                  onChange={handleChange}
-                  aria-invalid={!!error}
-                  className="w-full rounded-xl border border-gray-200 bg-white/60 px-4 py-3 text-sm text-[#121212] backdrop-blur outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-[#4F46E5] dark:border-white/20 dark:bg-white/10 dark:text-white dark:placeholder:text-white/40"
-                  placeholder="Enter admin secret key"
-                />
-              </motion.div>
-            )}
-
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -213,16 +188,17 @@ const Login = ({ isAdminLogin = false }) => {
               )}
             </AnimatePresence>
 
-            <motion.div variants={fieldVariants}>
+            {/* Forgot password — hidden for now, no backend support yet */}
+            {/* <motion.div variants={fieldVariants}>
               <div className="flex items-center justify-end">
                 <Link
                   to="/forgot-password"
-                  className="text-sm font-medium text-[#4F46E5] transition-colors hover:text-[#4338CA]"
+                  className="text-sm font-medium text-white/80 transition-colors hover:text-[#4338CA]"
                 >
                   Forgot Password?
                 </Link>
               </div>
-            </motion.div>
+            </motion.div> */}
 
             <motion.div variants={fieldVariants}>
               <motion.button
@@ -234,8 +210,6 @@ const Login = ({ isAdminLogin = false }) => {
               >
                 {loading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                ) : isAdminLogin ? (
-                  "Login as Admin"
                 ) : (
                   "Sign In"
                 )}
@@ -248,23 +222,12 @@ const Login = ({ isAdminLogin = false }) => {
               Don't have an account?{" "}
               <Link
                 to="/register"
-                className="font-semibold text-[#4F46E5] transition-colors hover:text-[#4338CA]"
+                className="font-semibold text-indigo-500 transition-colors hover:text-[#4338CA]"
               >
                 Create Account
               </Link>
             </p>
           </div>
-
-          {isAdminLogin === false && (
-            <div className="mt-4 text-center">
-              <Link
-                to="/register-admin"
-                className="text-xs font-medium text-[#FF7A59] hover:underline"
-              >
-                Register as Admin
-              </Link>
-            </div>
-          )}
         </motion.div>
       </div>
     </div>
