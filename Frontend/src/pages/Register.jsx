@@ -304,11 +304,11 @@ const Register = ({ isAdminRegister = false }) => {
 
                 <span className="text-sm text-gray-600 dark:text-white/70">
                   I agree to the{" "}
-                  <span className="font-medium text-[#4F46E5]">
+                  <span className="font-medium text-indigo-500">
                     Terms of Service
                   </span>{" "}
                   and{" "}
-                  <span className="font-medium text-[#4F46E5]">
+                  <span className="font-medium text-indigo-500">
                     Privacy Policy
                   </span>
                 </span>
@@ -339,7 +339,7 @@ const Register = ({ isAdminRegister = false }) => {
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="font-semibold text-[#4F46E5] transition-colors hover:text-[#4338CA]"
+                className="font-semibold text-indigo-500 transition-colors hover:text-[#4338CA]"
               >
                 Sign in
               </Link>

@@ -1,0 +1,43 @@
+export const plans = [
+  {
+    _id: "1",
+    operator: "Jio",
+    category: "Daily",
+    price: 399,
+    validityDays: 28,
+    dailyData: 2,
+    sms: 100,
+    isUnlimitedCalls: true,
+    isUnlimitedSMS: true,
+    ottApps: ["JioHotstar"],
+    isActive: true,
+  },
+
+  {
+    _id: "2",
+    operator: "Airtel",
+    category: "Daily",
+    price: 349,
+    validityDays: 28,
+    dailyData: 2,
+    sms: 100,
+    isUnlimitedCalls: true,
+    isUnlimitedSMS: true,
+    ottApps: ["Prime"],
+    isActive: true,
+  },
+
+  {
+    _id: "3",
+    operator: "VI",
+    category: "Non-Daily",
+    price: 299,
+    validityDays: 30,
+    totalData: 25,
+    sms: 100,
+    isUnlimitedCalls: true,
+    isUnlimitedSMS: false,
+    ottApps: [],
+    isActive: true,
+  },
+];
