@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -83,7 +83,7 @@ export default function Login() {
             </div>
 
             {/* Error Area (reserved space to prevent layout shift) */}
-            <div className="min-h-[24px]">
+            <div className="min-h-6">
               {error && (
                 <p className="text-sm text-red-400 font-medium">{error}</p>
               )}
@@ -123,3 +123,5 @@ export default function Login() {
     </div>
   );
 }
+
+export default Login;
