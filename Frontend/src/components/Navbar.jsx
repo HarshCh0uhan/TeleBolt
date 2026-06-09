@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 
-export default function Navbar({ isAuthenticated = false }) {
+const Navbar = ({ isAuthenticated = false }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinkClass = ({ isActive }) =>
@@ -126,3 +126,5 @@ export default function Navbar({ isAuthenticated = false }) {
     </header>
   );
 }
+
+export default Navbar

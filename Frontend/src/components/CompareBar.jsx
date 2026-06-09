@@ -1,4 +1,6 @@
-export default function CompareBar() {
+
+
+const CompareBar = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#1a1a1a]/95 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 py-4">
@@ -92,3 +94,5 @@ export default function CompareBar() {
     </div>
   );
 }
+
+export default CompareBar

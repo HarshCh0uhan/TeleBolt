@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 
-export default function FilterSidebar() {
+const FilterSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const operators = ["Jio", "Airtel", "VI"];
@@ -22,7 +22,7 @@ export default function FilterSidebar() {
       {/* Mobile Overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-40 bg-black/70 lg:hidden">
-          <div className="absolute left-0 top-0 h-full w-[300px] border-r border-white/10 bg-[#1f1f1f]">
+          <div className="absolute left-0 top-0 h-full w-75 border-r border-white/10 bg-[#1f1f1f]">
             <div className="flex items-center justify-between border-b border-white/10 p-4">
               <h2 className="text-lg font-semibold text-white">
                 Filters
@@ -42,7 +42,7 @@ export default function FilterSidebar() {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden w-[260px] shrink-0 border-r border-white/10 bg-[#1f1f1f] lg:block">
+      <aside className="hidden w-65 shrink-0 border-r border-white/10 bg-[#1f1f1f] lg:block">
         <SidebarContent operators={operators} />
       </aside>
     </>
@@ -153,3 +153,5 @@ function SidebarContent({ operators }) {
     </div>
   );
 }
+
+export default FilterSidebar
