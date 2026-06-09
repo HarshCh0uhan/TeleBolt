@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
+import { useAuth } from "../context/AuthContext";
 
 const Register = ({ isAdminRegister = false }) => {
   const [username, setUsername] = useState("");
@@ -8,8 +9,10 @@ const Register = ({ isAdminRegister = false }) => {
   const [password, setPassword] = useState("");
   const [adminSecretKey, setAdminSecretKey] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate()
+  const {user, registerUser, registerAdminUser} = useAuth
+  const [error, setError] = useState("");
 
-  const error = "";
 
   const accent = isAdminRegister ? "#ef4444" : "#58c28d";
 
@@ -17,6 +20,17 @@ const Register = ({ isAdminRegister = false }) => {
     e.preventDefault();
 
     setLoading(true);
+
+    try {
+      if(!user){
+        if(!isAdminRegister) registerUser(username, email, password)
+        else registerAdminUser(username, email, password, adminSecretKey)
+        navigate('/')
+      }
+    } catch (err) {
+       setError(err.response?.data?.error || 'Registration failed. Please try again.')
+    }
+
 
     // UI-only loading state
     setTimeout(() => {
