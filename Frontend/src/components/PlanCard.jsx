@@ -1,4 +1,6 @@
-export default function PlanCard({plan}) {
+
+
+const PlanCard = ({plan}) => {
   return (
     <article className="group overflow-hidden rounded-3xl border border-white/10 bg-[#1f1f1f] transition-all duration-300 hover:border-[#58c28d]/30 hover:-translate-y-1">
       {/* Header */}
@@ -110,3 +112,5 @@ export default function PlanCard({plan}) {
     </article>
   );
 }
+
+export default PlanCard

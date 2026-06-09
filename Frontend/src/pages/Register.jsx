@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 
-export default function Register({ isAdminRegister = false }) {
+const Register = ({ isAdminRegister = false }) => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -156,7 +156,7 @@ export default function Register({ isAdminRegister = false }) {
             )}
 
             {/* Error Area */}
-            <div className="min-h-[24px]">
+            <div className="min-h-6">
               {error && (
                 <p className="text-sm font-medium text-red-400">{error}</p>
               )}
@@ -204,3 +204,5 @@ export default function Register({ isAdminRegister = false }) {
     </div>
   );
 }
+
+export default Register
