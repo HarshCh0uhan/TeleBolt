@@ -1,18 +1,26 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Placeholder UI state only
-  const error = "";
+  const navigate = useNavigate();
+  const {user, loginUser} = useAuth;
+  const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
+
+    try {
+      if(!user) loginUser(email, password);
+      navigate('/')
+    } catch (err) {
+      setError(err.response?.data?.error || 'Login failed. Please try again.')
+    }
 
     // UI-only loading simulation
     setTimeout(() => {
