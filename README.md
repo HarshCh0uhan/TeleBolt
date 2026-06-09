@@ -219,31 +219,13 @@ All tiers used are free. The project is designed to run at zero cost during MVP.
 MIT
 
 
-src/
-  pages/
-    Home.jsx
-    PlanDetail.jsx
-    Compare.jsx
-    Login.jsx
-    Register.jsx
-    RegisterAdmin.jsx
-    NotFound.jsx
-    admin/
-      Dashboard.jsx
-      Plans.jsx
-      CreatePlan.jsx
-      EditPlan.jsx
-      DetectedChanges.jsx
-      UploadCSV.jsx
-  components/
-    PlanCard.jsx
-    PlanFilters.jsx
-    Navbar.jsx
-    ProtectedRoute.jsx
-  api/
-    axios.js        → axios instance with base URL
-    plans.api.js    → all plan related API calls
-    auth.api.js     → all auth related API calls
-    admin.api.js    → all admin related API calls
-  context/
-    AuthContext.jsx → global auth state
+1. Login
+2. Register
+3. Navbar
+4. PlanCard
+5. FilterSidebar
+6. CompareBar
+7. Home.jsx
+8. PlanDetail.jsx
+9. Compare.jsx
+10. Admin pages
