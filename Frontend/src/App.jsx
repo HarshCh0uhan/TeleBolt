@@ -2,7 +2,7 @@ import './App.css'
 import { Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
-import PlanDetail from './pages/PlanDetail';
+// import PlanTracker from './components/PlanTracker';
 import Compare from './pages/Compare';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -20,7 +20,7 @@ function App() {
       {/* Public Routes */}
       <Route path="/" element={<Home/>} />
       <Route path="/plans" element={<Home/>} />
-      <Route path="/plans/:id" element={<PlanDetail/>} />
+      {/* <Route path="/plans/:planid" element={<PlanTracker/>} /> */}
       <Route path="/compare" element={<Compare/>} />
       <Route path="/login" element={<Login/>} />
       <Route path="/register" element={<Register/>} />
