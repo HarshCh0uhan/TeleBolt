@@ -96,13 +96,13 @@ const PlanCard = ({plan, onTrack}) => {
       {/* Footer */}
       <div className="border-t border-white/10 p-5">
         <div className="flex gap-3">
-          <button onClick={onTrack} className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
-            Track
-          </button>
-
-          <button className="rounded-2xl border border-white/10 px-4 py-3 text-white transition hover:border-[#58c28d]/30">
+          <button className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
             Compare
           </button>
+
+          {/* <button onClick={onTrack} className="rounded-2xl border border-white/10 px-4 py-3 text-white transition hover:border-[#58c28d]/30">
+            Track
+          </button> */}
         </div>
 
         {/* TODO:
