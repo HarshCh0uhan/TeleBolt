@@ -1,6 +1,6 @@
 
 
-const PlanCard = ({plan}) => {
+const PlanCard = ({plan, onTrack}) => {
   return (
     <article className="group overflow-hidden rounded-3xl border border-white/10 bg-[#1f1f1f] transition-all duration-300 hover:border-[#58c28d]/30 hover:-translate-y-1">
       {/* Header */}
@@ -13,7 +13,7 @@ const PlanCard = ({plan}) => {
             </span>
 
             <h3 className="mt-3 text-2xl font-bold text-white">
-              ₹{plan.price}9
+              ₹{plan.price}
             </h3>
 
             <p className="mt-1 text-sm text-zinc-400">
@@ -33,14 +33,14 @@ const PlanCard = ({plan}) => {
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-2xl bg-[#262626] p-4">
             <p className="text-xs uppercase tracking-wider text-zinc-500">
-              Daily Data
+              {plan.dailyData ? "Daily Data" : "Total Data"}
             </p>
 
             {/* TODO: dailyData */}
             <p className="mt-2 text-lg font-semibold text-white">
-              {plan.dailyData
-            ? `${plan.dailyData} GB/day`
-            : `${plan.totalData} GB Total`}
+                {plan.dailyData
+                ? `${plan.dailyData} GB/day`
+                : `${plan.totalData} GB Total`}
             </p>
           </div>
 
@@ -51,7 +51,7 @@ const PlanCard = ({plan}) => {
 
             {/* TODO: sms */}
             <p className="mt-2 text-lg font-semibold text-white">
-              {plan.sms || 0}
+              {plan.sms || "N/A"}
             </p>
           </div>
         </div>
@@ -78,9 +78,17 @@ const PlanCard = ({plan}) => {
 
           <div className="flex flex-wrap gap-2">
             {/* TODO: map ottApps */}
-            <span className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">
-              {(plan.ottApps.length) ? plan.ottApps.map((ott) => ott).join(', ') : "NA"}
-            </span>
+              {(plan.ottApps.length) ? plan.ottApps.map((ott) => (
+                <span
+                key={ott}
+                className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300"
+                >
+                {ott}
+                </span>
+              )) : 
+            <span className="text-sm text-zinc-500">
+                No OTT Benefits
+            </span>}
           </div>
         </div>
       </div>
@@ -89,12 +97,12 @@ const PlanCard = ({plan}) => {
       <div className="border-t border-white/10 p-5">
         <div className="flex gap-3">
           <button className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
-            View Details
-          </button>
-
-          <button className="rounded-2xl border border-white/10 px-4 py-3 text-white transition hover:border-[#58c28d]/30">
             Compare
           </button>
+
+          {/* <button onClick={onTrack} className="rounded-2xl border border-white/10 px-4 py-3 text-white transition hover:border-[#58c28d]/30">
+            Track
+          </button> */}
         </div>
 
         {/* TODO:

@@ -34,9 +34,9 @@ const Navbar = ({ isAuthenticated = false }) => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <NavLink to="/plans" className={navLinkClass}>
+            {/* <NavLink to="/plans" className={navLinkClass}>
               Plans
-            </NavLink>
+            </NavLink> */}
 
             <NavLink to="/compare" className={navLinkClass}>
               Compare
