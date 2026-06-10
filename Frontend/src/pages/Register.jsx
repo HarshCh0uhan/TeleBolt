@@ -10,25 +10,28 @@ const Register = ({ isAdminRegister = false }) => {
   const [adminSecretKey, setAdminSecretKey] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate()
-  const {user, registerUser, registerAdminUser} = useAuth
+  const {user, registerUser, registerAdminUser} = useAuth()
   const [error, setError] = useState("");
 
 
   const accent = isAdminRegister ? "#ef4444" : "#58c28d";
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     setLoading(true);
+    setError("")
 
     try {
-      if(!user){
-        if(!isAdminRegister) registerUser(username, email, password)
-        else registerAdminUser(username, email, password, adminSecretKey)
-        navigate('/')
+      if (!isAdminRegister) {
+          await registerUser(username, email, password) 
+      } else {
+          await registerAdminUser(username, email, password, adminSecretKey)
       }
+      navigate(isAdminRegister ? '/admin' : '/')
     } catch (err) {
        setError(err.response?.data?.error || 'Registration failed. Please try again.')
+    } finally {
+        setLoading(false)
     }
 
 

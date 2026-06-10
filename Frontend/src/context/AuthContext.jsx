@@ -18,21 +18,24 @@ export const AuthProvider = ({children}) => {
     }, []);
 
     const loginUser = async (email, password) => {
-        const res = await login({ email, password });
-        setUser(res.data.user);
-        return res.data.user;
+        await login({ email, password });
+        const meRes = await api.get("/auth/me");
+        setUser(meRes.data.user);
+        return meRes.data.user;
     };
 
     const registerUser = async (username, email, password) => {
-        const res = await register({username, email, password});
-        setUser(res.data.user);
-        return res.data.user;
+        await register({username, email, password});
+        const meRes = await api.get("/auth/me");
+        setUser(meRes.data.user);
+        return meRes.data.user;
     };
 
     const registerAdminUser = async (username, email, password, adminSecretKey) => {
-        const res = await registerAdmin({username, email, password, adminSecretKey});
-        setUser(res.data.user);
-        return res.data.user;
+        await registerAdmin({username, email, password, adminSecretKey});
+        const meRes = await api.get("/auth/me");
+        setUser(meRes.data.user);
+        return meRes.data.user;
     };
 
     const logoutUser = async () => {
