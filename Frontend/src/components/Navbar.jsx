@@ -1,9 +1,13 @@
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
+import {useAuth} from "../context/AuthContext"
 
-const Navbar = ({ isAuthenticated = false }) => {
+const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const {user, logoutUser} = useAuth()
+
+  const handleLogout = async () => await logoutUser();
 
   const navLinkClass = ({ isActive }) =>
     `transition-colors duration-200 ${
@@ -42,10 +46,15 @@ const Navbar = ({ isAuthenticated = false }) => {
               Compare
             </NavLink>
 
-            {isAuthenticated ? (
-              <NavLink to="/profile" className={navLinkClass}>
-                Profile
-              </NavLink>
+            {user ? (
+              <>
+                <NavLink to="/profile" className={navLinkClass}>
+                  Profile
+                </NavLink>
+                <button onClick={handleLogout} className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
+                  Logout
+                </button>
+              </>
             ) : (
               <>
                 <NavLink to="/login" className={navLinkClass}>
@@ -104,10 +113,15 @@ const Navbar = ({ isAuthenticated = false }) => {
                 Compare
               </NavLink>
 
-              {isAuthenticated ? (
-                <NavLink to="/profile" className={navLinkClass}>
-                  Profile
-                </NavLink>
+              {user ? (
+                <>
+                  <NavLink to="/profile" className={navLinkClass}>
+                    Profile
+                  </NavLink>
+                  <button onClick={handleLogout} className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
+                    Logout
+                  </button>
+                </>
               ) : (
                 <>
                   <NavLink to="/login" className={navLinkClass}>
