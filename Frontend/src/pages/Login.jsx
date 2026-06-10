@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 import { useAuth } from "../context/AuthContext";
@@ -10,6 +10,12 @@ const Login = () => {
   const navigate = useNavigate();
   const {user, loginUser} = useAuth();
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate(user.role === 'admin' ? '/admin' : '/')
+    }
+  }, [user, loading])
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,6 +36,14 @@ const Login = () => {
     }, 1200);
   };
 
+  // useEffect(() => {
+  //   if (!loading && user) {
+  //       navigate(user.role === 'admin' ? '/admin' : '/')
+  //   }
+  // }, [user, loading])
+
+
+  if (loading) return null
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">

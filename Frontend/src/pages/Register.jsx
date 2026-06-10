@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +15,12 @@ const Register = ({ isAdminRegister = false }) => {
 
 
   const accent = isAdminRegister ? "#ef4444" : "#58c28d";
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate(user.role === 'admin' ? '/admin' : '/')
+    }
+  }, [user, loading])
 
   const handleSubmit = async (e) => {
     e.preventDefault();
