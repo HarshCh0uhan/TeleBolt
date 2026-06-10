@@ -8,18 +8,20 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const {user, loginUser} = useAuth;
+  const {user, loginUser} = useAuth();
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+    setError("")
     try {
-      if(!user) loginUser(email, password);
-      navigate('/')
+      const loggedInUser = await loginUser(email, password)
+      navigate(loggedInUser.role === 'admin' ? '/admin' : '/')
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please try again.')
+    } finally {
+        setLoading(false) 
     }
 
     // UI-only loading simulation
