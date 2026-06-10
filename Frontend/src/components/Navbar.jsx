@@ -5,9 +5,7 @@ import {useAuth} from "../context/AuthContext"
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const {user, logoutUser} = useAuth()
-
-  const handleLogout = async () => await logoutUser();
+  const {user, logoutUser, loading} = useAuth()
 
   const navLinkClass = ({ isActive }) =>
     `transition-colors duration-200 ${
@@ -46,12 +44,14 @@ const Navbar = () => {
               Compare
             </NavLink>
 
-            {user ? (
+            {loading ? (
+                <div className="h-8 w-32 rounded-lg bg-white/10 animate-pulse" />
+            ) : user ? (
               <>
                 <NavLink to="/profile" className={navLinkClass}>
                   Profile
                 </NavLink>
-                <button onClick={handleLogout} className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
+                <button onClick={logoutUser} className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
                   Logout
                 </button>
               </>
@@ -118,7 +118,7 @@ const Navbar = () => {
                   <NavLink to="/profile" className={navLinkClass}>
                     Profile
                   </NavLink>
-                  <button onClick={handleLogout} className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
+                  <button onClick={logoutUser} className="flex-1 rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
                     Logout
                   </button>
                 </>
