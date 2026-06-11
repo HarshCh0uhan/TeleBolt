@@ -1,4 +1,4 @@
-const mockPlans = [
+const plans = [
   {
     _id: "1",
     operator: "Jio",
@@ -280,5 +280,29 @@ const mockPlans = [
     isActive: true,
   },
 ];
+
+const mockPlans = plans.map((plan) => {
+  const multiplier = Math.ceil(
+    365 / plan.validityDays
+  );
+
+  const yearlyCost = multiplier * plan.price;
+
+  const yearlyData = plan.totalData
+    ? multiplier * plan.totalData
+    : null;
+
+  return {
+    ...plan,
+    yearlyCost,
+    yearlyData,
+    costPerGB:
+      yearlyData > 0
+        ? Number(
+            (yearlyCost / yearlyData).toFixed(2)
+          )
+        : null,
+  };
+});
 
 export default mockPlans;
