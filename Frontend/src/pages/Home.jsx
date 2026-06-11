@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Navbar from "../components/Navbar";
 import FilterSidebar from "../components/FilterSidebar";
@@ -6,9 +6,22 @@ import PlanCard from "../components/PlanCard";
 import CompareBar from "../components/CompareBar";
 import PlanTracker from "../components/PlanTracker";
 import mockPlans from "../data/mockPlans";
+import { getPlans } from "../api/plans.api";
 
 const Home = () => {
   const [showTracker, setShowTracker] = useState(false);
+  const [plans, setPlans] = useState([])
+
+  const fetchPlans = async () => {
+    const {data} = await getPlans() 
+  
+    setPlans(data.plans);
+  }  
+
+  useEffect(() => {
+    fetchPlans()
+  }, [getPlans])
+
 
   return (
     <div className="min-h-screen bg-[#181818]">
@@ -36,7 +49,7 @@ const Home = () => {
 
           <main className="flex-1">
             <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {mockPlans.map((plan) => (
+              {plans.map((plan) => (
                 <PlanCard
                   key={plan._id}
                   plan={plan}
