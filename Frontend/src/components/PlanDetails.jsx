@@ -1,12 +1,21 @@
 import { Link, useParams } from "react-router-dom";
 import mockPlans from "../data/mockPlans";
+import { getSinglePlan } from "../api/plans.api";
+import { useEffect, useState } from "react";
 
 const PlanDetails = () => {
+  const [plan, setPlan] = useState(null)
   const { planid } = useParams();
+  
 
-  const plan = mockPlans.find(
-    (p) => p._id === planid
-  );
+  const fetchPlan = async () => {
+    const {data} = await getSinglePlan(planid);
+    setPlan(data.plan)    
+  }
+
+  useEffect(() => {
+    fetchPlan()
+  }, [])
 
   if (!plan) {
     return (
@@ -49,8 +58,8 @@ const PlanDetails = () => {
             </div>
 
             {/* Value Metrics */}
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
                   Yearly Cost
                 </p>
@@ -58,9 +67,18 @@ const PlanDetails = () => {
                 <p className="mt-2 text-xl font-semibold text-[#58c28d]">
                   ₹{plan.yearlyCost}
                 </p>
+              </div> */}
+              <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
+                <p className="text-xs uppercase tracking-wider text-zinc-500">
+                  Total Data
+                </p>
+
+                <p className="mt-2 text-xl font-semibold text-[#58c28d]">
+                  {plan.totalData}
+                </p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
+              {/* <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
                   Yearly Data
                 </p>
@@ -68,7 +86,7 @@ const PlanDetails = () => {
                 <p className="mt-2 text-xl font-semibold text-white">
                   {plan.yearlyData} GB
                 </p>
-              </div>
+              </div> */}
 
               <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
@@ -127,7 +145,7 @@ const PlanDetails = () => {
 
               <div className="mt-3 flex flex-wrap gap-2">
                   {plan.ottApps.length ? plan.ottApps.map((ott) => (
-                    <span className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">
+                    <span key={plan._id} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">
                         {ott}
                     </span>
                   )) : 
