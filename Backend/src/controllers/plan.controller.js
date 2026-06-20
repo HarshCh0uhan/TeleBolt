@@ -24,8 +24,8 @@ export const getPlans = async (req, res) => {
             if(minData) filter.totalData.$gte = Number(minData)
             if(maxData) filter.totalData.$lte = Number(maxData)
         }
-        if(isUnlimitedCalls) filter.isUnlimitedCalls = isUnlimitedCalls === 'true'
-        if(isUnlimitedSMS) filter.isUnlimitedSMS = isUnlimitedSMS === 'true'
+        // if(isUnlimitedCalls) filter.isUnlimitedCalls = isUnlimitedCalls === 'true'
+        // if(isUnlimitedSMS) filter.isUnlimitedSMS = isUnlimitedSMS === 'true'
         
         const plansData = await Plans.find(filter);
         if(plansData.length === 0) throw new Error("No Plans Exist");
