@@ -14,10 +14,14 @@ const Home = () => {
   const [filters, setFilters] = useState({
     operators: [],
     category: "",
-    maxPrice: 3000,
-    minDailyData: 0,
-    validityDays: [],
+    dailyData: 0,
+    minValidity: 1,
+    maxValidity: 365,
+    minData: 1,
+    maxData: 500,
     ottApps: [],
+    minPrice: 99,
+    maxPrice: 3000,
   })
 
   const fetchPlans = async (activeFilters = {}) => {
@@ -37,35 +41,28 @@ const Home = () => {
   const handleApply = () => {
     const params = {}
 
-    if (filters.operators.length > 0) {
-      params.operator = filters.operators.join(',')
-    }
+    if (filters.operators.length > 0) params.operator = filters.operators.join(',')
     
-    if (filters.maxPrice < 3000) {
-      params.maxPrice = filters.maxPrice.toString()
-    }
+    if (filters.minPrice > 99) params.minPrice = filters.minPrice.toString()
+    if (filters.maxPrice < 3000) params.maxPrice = filters.maxPrice.toString()
     
-    if (filters.minDailyData > 0) {
-      params.dailyData = filters.minDailyData.toString()
-    }
+    if (filters.minData > 1) params.minData = filters.minData.toString()
+    if (filters.maxData < 500) params.maxData = filters.maxData.toString()
     
-    if (filters.validityDays > 0) {
-      params.validityDays = filters.validityDays.toString()
-    }
+    if (filters.dailyData > 0) params.dailyData = filters.dailyData.toString()
+    
+    if (filters.minValidity > 1) params.minValidity = filters.minValidity
+    if (filters.maxValidity < 365) params.maxValidity = filters.maxValidity
 
-    if(filters.category !== ''){
-      params.category = filters.category
-    }
+    if(filters.category !== '')params.category = filters.category
 
-    if (filters.ottApps.length > 0) {
-      params.ottApps = filters.ottApps.join(',')
-    }
+    if (filters.ottApps.length > 0) params.ottApps = filters.ottApps.join(',')
 
     fetchPlans(params)
   }
 
   const handleClear = () => {
-    setFilters({ operators: [], maxPrice: 3000, minDailyData: 0, validityDays: [], category: "", ottApps: [] })
+    setFilters({ operators: [], minPrice: 99, maxPrice: 3000, minData: 1, maxData:500, dailyData: 0, minValidity: 1, maxValidity: 365, category: "", ottApps: [] })
     fetchPlans();
   }
 
