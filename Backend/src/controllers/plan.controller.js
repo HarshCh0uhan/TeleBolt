@@ -9,7 +9,7 @@ export const getPlans = async (req, res) => {
 
         const filter ={isActive: true}
 
-        if(operator) filter.operator = operator
+        if(operator) filter.operator = { $in: operator.split(',') }
         if(category) filter.category = category
         if(ottApps) filter.ottApps = {$in: [ottApps]}
         if(minPrice || maxPrice){

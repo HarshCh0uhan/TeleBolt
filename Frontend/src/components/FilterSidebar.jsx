@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 
-const FilterSidebar = () => {
+const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const operators = ["Jio", "Airtel", "VI"];
+  const operators = ["Jio", "Airtel", "VI"];  
 
   return (
     <>
@@ -36,20 +36,33 @@ const FilterSidebar = () => {
               </button>
             </div>
 
-            <SidebarContent operators={operators} />
+            <SidebarContent 
+            operators={operators}
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+            onApply={onApply}
+            onClear={onClear}
+             />
           </div>
         </div>
       )}
 
       {/* Desktop Sidebar */}
       <aside className="hidden w-65 shrink-0 border-r border-white/10 bg-[#1f1f1f] lg:block">
-        <SidebarContent operators={operators} />
+        <SidebarContent 
+        operators={operators}
+        filters={filters}
+        onFiltersChange={onFiltersChange}
+        onApply={onApply}
+        onClear={onClear} />
       </aside>
     </>
   );
 }
 
-function SidebarContent({ operators }) {
+function SidebarContent({ operators, filters, onFiltersChange, onApply, onClear  }) {
+  const [budget, setBudget] = useState(0)
+  const [dailyData, setDailydata] = useState(0)
   return (
     <div className="p-5">
       {/* Operators */}
@@ -66,18 +79,21 @@ function SidebarContent({ operators }) {
             >
               <input
                 type="checkbox"
+                checked={filters.operators.includes(operator)}
                 className="h-4 w-4 accent-[#58c28d]"
+                onChange={() => {          
+                    const updated = filters.operators.includes(operator)
+                      ? filters.operators.filter(o => o !== operator)  
+                      : [...filters.operators, operator]    
+
+                      onFiltersChange('operators', updated)
+                }}
               />
 
               <span>{operator}</span>
             </label>
           ))}
         </div>
-
-        {/* TODO:
-            Connect selected operators state
-            Handle operator filtering
-        */}
       </div>
 
       {/* Budget */}
@@ -90,11 +106,17 @@ function SidebarContent({ operators }) {
           type="range"
           min="99"
           max="3000"
+          value={filters.maxPrice}
           className="w-full"
+          onChange={(e) => {
+            onFiltersChange('maxPrice', e.target.value)
+            setBudget(e.target.value)
+          }}
         />
 
         <div className="mt-2 flex justify-between text-xs text-zinc-500">
           <span>₹99</span>
+          <span>{budget}</span>
           <span>₹3000</span>
         </div>
 
@@ -115,20 +137,20 @@ function SidebarContent({ operators }) {
           type="range"
           min="0"
           max="5"
+          value={filters.minDailyData}
           step="0.5"
           className="w-full"
+          onChange={(e) => {
+            onFiltersChange('minDailyData', e.target.value)
+            setDailydata(e.target.value)
+          }}
         />
 
         <div className="mt-2 flex justify-between text-xs text-zinc-500">
           <span>0 GB</span>
+          <span>{dailyData}</span>
           <span>5 GB</span>
         </div>
-
-        {/* TODO:
-            Connect minimum data state
-            Display selected data amount
-            Apply data filtering
-        */}
       </div>
 
       {/* Sort */}
@@ -137,21 +159,32 @@ function SidebarContent({ operators }) {
           Sort By
         </h3>
 
-        <select className="w-full rounded-xl border border-white/10 bg-[#262626] px-4 py-3 text-white outline-none">
+        {/* <select className="w-full rounded-xl border border-white/10 bg-[#262626] px-4 py-3 text-white outline-none">
           <option>Best Value (₹/GB)</option>
           <option>Price: Low to High</option>
           <option>Price: High to Low</option>
           <option>Highest Data</option>
           <option>Longest Validity</option>
-        </select>
+        </select> */}
 
         {/* TODO:
             Connect sort state
             Implement sorting logic
         */}
       </div>
+
+      {/* Action Buttons */}
+      <div className="mt-8 flex gap-3">
+        <button onClick={onClear} className="flex-1 rounded-xl border border-white/10 py-3 text-sm font-medium text-zinc-400 transition hover:border-white/20 hover:text-white">
+          Clear
+        </button>
+
+        <button onClick={onApply} className="flex-1 rounded-xl bg-[#58c28d] py-3 text-sm font-semibold text-black transition hover:brightness-110">
+          Apply Filters
+        </button>
+      </div>
     </div>
   );
 }
 
-export default FilterSidebar
+export default FilterSidebar;
