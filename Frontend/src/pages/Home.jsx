@@ -17,6 +17,7 @@ const Home = () => {
     maxPrice: 3000,
     minDailyData: 0,
     validityDays: [],
+    ottApps: [],
   })
 
   const fetchPlans = async (activeFilters = {}) => {
@@ -56,11 +57,15 @@ const Home = () => {
       params.category = filters.category
     }
 
+    if (filters.ottApps.length > 0) {
+      params.ottApps = filters.ottApps.join(',')
+    }
+
     fetchPlans(params)
   }
 
   const handleClear = () => {
-    setFilters({ operators: [], maxPrice: 3000, minDailyData: 0, validityDays: [], category: "" })
+    setFilters({ operators: [], maxPrice: 3000, minDailyData: 0, validityDays: [], category: "", ottApps: [] })
     fetchPlans();
   }
 
