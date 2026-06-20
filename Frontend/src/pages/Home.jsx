@@ -57,10 +57,9 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-[#181818]">
       <div className="
-            max-h-[90vh]
+            max-h-screen
             w-full
             overflow-y-auto
-            rounded-3xl
             border
             border-white/10
             bg-[#1f1f1f]

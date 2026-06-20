@@ -154,24 +154,19 @@ function SidebarContent({ operators, filters, onFiltersChange, onApply, onClear 
       </div>
 
       {/* Sort */}
-      <div>
+      {/* <div>
         <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
           Sort By
         </h3>
 
-        {/* <select className="w-full rounded-xl border border-white/10 bg-[#262626] px-4 py-3 text-white outline-none">
+        <select className="w-full rounded-xl border border-white/10 bg-[#262626] px-4 py-3 text-white outline-none">
           <option>Best Value (₹/GB)</option>
           <option>Price: Low to High</option>
           <option>Price: High to Low</option>
           <option>Highest Data</option>
           <option>Longest Validity</option>
-        </select> */}
-
-        {/* TODO:
-            Connect sort state
-            Implement sorting logic
-        */}
-      </div>
+        </select>       
+      </div> */}
 
       {/* Action Buttons */}
       <div className="mt-8 flex gap-3">
