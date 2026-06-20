@@ -6,7 +6,6 @@ const PlanCard = ({ plan }) => {
     <article className="group overflow-hidden rounded-3xl border border-white/10 bg-[#1f1f1f] transition-all duration-300 hover:-translate-y-1 hover:border-[#58c28d]/30">
       <Link
         to={`/plans/${plan._id}`}
-        className="rounded-2xl border border-white/10 px-4 py-3 text-white transition hover:border-[#58c28d]/30"
       >
         {/* Header */}
         <div className="border-b border-white/10 p-5">
