@@ -116,7 +116,7 @@ function SidebarContent({ operators, categories, ottApps, filters, onFiltersChan
                 onIsDailyPlan(category)
               }}
             >
-              <div className="h-4 w-4 rounded-full border-2 border-zinc-600 flex items-center justify-center flex-shrink-0">
+              <div className="h-4 w-4 rounded-full border-2 border-zinc-600 flex items-center justify-center shrink-0">
                 {filters.category === category && (
                   <div className="h-2 w-2 rounded-full bg-[#58c28d]" />
                 )}

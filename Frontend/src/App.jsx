@@ -8,7 +8,6 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Dashboard from './pages/admin/Dashboard';
-import Plans from './pages/admin/Plans';
 import PlanForm from './pages/admin/PlanForm';
 import DetectedChanges from './pages/admin/DetectedChanges';
 import UploadCSV from './pages/admin/UploadCSV';
@@ -39,7 +38,7 @@ function App() {
       }/>
       <Route path='/admin/plans' element={
         <ProtectedRoute adminOnly>
-          <Plans/>
+          <PlanForm/>
         </ProtectedRoute>
       }/>
       <Route path='/admin/plans/create' element={
