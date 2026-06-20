@@ -13,8 +13,10 @@ const Home = () => {
   const [plans, setPlans] = useState([])
   const [filters, setFilters] = useState({
     operators: [],
+    category: "",
     maxPrice: 3000,
     minDailyData: 0,
+    validityDays: [],
   })
 
   const fetchPlans = async (activeFilters = {}) => {
@@ -28,7 +30,7 @@ const Home = () => {
   }, [])
 
   const handleFiltersChange = (key, value) => {
-    setFilters(prev => ({...prev, [key]: value}))
+    setFilters(prev => ({...prev, [key]: value}))    
   }
 
   const handleApply = () => {
@@ -45,12 +47,20 @@ const Home = () => {
     if (filters.minDailyData > 0) {
       params.dailyData = filters.minDailyData.toString()
     }
+    
+    if (filters.validityDays > 0) {
+      params.validityDays = filters.validityDays.toString()
+    }
+
+    if(filters.category !== ''){
+      params.category = filters.category
+    }
 
     fetchPlans(params)
   }
 
   const handleClear = () => {
-    setFilters({ operators: [], maxPrice: 3000, minDailyData: 0 })
+    setFilters({ operators: [], maxPrice: 3000, minDailyData: 0, validityDays: [], category: "" })
     fetchPlans();
   }
 
