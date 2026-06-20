@@ -9,8 +9,12 @@ const PlanDetails = () => {
   
 
   const fetchPlan = async () => {
-    const {data} = await getSinglePlan(planid);
-    setPlan(data.plan)    
+    try {
+      const {data} = await getSinglePlan(planid);
+      setPlan(data.plan)    
+    } catch (err) {
+      console.error(err?.response?.data?.err);
+    }
   }
 
   useEffect(() => {
@@ -114,7 +118,7 @@ const PlanDetails = () => {
               </p>
 
               <p className="mt-3 text-lg font-semibold text-white">
-                {plan.dailyData} GB/day
+                {plan.dailyData ? plan.dailyData + " GB/day" : "N/A"}
               </p>
             </div>
 
@@ -145,7 +149,7 @@ const PlanDetails = () => {
 
               <div className="mt-3 flex flex-wrap gap-2">
                   {plan.ottApps.length ? plan.ottApps.map((ott) => (
-                    <span key={plan._id} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">
+                    <span key={ott} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">
                         {ott}
                     </span>
                   )) : 
@@ -175,7 +179,7 @@ const PlanDetails = () => {
               </p>
 
               <p className="mt-2 text-2xl font-bold text-white">
-                {Math.floor(365/plan.validityDays)}
+                {Math.ceil(365/plan.validityDays)}
               </p>
             </div>
 
@@ -191,7 +195,7 @@ const PlanDetails = () => {
 
             <div className="rounded-2xl bg-[#262626] p-5">
               <p className="text-sm text-zinc-500">
-                Total Data Received
+                Total Yearly Data
               </p>
 
               <p className="mt-2 text-2xl font-bold text-white">
