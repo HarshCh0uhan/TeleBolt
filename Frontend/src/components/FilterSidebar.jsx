@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
+import Slider from 'rc-slider';
+import 'rc-slider/assets/index.css';
+import { filter } from "framer-motion/client";
 
 const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -65,6 +68,7 @@ const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
 };
 
 function SidebarContent({ operators, categories, ottApps, filters, onFiltersChange, onApply, onClear }) {
+  
   return (
     <div className="p-5">
       {/* Operators */}
@@ -107,7 +111,10 @@ function SidebarContent({ operators, categories, ottApps, filters, onFiltersChan
             <label
               key={category}
               className="flex cursor-pointer items-center gap-3 text-white"
-              onClick={() => onFiltersChange('category', category)}
+              onClick={() => {
+                onFiltersChange('category', category)
+                onIsDailyPlan(category)
+              }}
             >
               <div className="h-4 w-4 rounded-full border-2 border-zinc-600 flex items-center justify-center flex-shrink-0">
                 {filters.category === category && (
@@ -120,48 +127,110 @@ function SidebarContent({ operators, categories, ottApps, filters, onFiltersChan
         </div>
       </div>
 
-      {/* Budget */}
-      <div className="mb-8">
+      {/* Daily Data */}
+      {filters.category === 'Daily' && <div className="mb-8">
         <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Budget
-        </h3>
-
-        <input
-          type="range"
-          min="99"
-          max="3000"
-          value={filters.maxPrice}
-          className="w-full"
-          onChange={(e) => onFiltersChange("maxPrice", e.target.value)}
-        />
-
-        <div className="mt-2 flex justify-between text-xs text-zinc-500">
-          <span>₹99</span>
-          <span className="text-zinc-300">₹{filters.maxPrice}</span>
-          <span>₹3000</span>
-        </div>
-      </div>
-
-      {/* Min Daily Data */}
-      <div className="mb-8">
-        <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Min Data / Day
+          Data / Day
         </h3>
 
         <input
           type="range"
           min="0"
           max="5"
-          value={filters.minDailyData}
+          value={filters.dailyData}
           step="0.5"
           className="w-full"
-          onChange={(e) => onFiltersChange("minDailyData", e.target.value)}
+          onChange={(e) => onFiltersChange("dailyData", e.target.value)}
         />
 
         <div className="mt-2 flex justify-between text-xs text-zinc-500">
           <span>0 GB</span>
-          <span className="text-zinc-300">{filters.minDailyData} GB</span>
+          <span className="text-zinc-300">{filters.dailyData} GB</span>
           <span>5 GB</span>
+        </div>
+      </div>}
+
+      {/* Total Data */}
+      {filters.category === 'Non-Daily' && <div className="mb-8">
+        <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          Total Data
+        </h3>
+
+        <Slider
+          range
+          min={1}
+          max={500}
+          value={[filters.minData, filters.maxData]}
+          onChange={([min, max]) => {
+            onFiltersChange('minData', min)
+            onFiltersChange('maxData', max)
+          }}
+          styles={{
+            track: { backgroundColor: '#58c28d' },
+            handle: { borderColor: '#58c28d', backgroundColor: '#58c28d' },
+            rail: { backgroundColor: '#3f3f46' }
+          }}
+        />
+
+        <div className="mt-2 flex justify-between text-xs text-zinc-500">
+          <span>{filters.minData} GB</span>
+          <span>{filters.maxData} GB</span>
+        </div>
+      </div>}
+
+      {/* Budget */}
+      <div className="mb-8">
+        <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          Budget
+        </h3>
+
+        <Slider
+          range
+          min={99}
+          max={3000}
+          value={[filters.minPrice, filters.maxPrice]}
+          onChange={([min, max]) => {
+            onFiltersChange('minPrice', min)
+            onFiltersChange('maxPrice', max)
+          }}
+          styles={{
+            track: { backgroundColor: '#58c28d' },
+            handle: { borderColor: '#58c28d', backgroundColor: '#58c28d' },
+            rail: { backgroundColor: '#3f3f46' }
+          }}
+        />
+
+        <div className="mt-2 flex justify-between text-xs text-zinc-500">
+          <span>₹{filters.minPrice}</span>
+          <span>₹{filters.maxPrice}</span>
+        </div>
+      </div>
+
+      {/* Validity Days */}
+      <div className="mb-8">
+        <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          Validity Days
+        </h3>
+
+        <Slider
+          range
+          min={1}
+          max={365}
+          value={[filters.minValidity, filters.maxValidity]}
+          onChange={([min, max]) => {
+            onFiltersChange('minValidity', min)
+            onFiltersChange('maxValidity', max)
+          }}
+          styles={{
+            track: { backgroundColor: '#58c28d' },
+            handle: { borderColor: '#58c28d', backgroundColor: '#58c28d' },
+            rail: { backgroundColor: '#3f3f46' }
+          }}
+        />
+
+        <div className="mt-2 flex justify-between text-xs text-zinc-500">
+          <span>{filters.minValidity} days</span>
+          <span>{filters.maxValidity} days</span>
         </div>
       </div>
 

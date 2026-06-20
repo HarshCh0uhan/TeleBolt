@@ -4,7 +4,7 @@ import mongoose from "mongoose"
 
 export const getPlans = async (req, res) => {
     try {
-        const {operator, category, minPrice, maxPrice, validityDays, ottApps,
+        const {operator, category, minPrice, maxPrice, minValidity, maxValidity, ottApps,
         dailyData, minData, maxData, isActive, isUnlimitedCalls, isUnlimitedSMS} = req.query;
 
         const filter ={isActive: true}
@@ -17,7 +17,11 @@ export const getPlans = async (req, res) => {
             if(minPrice) filter.price.$gte = Number(minPrice)
             if(maxPrice) filter.price.$lte = Number(maxPrice)
         } 
-        if(validityDays) filter.validityDays = Number(validityDays)
+        if(minValidity || maxValidity){
+            filter.validityDays = {}
+            if(minValidity) filter.validityDays.$gte = Number(minValidity)
+            if(maxValidity) filter.validityDays.$lte = Number(maxValidity)
+        }
         if(dailyData) filter.dailyData = Number(dailyData)
         if(minData || maxData) {
             filter.totalData = {}
