@@ -6,6 +6,7 @@ const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
 
   const operators = ["Jio", "Airtel", "VI"];
   const categories = ["Daily", "Non-Daily"];
+  const ottApps = ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5"];
 
   return (
     <>
@@ -37,6 +38,7 @@ const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
             <SidebarContent
               operators={operators}
               categories={categories}
+              ottApps={ottApps}
               filters={filters}
               onFiltersChange={onFiltersChange}
               onApply={onApply}
@@ -51,6 +53,7 @@ const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
         <SidebarContent
           operators={operators}
           categories={categories}
+          ottApps={ottApps}
           filters={filters}
           onFiltersChange={onFiltersChange}
           onApply={onApply}
@@ -61,7 +64,7 @@ const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
   );
 };
 
-function SidebarContent({ operators, categories, filters, onFiltersChange, onApply, onClear }) {
+function SidebarContent({ operators, categories, ottApps, filters, onFiltersChange, onApply, onClear }) {
   return (
     <div className="p-5">
       {/* Operators */}
@@ -159,6 +162,35 @@ function SidebarContent({ operators, categories, filters, onFiltersChange, onApp
           <span>0 GB</span>
           <span className="text-zinc-300">{filters.minDailyData} GB</span>
           <span>5 GB</span>
+        </div>
+      </div>
+
+      {/* Ott Apps */}
+      <div className="mb-8">
+        <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          OTT Apps
+        </h3>
+
+        <div className="space-y-3">
+          {ottApps.map((ottApp) => (
+            <label
+              key={ottApp}
+              className="flex cursor-pointer items-center gap-3 text-white"
+            >
+              <input
+                type="checkbox"
+                checked={filters.ottApps.includes(ottApp)}
+                className="h-4 w-4 accent-[#58c28d]"
+                onChange={() => {
+                  const updated = filters.ottApps.includes(ottApp)
+                    ? filters.ottApps.filter((o) => o !== ottApp)
+                    : [...filters.ottApps, ottApp];
+                  onFiltersChange("ottApps", updated);
+                }}
+              />
+              <span>{ottApp}</span>
+            </label>
+          ))}
         </div>
       </div>
 
