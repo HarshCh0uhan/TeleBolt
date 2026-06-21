@@ -233,12 +233,10 @@ const AdminLayout = ({ children }) => {
               <button
                 type="button"
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
-                onClick={() => {
-                  // TODO: call logoutUser() from AuthContext
-                }}
+                onClick={logoutUser}
               >
                 <LogOut className="h-4.5 w-4.5" />
-                Sign out
+                Logout
               </button>
             </div>
           </div>

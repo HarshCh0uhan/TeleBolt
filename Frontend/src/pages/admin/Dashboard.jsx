@@ -39,7 +39,7 @@ const Dashboard = () => {
         }
       />
 
-      <section className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
+      {/* <section className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
         <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#58c28d]/30">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-xl">
@@ -55,7 +55,7 @@ const Dashboard = () => {
               </p>
             </div>
 
-            <div className="grid min-w-[220px] gap-3 rounded-3xl border border-white/10 bg-[#262626] p-4">
+            <div className="grid min-w-55 gap-3 rounded-3xl border border-white/10 bg-[#262626] p-4">
               <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#1f1f1f] p-3">
                 <Clock3 className="h-4.5 w-4.5 text-[#58c28d]" />
                 <div>
@@ -98,7 +98,7 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard label="Total plans" value="24" hint="2 added this week" icon={Layers3} tone="success" />
@@ -107,7 +107,7 @@ const Dashboard = () => {
         <AdminStatCard label="Uploads today" value="5" hint="1 rejected row" icon={UploadCloud} />
       </section>
 
-      <section className="mt-5 grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+      <section className="mt-5 grid">
         <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -136,7 +136,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid gap-4">
+        {/* <div className="grid gap-4">
           <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#58c28d]/30">
             <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">System status</div>
             <div className="mt-2 text-lg font-medium text-white">Admin queue is clear</div>
@@ -152,7 +152,7 @@ const Dashboard = () => {
               Backgrounds stay dark, cards stay elevated, and green only appears where TeleBolt should feel active.
             </p>
           </div>
-        </div>
+        </div> */}
       </section>
     </AdminLayout>
   );
