@@ -8,7 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Dashboard from './pages/admin/Dashboard';
-import PlanForm from './pages/admin/PlanForm';
+import PlanForm from './pages/admin/Plans';
 import DetectedChanges from './pages/admin/DetectedChanges';
 import UploadCSV from './pages/admin/UploadCSV';
 
@@ -36,6 +36,11 @@ function App() {
           <Dashboard/>
         </ProtectedRoute>
       }/>
+      <Route path='/admin/dashboard' element={
+        <ProtectedRoute adminOnly>
+          <Dashboard/>
+        </ProtectedRoute>
+      }/>
       <Route path='/admin/plans' element={
         <ProtectedRoute adminOnly>
           <PlanForm/>
@@ -51,7 +56,7 @@ function App() {
               <PlanForm />
           </ProtectedRoute>
       }/>
-      <Route path='/admin/detected' element={
+      <Route path='/admin/detected-changes' element={
         <ProtectedRoute adminOnly>
           <DetectedChanges/>
         </ProtectedRoute>

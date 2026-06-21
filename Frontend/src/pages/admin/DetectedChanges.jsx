@@ -1,105 +1,67 @@
-import { useEffect, useState } from "react";
-import { ArrowRight, Check, X } from "lucide-react";
-import AdminLayout from "../../components/admin/AdminLayout";
-import Badge from "../../components/admin/Badge";
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminStatCard from '../../components/admin/AdminStatCard';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
+import AdminActionButtons from '../../components/admin/AdminActionButtons';
+import { Clock3, BadgeCheck, XCircle, FileClock } from 'lucide-react';
 
-const statusTone = { Pending: "yellow", Approved: "mint", Rejected: "red" };
+const changes = [
+  { id: 1, plan: 'Jio 299', field: 'Price', oldValue: '₹299', newValue: '₹279', status: 'Pending' },
+  { id: 2, plan: 'Airtel 349', field: 'Validity', oldValue: '28 days', newValue: '30 days', status: 'Pending' },
+  { id: 3, plan: 'Vi 269', field: 'Data/day', oldValue: '1.5 GB', newValue: '2 GB', status: 'Review' },
+];
 
 const DetectedChanges = () => {
-  const [changes, setChanges] = useState([]);
-  const [statusFilter, setStatusFilter] = useState("Pending");
-
-  useEffect(() => {
-    // TODO: fetch detected changes, optionally filtered by status server-side
-    // const { data } = await getDetectedChanges({ status: statusFilter })
-    // setChanges(data.changes)
-  }, [statusFilter]);
-
-  const handleDecision = (changeId, decision) => {
-    // TODO: call updateDetectedChangeStatus(changeId, decision)
-    // On "Approved", backend should also apply newValue to the linked Plan.
-    // Then remove/update the item in local state.
-  };
-
   return (
-    <AdminLayout
-      title="Detected Changes"
-      description="Review scraped price and validity changes before they go live."
-    >
-      {/* Status filter tabs */}
-      <div className="mb-6 flex gap-2">
-        {["Pending", "Approved", "Rejected"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-              statusFilter === status
-                ? "bg-[#58c28d]/10 text-[#58c28d]"
-                : "text-zinc-400 hover:bg-white/5 hover:text-white"
-            }`}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
+    <AdminLayout>
+      <AdminPageHeader
+        eyebrow="Admin Dashboard"
+        title="Detected changes"
+        description="Review incoming edits, accept the clean ones, and reject the noisy ones without breaking the TeleBolt visual language."
+      />
 
-      {changes.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f] py-16 text-center">
-          <p className="text-zinc-400">No {statusFilter.toLowerCase()} changes.</p>
+      <section className="grid gap-4 sm:grid-cols-3">
+        <AdminStatCard label="Pending" value="12" hint="Waiting for manual approval" icon={Clock3} tone="warning" />
+        <AdminStatCard label="Approved" value="4" hint="Merged into the catalog" icon={BadgeCheck} tone="success" />
+        <AdminStatCard label="Rejected" value="3" hint="Kept out of the live list" icon={XCircle} tone="danger" />
+      </section>
+
+      <section className="mt-5 rounded-3xl border border-white/10 bg-[#1f1f1f] p-5">
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+          <FileClock className="h-4 w-4 text-[#58c28d]" />
+          Review queue
         </div>
-      ) : (
-        <div className="space-y-4">
-          {changes.map((change) => (
+
+        <div className="mt-5 grid gap-3">
+          {changes.map((item) => (
             <div
-              key={change._id}
-              className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:flex-row sm:items-center sm:justify-between"
+              key={item.id}
+              className="rounded-3xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#58c28d]/30"
             >
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  {/* TODO: plan.operator / plan.category come from populated planId */}
-                  <p className="font-medium text-white">
-                    {change.plan?.operator} · {change.plan?.category}
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-medium text-white">{item.plan}</h3>
+                    <AdminStatusBadge status={item.status} />
+                  </div>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    <span className="text-zinc-300">{item.field}</span> changed from{' '}
+                    <span className="text-white">{item.oldValue}</span> to{' '}
+                    <span className="text-[#58c28d]">{item.newValue}</span>
                   </p>
-                  <Badge tone={statusTone[change.status]}>{change.status}</Badge>
                 </div>
 
-                <p className="mt-1 text-xs uppercase tracking-wider text-zinc-500">
-                  {change.field}
-                </p>
-
-                <div className="mt-3 flex items-center gap-3 text-lg">
-                  <span className="text-zinc-500 line-through">
-                    {change.oldValue}
-                  </span>
-                  <ArrowRight size={16} className="text-zinc-600" />
-                  <span className="font-semibold text-[#58c28d]">
-                    {change.newValue}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <AdminActionButtons
+                    onApprove={() => {}}
+                    onReject={() => {}}
+                  />
                 </div>
               </div>
-
-              {change.status === "Pending" && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleDecision(change._id, "Rejected")}
-                    className="flex items-center gap-1.5 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
-                  >
-                    <X size={15} />
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => handleDecision(change._id, "Approved")}
-                    className="flex items-center gap-1.5 rounded-xl bg-[#58c28d] px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
-                  >
-                    <Check size={15} />
-                    Approve
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>
-      )}
+      </section>
     </AdminLayout>
   );
 };

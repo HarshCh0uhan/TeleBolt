@@ -1,283 +1,182 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import AdminLayout from "../../components/admin/AdminLayout";
+import { useMemo, useState } from 'react';
+import { Check, ChevronRight, CircleDot, Sparkles } from 'lucide-react';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
 
-const OPERATORS = ["Jio", "Airtel", "VI"];
-const CATEGORIES = ["Daily", "Non-Daily"];
-const OTT_APPS = ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5", "Other"];
+const ottOptions = ['JioCinema', 'JioTV', 'Disney+', 'Wynk', 'Zee5', 'Amazon Prime', 'Hotstar'];
 
-const emptyForm = {
-  operator: "",
-  category: "",
-  price: "",
-  validityDays: "",
-  dailyData: "",
-  totalData: "",
-  sms: "",
-  isUnlimitedCalls: true,
-  isUnlimitedSMS: false,
-  ottApps: [],
-  isActive: true,
-};
+const Input = ({ label, children, hint }) => (
+  <label className="block">
+    <div className="mb-2 text-sm font-medium text-zinc-300">{label}</div>
+    {children}
+    {hint ? <div className="mt-2 text-xs text-zinc-500">{hint}</div> : null}
+  </label>
+);
 
-// Renders for both /admin/plans/create and /admin/plans/:id/edit.
-// `isEditMode` is inferred from the presence of an :id param.
 const PlanForm = () => {
-  const { id } = useParams();
-  const isEditMode = Boolean(id);
-  const navigate = useNavigate();
+  const [selectedOtt, setSelectedOtt] = useState(['JioCinema', 'JioTV']);
+  const [active, setActive] = useState(true);
 
-  const [form, setForm] = useState(emptyForm);
-  const [submitting, setSubmitting] = useState(false);
+  const chipList = useMemo(() => ottOptions, []);
 
-  // TODO: if isEditMode, fetch the existing plan on mount and setForm(data.plan)
-  // useEffect(() => { if (isEditMode) { ... } }, [id])
-
-  const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-
-  const toggleOttApp = (app) => {
-    const updated = form.ottApps.includes(app)
-      ? form.ottApps.filter((o) => o !== app)
-      : [...form.ottApps, app];
-    update("ottApps", updated);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    // TODO: validate (mirror schema rules — e.g. either dailyData or
-    // totalData must be present), then call createPlan(form) or
-    // updatePlan(id, form), then navigate("/admin/plans") on success.
-
-    setSubmitting(false);
+  const toggleOtt = (item) => {
+    setSelectedOtt((current) =>
+      current.includes(item) ? current.filter((x) => x !== item) : [...current, item]
+    );
   };
 
   return (
-    <AdminLayout
-      title={isEditMode ? "Edit Plan" : "Create Plan"}
-      description={
-        isEditMode
-          ? "Update the details for this plan."
-          : "Add a new telecom recharge plan."
-      }
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-3xl rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8"
-      >
-        {/* Operator + Category */}
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Field label="Operator">
-            <select
-              value={form.operator}
-              onChange={(e) => update("operator", e.target.value)}
-              className="select"
-              required
-            >
-              <option value="" disabled>
-                Select operator
-              </option>
-              {OPERATORS.map((op) => (
-                <option key={op} value={op}>
-                  {op}
-                </option>
-              ))}
-            </select>
-          </Field>
+    <AdminLayout>
+      <AdminPageHeader
+        eyebrow="Admin Dashboard"
+        title="Plan form"
+        description="Keep the form clean and premium. Put the logic wherever you want later; the UI is already structured for it."
+      />
 
-          <Field label="Category">
-            <select
-              value={form.category}
-              onChange={(e) => update("category", e.target.value)}
-              className="select"
-              required
-            >
-              <option value="" disabled>
-                Select category
-              </option>
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
+      <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
+        <div className="grid gap-5">
+          <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+              <Sparkles className="h-4 w-4 text-[#58c28d]" />
+              Basic information
+            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <Input label="Operator">
+                <select className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
+                  <option>Jio</option>
+                  <option>Airtel</option>
+                  <option>Vi</option>
+                </select>
+              </Input>
+              <Input label="Category">
+                <select className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
+                  <option>Popular</option>
+                  <option>Premium</option>
+                  <option>Value</option>
+                  <option>Annual</option>
+                </select>
+              </Input>
+              <Input label="Price">
+                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="299" />
+              </Input>
+              <Input label="Validity (days)">
+                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="28" />
+              </Input>
+            </div>
+          </section>
 
-        {/* Price + Validity */}
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          <Field label="Price (₹)">
-            <input
-              type="number"
-              min={1}
-              value={form.price}
-              onChange={(e) => update("price", e.target.value)}
-              className="input"
-              required
-            />
-          </Field>
+          <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+              <CircleDot className="h-4 w-4 text-[#58c28d]" />
+              Data benefits
+            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <Input label="Daily data">
+                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="2 GB" />
+              </Input>
+              <Input label="Total data">
+                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="56 GB" />
+              </Input>
+              <Input label="SMS">
+                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="100/day" />
+              </Input>
+            </div>
+          </section>
 
-          <Field label="Validity (days)">
-            <input
-              type="number"
-              min={1}
-              max={365}
-              value={form.validityDays}
-              onChange={(e) => update("validityDays", e.target.value)}
-              className="input"
-              required
-            />
-          </Field>
-        </div>
-
-        {/* Data — daily vs total depends on category */}
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          <Field label="Daily Data (GB)" hint="Required for Daily plans">
-            <input
-              type="number"
-              step="0.5"
-              value={form.dailyData}
-              onChange={(e) => update("dailyData", e.target.value)}
-              className="input"
-              disabled={form.category === "Non-Daily"}
-            />
-          </Field>
-
-          <Field label="Total Data (GB)" hint="Required for Non-Daily plans">
-            <input
-              type="number"
-              value={form.totalData}
-              onChange={(e) => update("totalData", e.target.value)}
-              className="input"
-              disabled={form.category === "Daily"}
-            />
-          </Field>
-        </div>
-
-        {/* SMS */}
-        <div className="mt-6">
-          <Field label="SMS (per validity period)">
-            <input
-              type="number"
-              value={form.sms}
-              onChange={(e) => update("sms", e.target.value)}
-              className="input max-w-xs"
-            />
-          </Field>
-        </div>
-
-        {/* Toggles */}
-        <div className="mt-6 flex flex-wrap gap-6">
-          <Toggle
-            label="Unlimited calls"
-            checked={form.isUnlimitedCalls}
-            onChange={(v) => update("isUnlimitedCalls", v)}
-          />
-          <Toggle
-            label="Unlimited SMS"
-            checked={form.isUnlimitedSMS}
-            onChange={(v) => update("isUnlimitedSMS", v)}
-          />
-          <Toggle
-            label="Active"
-            checked={form.isActive}
-            onChange={(v) => update("isActive", v)}
-          />
-        </div>
-
-        {/* OTT Apps */}
-        <div className="mt-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            OTT Apps
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {OTT_APPS.map((app) => {
-              const selected = form.ottApps.includes(app);
-              return (
+          <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+              <Check className="h-4 w-4 text-[#58c28d]" />
+              Calling
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {['Unlimited calls', 'Unlimited SMS'].map((item) => (
                 <button
+                  key={item}
                   type="button"
-                  key={app}
-                  onClick={() => toggleOttApp(app)}
-                  className={`rounded-full border px-4 py-2 text-sm transition ${
-                    selected
-                      ? "border-[#58c28d]/40 bg-[#58c28d]/10 text-[#58c28d]"
-                      : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
-                  }`}
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-left text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
                 >
-                  {app}
+                  <span>{item}</span>
+                  <span className="rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-1 text-[10px] uppercase tracking-[0.28em] text-[#dff6ea]">
+                    toggle
+                  </span>
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+                  <ChevronRight className="h-4 w-4 text-[#58c28d]" />
+                  OTT benefits
+                </div>
+                <p className="mt-2 text-sm text-zinc-400">Chips switch on and off with the same active-green feel used everywhere else.</p>
+              </div>
+              <div className="text-xs text-zinc-500">{selectedOtt.length} selected</div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {chipList.map((item) => {
+                const activeChip = selectedOtt.includes(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleOtt(item)}
+                    className={`rounded-full border px-4 py-2 text-sm transition-all duration-300 hover:-translate-y-0.5 ${
+                      activeChip
+                        ? 'border-[#58c28d]/25 bg-[#58c28d]/12 text-[#dff6ea]'
+                        : 'border-white/10 bg-[#181818] text-zinc-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Status</div>
+                <p className="mt-2 text-sm text-zinc-400">Keep this toggle visually obvious without feeling loud.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActive((v) => !v)}
+                className={`relative h-8 w-14 rounded-full border transition-all duration-300 ${
+                  active ? 'border-[#58c28d]/30 bg-[#58c28d]/15' : 'border-white/10 bg-[#181818]'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 h-6 w-6 rounded-full transition-all duration-300 ${
+                    active ? 'left-7 bg-[#58c28d]' : 'left-1 bg-zinc-500'
+                  }`}
+                />
+              </button>
+            </div>
+          </section>
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              className="rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
+            >
+              Save plan
+            </button>
           </div>
         </div>
-
-        {/* Actions */}
-        <div className="mt-10 flex gap-3 border-t border-white/10 pt-6">
-          <button
-            type="button"
-            onClick={() => navigate("/admin/plans")}
-            className="flex-1 rounded-xl border border-white/10 py-3 text-sm font-medium text-zinc-400 transition hover:border-white/20 hover:text-white sm:flex-none sm:px-8"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="flex-1 rounded-xl bg-[#58c28d] py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-50 sm:flex-none sm:px-8"
-          >
-            {submitting
-              ? "Saving…"
-              : isEditMode
-              ? "Save changes"
-              : "Create plan"}
-          </button>
-        </div>
-      </form>
+      </div>
     </AdminLayout>
   );
 };
 
-// Small layout helper — label + control + optional hint.
-const Field = ({ label, hint, children }) => (
-  <label className="block">
-    <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-400">
-      {label}
-    </span>
-    {children}
-    {hint && <span className="mt-1.5 block text-xs text-zinc-500">{hint}</span>}
-  </label>
-);
-
-const Toggle = ({ label, checked, onChange }) => (
-  <label className="flex cursor-pointer items-center gap-3">
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-        checked ? "bg-[#58c28d]" : "bg-white/10"
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${
-          checked ? "left-5" : "left-0.5"
-        }`}
-      />
-    </button>
-    <span className="text-sm text-zinc-300">{label}</span>
-  </label>
-);
-
 export default PlanForm;
-
-/* Shared input styles — add once to your global CSS (e.g. index.css):
-
-.input, .select {
-  @apply w-full rounded-xl border border-white/10 bg-[#181818] px-4 py-2.5
-         text-sm text-white focus:border-[#58c28d]/50 focus:outline-none
-         disabled:cursor-not-allowed disabled:opacity-40;
-}
-*/
