@@ -8,6 +8,7 @@ import AdminTable from '../../components/admin/AdminTable';
 import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminActionButtons from '../../components/admin/AdminActionButtons';
 import AdminEmptyState from '../../components/admin/AdminEmptyState';
+import { NavLink } from "react-router-dom";
 
 const samplePlans = [
   { id: 1, operator: 'Jio', price: '₹299', validity: '28d', dataPerDay: '2 GB', totalData: '56 GB', category: 'Popular', status: 'Active', updated: 'May 1' },
@@ -47,20 +48,20 @@ const Plans = () => {
         description="Track the catalog, review every row, and keep each plan aligned with the latest source data."
         actions={
           <>
-            <button
-              type="button"
+            <NavLink
+              to="/admin/upload-csv"
               className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
             >
               <UploadCloud className="h-4.5 w-4.5" />
               Import CSV
-            </button>
-            <button
-              type="button"
+            </NavLink>
+            <NavLink
+              to="/admin/plans/create"
               className="inline-flex items-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2.5 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
             >
               <Plus className="h-4.5 w-4.5" />
               Add plan
-            </button>
+            </NavLink>
           </>
         }
       />

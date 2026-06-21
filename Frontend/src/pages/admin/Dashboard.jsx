@@ -2,6 +2,7 @@ import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminStatCard from '../../components/admin/AdminStatCard';
 import { Activity, BadgeIndianRupee, Layers3, UploadCloud, Clock3, BellRing, ArrowRight } from 'lucide-react';
+import {NavLink} from 'react-router-dom'
 
 const activity = [
   { title: 'CSV uploaded', meta: 'Today • 10:30 AM', tone: 'success' },
@@ -11,6 +12,7 @@ const activity = [
 ];
 
 const Dashboard = () => {
+
   return (
     <AdminLayout>
       <AdminPageHeader
@@ -19,18 +21,20 @@ const Dashboard = () => {
         description="Monitor plans, review detected changes, and keep uploads clean from one place."
         actions={
           <>
-            <button
+          {/* Future Plans */}
+            {/* <button
               type="button"
               className="rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
             >
               View audit log
-            </button>
-            <button
-              type="button"
+            </button> */}
+            
+            <NavLink
+              to="/admin/plans"
               className="rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2.5 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
             >
               Open plans
-            </button>
+            </NavLink>
           </>
         }
       />

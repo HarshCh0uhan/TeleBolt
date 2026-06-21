@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Check, ChevronRight, CircleDot, Sparkles } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import { Link } from "react-router-dom";
 
 const ottOptions = ['JioCinema', 'JioTV', 'Disney+', 'Wynk', 'Zee5', 'Amazon Prime', 'Hotstar'];
 
@@ -50,10 +51,8 @@ const PlanForm = () => {
               </Input>
               <Input label="Category">
                 <select className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
-                  <option>Popular</option>
-                  <option>Premium</option>
-                  <option>Value</option>
-                  <option>Annual</option>
+                  <option>Daily</option>
+                  <option>Non-Daily</option>
                 </select>
               </Input>
               <Input label="Price">
@@ -160,18 +159,18 @@ const PlanForm = () => {
           </section>
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
+            <Link
+              to="/admin/plans"
               className="rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
             >
               Cancel
-            </button>
-            <button
-              type="button"
+            </Link>
+            <Link
+              to="/login"
               className="rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
             >
               Save plan
-            </button>
+            </Link>
           </div>
         </div>
       </div>
