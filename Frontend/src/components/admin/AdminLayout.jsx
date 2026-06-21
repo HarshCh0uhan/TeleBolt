@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import logo from '../../assets/TeleBolt Logo.png'
 import {
   LayoutDashboard,
   ListOrdered,
@@ -15,6 +16,7 @@ import {
   History,
   BarChart3,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
@@ -35,6 +37,7 @@ const baseLink =
 
 const AdminLayout = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const {logoutUser} = useAuth()
 
   const nav = useMemo(() => navItems, []);
   const drawerClass = drawerOpen
@@ -42,12 +45,18 @@ const AdminLayout = ({ children }) => {
     : '-translate-x-full opacity-0 pointer-events-none';
 
   return (
-    <div className="min-h-screen bg-[#181818] text-white">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-white/10 bg-[#181818] lg:flex">
-        <div className="flex h-full flex-col px-5 py-5">
-          <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-3 w-3 rounded-full bg-[#58c28d]" />
+    <div className="min-h-screen bg-[#181818] text-white max-h-screen w-full overflow-y-auto scrollbar-thin scrollbar-track-[#1f1f1f] scrollbar-thumb-[#58c28d]/40 hover:scrollbar-thumb-[#58c28d]/60">
+      {/* Desktop View */}
+      <aside className="max-h-screen overflow-y-auto border border-white/10 scrollbar-thin scrollbar-track-[#1f1f1f]
+      scrollbar-thumb-[#58c28d]/40 hover:scrollbar-thumb-[#58c28d]/60 fixed inset-y-0 left-0 hidden w-72 flex-col border-r lg:flex">
+        <div className="flex h-full flex-col px-3 py-5 ">
+          <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] py-3">
+            <div className="flex items-center justify-center gap-3">
+              <img
+                src={logo}
+                alt="TeleBolt"
+                className="h-12 w-auto object-contain"
+              />
               <div>
                 <div className="text-2xl font-semibold tracking-tight">TeleBolt</div>
                 <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#cfeedd]">
@@ -130,21 +139,20 @@ const AdminLayout = ({ children }) => {
 
             <button
               type="button"
-              className="group flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
-              onClick={() => {
-                // TODO: call logoutUser() from AuthContext
-              }}
+              className="group mb-3 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
+              onClick={logoutUser}
             >
               <span className="flex items-center gap-2">
                 <LogOut className="h-4.5 w-4.5" />
-                Sign out
+                Logout
               </span>
               <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
             </button>
           </div>
         </div>
       </aside>
-
+      
+      {/* Mobile View */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#181818]/95 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-4 py-3.5">
           <div>
@@ -237,6 +245,7 @@ const AdminLayout = ({ children }) => {
         </aside>
       </div>
 
+      {/* Main Content */}
       <main className="min-h-screen px-4 pb-8 pt-4 lg:ml-72 lg:px-8 lg:pt-6">
         {children}
       </main>
