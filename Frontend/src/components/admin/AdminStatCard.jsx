@@ -17,7 +17,7 @@ const AdminStatCard = ({ label, value, hint, icon: Icon, tone = 'default' }) => 
           <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">{label}</div>
           <div className="mt-3 text-3xl font-semibold tracking-tight text-white">{value}</div>
         </div>
-        <div className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-[#262626] text-[#58c28d] transition-transform duration-300 group-hover:scale-105 group-hover:rotate-[-3deg]">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-[#262626] text-[#58c28d] transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
           {Icon ? <Icon className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
         </div>
       </div>
