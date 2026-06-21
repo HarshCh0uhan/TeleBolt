@@ -74,7 +74,7 @@ const Plans = () => {
       </section>
 
       <section className="mt-5 rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-5">
-        <div className="grid gap-3 lg:grid-cols-[1.3fr_0.7fr_0.7fr_0.7fr]">
+        <div className="grid gap-3 lg:grid-cols-[2fr_0.7fr_0.7fr_0.7fr]">
           <AdminSearchBar
             value={search}
             onChange={setSearch}
@@ -95,7 +95,7 @@ const Plans = () => {
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40"
           >
-            {['All categories', 'Popular', 'Premium', 'Value', 'Annual', 'Entry'].map((item) => (
+            {['Daily', 'Non-Daily'].map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
