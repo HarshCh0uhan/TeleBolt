@@ -5,6 +5,8 @@ const AdminTable = ({ columns = [], data = [], renderCell, emptyState }) => {
 
   return (
     <div className="rounded-3xl border border-white/10 bg-[#1f1f1f]">
+
+      {/* Desktop View */}
       <div className="hidden overflow-x-auto rounded-3xl md:block">
         <table className="min-w-full border-separate border-spacing-0">
           <thead>
@@ -27,7 +29,7 @@ const AdminTable = ({ columns = [], data = [], renderCell, emptyState }) => {
               >
                 {columns.map((col) => (
                   <td
-                    key={col.key}
+                    key={col.key} 
                     className="border-b border-white/10 px-5 py-4 text-sm text-zinc-200"
                   >
                     {renderCell ? renderCell(row, col) : row[col.key]}
@@ -38,7 +40,8 @@ const AdminTable = ({ columns = [], data = [], renderCell, emptyState }) => {
           </tbody>
         </table>
       </div>
-
+      
+      {/* Mobile View */}
       <div className="grid gap-3 p-4 md:hidden">
         {data.map((row, rowIndex) => (
           <div

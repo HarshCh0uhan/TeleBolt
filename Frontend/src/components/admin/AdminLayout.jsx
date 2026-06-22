@@ -19,7 +19,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
-  { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
   { label: 'Plans', to: '/admin/plans', icon: ListOrdered },
   { label: 'Detected Changes', to: '/admin/detected-changes', icon: FileClock, badge: '3' },
   { label: 'Upload CSV', to: '/admin/upload-csv', icon: UploadCloud },
@@ -78,6 +78,7 @@ const AdminLayout = ({ children }) => {
                   <NavLink
                     key={item.label}
                     to={item.to}
+                    end={item.label === 'Dashboard'}
                     className={({ isActive }) =>
                       `${baseLink} ${
                         isActive
@@ -204,6 +205,7 @@ const AdminLayout = ({ children }) => {
                   <NavLink
                     key={item.label}
                     to={item.to}
+                    end={item.label === 'Dashboard'}
                     onClick={() => setDrawerOpen(false)}
                     className={({ isActive }) =>
                       `${baseLink} ${
