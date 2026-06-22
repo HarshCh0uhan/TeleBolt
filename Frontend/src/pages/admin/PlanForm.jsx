@@ -2,21 +2,35 @@ import { useMemo, useState } from 'react';
 import { Check, ChevronRight, CircleDot, Sparkles } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import {createPlan} from '../../api/admin.api'
+import { create } from 'axios';
 
-const ottOptions = ['JioCinema', 'JioTV', 'Disney+', 'Wynk', 'Zee5', 'Amazon Prime', 'Hotstar'];
+const ottOptions = ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5", "Other"];
 
 const Input = ({ label, children, hint }) => (
   <label className="block">
     <div className="mb-2 text-sm font-medium text-zinc-300">{label}</div>
     {children}
-    {hint ? <div className="mt-2 text-xs text-zinc-500">{hint}</div> : null}
+    {/* {hint ? <div className="mt-2 text-xs text-zinc-500">{hint}</div> : null} */}
   </label>
 );
 
 const PlanForm = () => {
-  const [selectedOtt, setSelectedOtt] = useState(['JioCinema', 'JioTV']);
+  const [selectedOtt, setSelectedOtt] = useState([]);
   const [active, setActive] = useState(true);
+  const navigate = useNavigate()
+  const [error, setError] = useState()
+  const [price, setPrice] = useState(null)
+  const [validityDays, setValidityDays] = useState(null)
+  const [dailyData, setDailydata] = useState(null)
+  const [totalData, setTotaldata] = useState(null)
+  const [sms, setSms] = useState(null) 
+  const [operator, setOperator] = useState('Jio')
+  const [category, setCategory] = useState('Daily')
+  const [isUnlimitedCalls, setIsUnlimitedCalls] = useState(true)
+  const [isUnlimitedSMS, setIsUnlimitedSMS] = useState(false)
+  
 
   const chipList = useMemo(() => ottOptions, []);
 
@@ -25,6 +39,30 @@ const PlanForm = () => {
       current.includes(item) ? current.filter((x) => x !== item) : [...current, item]
     );
   };
+  
+  
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await createPlan({
+          operator, 
+          category, 
+          price, 
+          validityDays, 
+          dailyData, 
+          totalData, 
+          sms, 
+          isUnlimitedCalls, 
+          isUnlimitedSMS, 
+          ottApps: selectedOtt, 
+          isActive: active})
+      navigate('/admin/plans', { state: { created: true } })
+    } catch (err) {
+      console.log(console.log(err.response.data));
+    }
+  }
+  
 
   return (
     <AdminLayout>
@@ -36,34 +74,37 @@ const PlanForm = () => {
 
       <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
         <div className="grid gap-5">
+
+          {/* Basic Information */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               <Sparkles className="h-4 w-4 text-[#58c28d]" />
               Basic information
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Input label="Operator">
-                <select className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
+              <Input label="Operator*">
+                <select onChange={(e) => setOperator(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
                   <option>Jio</option>
                   <option>Airtel</option>
-                  <option>Vi</option>
+                  <option>VI</option>
                 </select>
               </Input>
-              <Input label="Category">
-                <select className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
+              <Input label="Category*">
+                <select onChange={(e) => setCategory(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
                   <option>Daily</option>
                   <option>Non-Daily</option>
                 </select>
               </Input>
-              <Input label="Price">
-                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="299" />
+              <Input label="Price*">
+                <input onChange={(e) => setPrice(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="299" />
               </Input>
-              <Input label="Validity (days)">
-                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="28" />
+              <Input label="Validity (days)*">
+                <input onChange={(e) => setValidityDays(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="28" />
               </Input>
             </div>
           </section>
 
+          {/* Data Benefits */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               <CircleDot className="h-4 w-4 text-[#58c28d]" />
@@ -71,38 +112,53 @@ const PlanForm = () => {
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               <Input label="Daily data">
-                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="2 GB" />
+                <input onChange={(e) => setDailydata(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="2 GB" />
               </Input>
               <Input label="Total data">
-                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="56 GB" />
+                <input onChange={(e) => setTotaldata(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="56 GB" />
               </Input>
               <Input label="SMS">
-                <input className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="100/day" />
+                <input onChange={(e) => setSms(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="100/day" />
               </Input>
             </div>
           </section>
 
+          {/* Calling */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
-            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
-              <Check className="h-4 w-4 text-[#58c28d]" />
-              Calling
-            </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {['Unlimited calls', 'Unlimited SMS'].map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-left text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
-                >
-                  <span>{item}</span>
-                  <span className="rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-1 text-[10px] uppercase tracking-[0.28em] text-[#dff6ea]">
-                    toggle
-                  </span>
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setIsUnlimitedCalls(prev => !prev)}
+                className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-all duration-300 ${
+                  isUnlimitedCalls 
+                    ? 'border-[#58c28d]/40 bg-[#58c28d]/10 text-white' 
+                    : 'border-white/10 bg-[#181818] text-zinc-300'
+                }`}
+              >
+                <span>Unlimited Calls</span>
+                <span className="rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-1 text-[10px] uppercase tracking-[0.28em] text-[#dff6ea]">
+                  {isUnlimitedCalls ? 'ON' : 'OFF'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsUnlimitedSMS(prev => !prev)}
+                className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-all duration-300 ${
+                  isUnlimitedSMS 
+                    ? 'border-[#58c28d]/40 bg-[#58c28d]/10 text-white' 
+                    : 'border-white/10 bg-[#181818] text-zinc-300'
+                }`}
+              >
+                <span>Unlimited SMS</span>
+                <span className="rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-1 text-[10px] uppercase tracking-[0.28em] text-[#dff6ea]">
+                  {isUnlimitedSMS ? 'ON' : 'OFF'}
+                </span>
+              </button>
             </div>
           </section>
 
+          {/* OTT Benefits */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -136,6 +192,7 @@ const PlanForm = () => {
             </div>
           </section>
 
+          {/* Active or Not */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -158,6 +215,7 @@ const PlanForm = () => {
             </div>
           </section>
 
+          {/* Submit or Cancel */}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Link
               to="/admin/plans"
@@ -165,12 +223,12 @@ const PlanForm = () => {
             >
               Cancel
             </Link>
-            <Link
-              to="/login"
+            <button
+              onClick={handleSubmit}
               className="rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
             >
               Save plan
-            </Link>
+            </button>
           </div>
         </div>
       </div>
