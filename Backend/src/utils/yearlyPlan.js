@@ -3,8 +3,9 @@ export const yearlyPlan = (plan) => {
     const multiplier = Math.ceil(365 / plan.validityDays)
     const yearlyCost = multiplier * plan.price
     const yearlyData = plan.totalData ? multiplier * plan.totalData : null;
+    const obj = typeof plan.toObject === 'function' ? plan.toObject() : plan;
     return {
-        ...plan.toObject(),
+        ...obj,
         yearlyCost,
         yearlyData,
         costPerGB: yearlyData > 0 

@@ -39,12 +39,6 @@ const Register = ({ isAdminRegister = false }) => {
     } finally {
         setLoading(false)
     }
-
-
-    // UI-only loading state
-    setTimeout(() => {
-      setLoading(false);
-    }, 1200);
   };
 
   return (

@@ -12,7 +12,7 @@ const PlanDetails = () => {
       const {data} = await getSinglePlan(planid);
       setPlan(data.plan)    
     } catch (err) {
-      console.error(err?.response?.data?.err);
+      console.error(err?.response?.data);
     }
   }
 
