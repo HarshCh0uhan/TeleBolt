@@ -10,23 +10,17 @@ import AdminActionButtons from '../../components/admin/AdminActionButtons';
 import AdminEmptyState from '../../components/admin/AdminEmptyState';
 import { NavLink } from "react-router-dom";
 import { useLocation } from 'react-router-dom'
-
-const samplePlans = [
-  { id: 1, operator: 'Jio', price: '₹299', validity: '28d', dataPerDay: '2 GB', totalData: '56 GB', category: 'Popular', status: 'Active', updated: 'May 1' },
-  { id: 2, operator: 'Airtel', price: '₹349', validity: '28d', dataPerDay: '2 GB', totalData: '56 GB', category: 'Premium', status: 'Active', updated: 'Apr 28' },
-  { id: 3, operator: 'Vi', price: '₹269', validity: '28d', dataPerDay: '1.5 GB', totalData: '42 GB', category: 'Value', status: 'Active', updated: 'Apr 20' },
-  { id: 4, operator: 'Jio', price: '₹2,999', validity: '365d', dataPerDay: '2.5 GB', totalData: '730 GB', category: 'Annual', status: 'Active', updated: 'Apr 15' },
-  { id: 5, operator: 'Airtel', price: '₹179', validity: '18d', dataPerDay: '1 GB', totalData: '18 GB', category: 'Entry', status: 'Inactive', updated: 'Mar 10' },
-];
+import {deletePlan, getAdminPlans} from '../../api/admin.api'
+import { useNavigate } from 'react-router-dom';
 
 const columns = [
   { key: 'operator', header: 'Operator' },
+  { key: 'category', header: 'Category' },
   { key: 'price', header: 'Price' },
-  { key: 'validity', header: 'Validity' },
-  { key: 'dataPerDay', header: 'Data / day' },
-  { key: 'totalData', header: 'Total data' },
-  { key: 'status', header: 'Status' },
-  { key: 'updated', header: 'Updated' },
+  { key: 'validityDays', header: 'Validity (days)' },
+  { key: 'data', header: 'Data' },        
+  { key: 'isActive', header: 'Status' },
+  { key: 'updatedAt', header: 'Updated' },
   { key: 'actions', header: 'Actions' },
 ];
 
@@ -37,26 +31,53 @@ const Plans = () => {
   const [statusFilter, setStatusFilter] = useState('All status');
   const location = useLocation()
   const [showToast, setShowToast] = useState(false)
+  const [adminPlans, setAdminPlans] = useState([])
+  const navigate = useNavigate();
 
-  const filteredPlans = useMemo(() => {
-    // TODO: wire real filtering logic
-    return samplePlans;
-  }, [search, operatorFilter, categoryFilter, statusFilter]);
+  // const filteredPlans = useMemo(() => {
+  //   return samplePlans;
+  // }, [search, operatorFilter, categoryFilter, statusFilter]);
+
+  const fetchAdminPlans = async () => {
+    try {
+      const {data} = await getAdminPlans();
+      setAdminPlans(data.plans)
+    } catch (err) {
+      console.error(err.response.data)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      await deletePlan(id);
+      setAdminPlans(prev => prev.filter(plan => plan._id !== id));
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
+  }
 
   useEffect(() => {
+    
     if(location.state?.created){
       setShowToast(true)
-      setTimeout(() => setShowToast(false), 3000)
+      navigate(location.pathname, { replace: true, state: {} });  
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
     }
+    console.log(location.state?.created);
+    fetchAdminPlans()
   }, [])
 
   return (
     <AdminLayout>
+      {/* Plan Created Notification */}
       {showToast && (
         <div className="fixed top-6 right-6 z-50 rounded-2xl border border-[#58c28d]/30 bg-[#1f1f1f] px-5 py-4 text-sm text-[#58c28d] shadow-xl">
           ✓ Plan created successfully
         </div>
       )}
+
+      {/* Plan Header */}
       <AdminPageHeader
         eyebrow="Admin Dashboard"
         title="Plans management"
@@ -81,6 +102,7 @@ const Plans = () => {
         }
       />
 
+      {/* Plan AdminStatCard */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard label="Total plans" value="24" hint="All operators combined" />
         <AdminStatCard label="Active" value="21" hint="Currently visible plans" />
@@ -88,6 +110,7 @@ const Plans = () => {
         <AdminStatCard label="Pending changes" value="3" hint="Awaiting approval" tone="warning" />
       </section>
 
+      {/* Plan Filters */}
       <section className="mt-5 rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-5">
         <div className="grid gap-3 lg:grid-cols-[2fr_0.7fr_0.7fr_0.7fr]">
           <AdminSearchBar
@@ -130,10 +153,11 @@ const Plans = () => {
         </div>
       </section>
 
+      {/* Plan Table */}
       <section className="mt-5">
         <AdminTable
           columns={columns}
-          data={filteredPlans}
+          data={adminPlans}
           emptyState={
             <AdminEmptyState
               title="No plans found"
@@ -141,17 +165,25 @@ const Plans = () => {
             />
           }
           renderCell={(row, col) => {
-            if (col.key === 'status') return <AdminStatusBadge status={row.status} />;
+            if (col.key === 'data') {
+              if (row.dailyData != null) return `${row.dailyData} GB/day`;
+              if (row.totalData != null) return `${row.totalData} GB total`;
+              return 'N/A';
+            }
+            if (col.key === 'price') return `₹${row.price}`;
+            if (col.key === 'isActive') 
+              return <AdminStatusBadge status={row.isActive ? 'Active' : 'Inactive'} />;
+            if (col.key === 'updatedAt') 
+              return new Date(row.updatedAt).toLocaleDateString('en-IN');
             if (col.key === 'actions') {
               return (
                 <AdminActionButtons
-                  onView={() => {}}
-                  onEdit={() => {}}
-                  onDelete={() => {}}
+                  onEdit={() => navigate(`/admin/plans/edit/${row._id}`)}
+                  onDelete={() => handleDelete(row._id)}
                 />
               );
             }
-            return row[col.key];
+            return row[col.key]?? '—';
           }}
         />
       </section>
