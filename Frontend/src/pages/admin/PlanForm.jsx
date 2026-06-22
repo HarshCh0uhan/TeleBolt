@@ -4,7 +4,6 @@ import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import { Link, useNavigate } from "react-router-dom";
 import {createPlan} from '../../api/admin.api'
-import { create } from 'axios';
 
 const ottOptions = ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5", "Other"];
 
@@ -12,25 +11,26 @@ const Input = ({ label, children, hint }) => (
   <label className="block">
     <div className="mb-2 text-sm font-medium text-zinc-300">{label}</div>
     {children}
-    {/* {hint ? <div className="mt-2 text-xs text-zinc-500">{hint}</div> : null} */}
   </label>
 );
 
 const PlanForm = () => {
   const [selectedOtt, setSelectedOtt] = useState([]);
   const [active, setActive] = useState(true);
-  const navigate = useNavigate()
-  const [error, setError] = useState()
-  const [price, setPrice] = useState(null)
-  const [validityDays, setValidityDays] = useState(null)
-  const [dailyData, setDailydata] = useState(null)
-  const [totalData, setTotaldata] = useState(null)
-  const [sms, setSms] = useState(null) 
-  const [operator, setOperator] = useState('Jio')
-  const [category, setCategory] = useState('Daily')
-  const [isUnlimitedCalls, setIsUnlimitedCalls] = useState(true)
-  const [isUnlimitedSMS, setIsUnlimitedSMS] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   
+  const navigate = useNavigate();
+  
+  const [price, setPrice] = useState(null);
+  const [validityDays, setValidityDays] = useState(null);
+  const [dailyData, setDailydata] = useState(null);
+  const [totalData, setTotaldata] = useState(null);
+  const [sms, setSms] = useState(null); 
+  const [operator, setOperator] = useState('Jio');
+  const [category, setCategory] = useState('Daily');
+  const [isUnlimitedCalls, setIsUnlimitedCalls] = useState(true);
+  const [isUnlimitedSMS, setIsUnlimitedSMS] = useState(false);
 
   const chipList = useMemo(() => ottOptions, []);
 
@@ -39,30 +39,34 @@ const PlanForm = () => {
       current.includes(item) ? current.filter((x) => x !== item) : [...current, item]
     );
   };
-  
-  
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    
     try {
       await createPlan({
-          operator, 
-          category, 
-          price, 
-          validityDays, 
-          dailyData, 
-          totalData, 
-          sms, 
-          isUnlimitedCalls, 
-          isUnlimitedSMS, 
-          ottApps: selectedOtt, 
-          isActive: active})
-      navigate('/admin/plans', { state: { created: true } })
+        operator, 
+        category, 
+        price, 
+        validityDays, 
+        dailyData, 
+        totalData, 
+        sms, 
+        isUnlimitedCalls, 
+        isUnlimitedSMS, 
+        ottApps: selectedOtt, 
+        isActive: active
+      });
+      navigate('/admin/plans', { state: { created: true } });
     } catch (err) {
-      console.log(console.log(err.response.data));
+      console.error(err);
+      setError(err.response?.data || 'Failed to create plan. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  }
-  
+  };
 
   return (
     <AdminLayout>
@@ -123,7 +127,7 @@ const PlanForm = () => {
             </div>
           </section>
 
-          {/* Calling */}
+          {/* Calling & SMS Toggles */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <button
@@ -215,6 +219,13 @@ const PlanForm = () => {
             </div>
           </section>
 
+          {/* Error Display */}
+          {error && (
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
           {/* Submit or Cancel */}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Link
@@ -225,9 +236,17 @@ const PlanForm = () => {
             </Link>
             <button
               onClick={handleSubmit}
-              className="rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
+              disabled={loading}
+              className="group flex rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Save plan
+              {loading ? (
+                <div className="flex items-center gap-3">
+                  <div className="h-4 w-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                "Save plan"
+              )}
             </button>
           </div>
         </div>

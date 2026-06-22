@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
     }
 })
 
-const sendEmailAlert = async(changes) => {
+const sendEmailAlert = async() => {
     await transporter.sendMail({
         from: process.env.EMAIL,
         to: process.env.ADMIN_EMAIL,

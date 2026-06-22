@@ -37,7 +37,7 @@ const baseLink =
 
 const AdminLayout = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const {logoutUser} = useAuth()
+  const {logoutUser, user} = useAuth()
 
   const nav = useMemo(() => navItems, []);
   const drawerClass = drawerOpen
@@ -227,7 +227,7 @@ const AdminLayout = ({ children }) => {
 
             <div className="mt-auto space-y-3 pt-6">
               <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-4">
-                <div className="text-sm font-medium text-white">admin@example.com</div>
+                <div className="text-sm font-medium text-white">{user.email}</div>
                 <div className="mt-1 text-xs text-zinc-500">Single-admin workspace</div>
               </div>
               <button

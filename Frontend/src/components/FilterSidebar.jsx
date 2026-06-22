@@ -2,7 +2,6 @@ import { useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
-import { filter } from "framer-motion/client";
 
 const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -113,7 +112,6 @@ function SidebarContent({ operators, categories, ottApps, filters, onFiltersChan
               className="flex cursor-pointer items-center gap-3 text-white"
               onClick={() => {
                 onFiltersChange('category', category)
-                onIsDailyPlan(category)
               }}
             >
               <div className="h-4 w-4 rounded-full border-2 border-zinc-600 flex items-center justify-center shrink-0">

@@ -29,11 +29,6 @@ const Login = () => {
     } finally {
         setLoading(false) 
     }
-
-    // UI-only loading simulation
-    setTimeout(() => {
-      setLoading(false);
-    }, 1200);
   };
 
   // useEffect(() => {

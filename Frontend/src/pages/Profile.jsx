@@ -123,7 +123,7 @@ const Profile = () => {
               </p>
 
               <p className="mt-2 text-lg font-semibold text-white">
-                {new Date(user.updatedAt).toLocaleDateString("en-IN", {
+                {new Date(user.createdAt).toLocaleDateString("en-IN", {
                   day: "numeric",
                   month: "long",
                   year: "numeric",
