@@ -1,5 +1,4 @@
 import { Link, useParams } from "react-router-dom";
-import mockPlans from "../data/mockPlans";
 import { getSinglePlan } from "../api/plans.api";
 import { useEffect, useState } from "react";
 

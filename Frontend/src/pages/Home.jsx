@@ -3,9 +3,7 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import FilterSidebar from "../components/FilterSidebar";
 import PlanCard from "../components/PlanCard";
-import CompareBar from "../components/CompareBar";
 import PlanTracker from "../components/PlanTracker";
-import mockPlans from "../data/mockPlans";
 import { getPlans } from "../api/plans.api";
 
 const Home = () => {

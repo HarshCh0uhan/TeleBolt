@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Filter, Plus, UploadCloud } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
@@ -9,6 +9,7 @@ import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminActionButtons from '../../components/admin/AdminActionButtons';
 import AdminEmptyState from '../../components/admin/AdminEmptyState';
 import { NavLink } from "react-router-dom";
+import { useLocation } from 'react-router-dom'
 
 const samplePlans = [
   { id: 1, operator: 'Jio', price: '₹299', validity: '28d', dataPerDay: '2 GB', totalData: '56 GB', category: 'Popular', status: 'Active', updated: 'May 1' },
@@ -34,14 +35,28 @@ const Plans = () => {
   const [operatorFilter, setOperatorFilter] = useState('All operators');
   const [categoryFilter, setCategoryFilter] = useState('All categories');
   const [statusFilter, setStatusFilter] = useState('All status');
+  const location = useLocation()
+  const [showToast, setShowToast] = useState(false)
 
   const filteredPlans = useMemo(() => {
     // TODO: wire real filtering logic
     return samplePlans;
   }, [search, operatorFilter, categoryFilter, statusFilter]);
 
+  useEffect(() => {
+    if(location.state?.created){
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 3000)
+    }
+  }, [])
+
   return (
     <AdminLayout>
+      {showToast && (
+        <div className="fixed top-6 right-6 z-50 rounded-2xl border border-[#58c28d]/30 bg-[#1f1f1f] px-5 py-4 text-sm text-[#58c28d] shadow-xl">
+          ✓ Plan created successfully
+        </div>
+      )}
       <AdminPageHeader
         eyebrow="Admin Dashboard"
         title="Plans management"
