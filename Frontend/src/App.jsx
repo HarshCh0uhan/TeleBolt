@@ -12,56 +12,35 @@ import Plans from './pages/admin/Plans';
 import PlanForm from './pages/admin/PlanForm';
 import DetectedChanges from './pages/admin/DetectedChanges';
 import UploadCSV from './pages/admin/UploadCSV';
+import PublicLayout from './layouts/PublicLayout';
+import AdminLayout from './layouts/AdminLayout';
 
 function App() {
 
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<Home/>} />
-      <Route path="/plans" element={<Home/>} />
-      <Route path="/plans/:planid" element={<PlanDetails/>} />
-      <Route path="/compare" element={<Compare/>} />
-      <Route path="/login" element={<Login/>} />
-      <Route path="/register" element={<Register/>} />
-      <Route path="/register-admin" element={<Register isAdminRegister/>} />
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/plans" element={<Home />} />
+        <Route path="/plans/:planid" element={<PlanDetails />} />
+        <Route path="/compare" element={<Compare />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/register-admin" element={<Register isAdminRegister />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      </Route>
 
-      {/* Protected Routes */}
-      <Route path="/profile" element={
-        <ProtectedRoute>
-          <Profile/>
-        </ProtectedRoute>
-      } />
-      <Route path='/admin' element={
-        <ProtectedRoute adminOnly>
-          <Dashboard/>
-        </ProtectedRoute>
-      }/>
-      <Route path='/admin/plans' element={
-        <ProtectedRoute adminOnly>
-          <Plans/>
-        </ProtectedRoute>
-      }/>
-      <Route path='/admin/plans/create' element={
-          <ProtectedRoute adminOnly>
-              <PlanForm />
-          </ProtectedRoute>
-      }/>
-      <Route path='/admin/plans/edit/:id' element={
-          <ProtectedRoute adminOnly>
-              <PlanForm />
-          </ProtectedRoute>
-      }/>
-      <Route path='/admin/detected-changes' element={
-        <ProtectedRoute adminOnly>
-          <DetectedChanges/>
-        </ProtectedRoute>
-      }/>
-      <Route path='/admin/upload-csv' element={
-        <ProtectedRoute adminOnly>
-          <UploadCSV/>
-        </ProtectedRoute>
-      }/>
+      {/* Admin Routes */}
+      <Route element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
+        <Route path="/admin" element={<Dashboard />} />
+        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/plans" element={<Plans />} />
+        <Route path="/admin/plans/create" element={<PlanForm />} />
+        <Route path="/admin/plans/edit/:id" element={<PlanForm />} />
+        <Route path="/admin/detected-changes" element={<DetectedChanges />} />
+        <Route path="/admin/upload-csv" element={<UploadCSV />} />
+      </Route>
     </Routes>
   )
 }

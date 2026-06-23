@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminStatCard from '../../components/admin/AdminStatCard';
 import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
@@ -70,7 +69,7 @@ const DetectedChanges = () => {
   const pendingChanges = changes.filter(c => c.status === 'Pending');
 
   return (
-    <AdminLayout>
+    <>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -187,7 +186,7 @@ const DetectedChanges = () => {
           </div>
         )}
       </motion.section>
-    </AdminLayout>
+    </>
   );
 };
 

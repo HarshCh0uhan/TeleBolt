@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminStatCard from '../../components/admin/AdminStatCard';
 import {
@@ -120,7 +119,7 @@ const Dashboard = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <AdminPageHeader
           eyebrow="Admin Dashboard"
@@ -333,7 +332,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
       </motion.div>
-    </AdminLayout>
+    </>
   );
 };
 

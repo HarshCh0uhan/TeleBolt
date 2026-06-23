@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import logo from '../../assets/TeleBolt Logo.png'
+import logo from '../assets/TeleBolt Logo.png'
 import {
   LayoutDashboard,
   ListOrdered,
@@ -16,8 +16,9 @@ import {
   History,
   BarChart3,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useAdminStats } from '../../context/AdminStatsContext';
+import { useAuth } from '../context/AuthContext';
+import { useAdminStats } from '../context/AdminStatsContext';
+import { Outlet } from 'react-router-dom';
 
 const navItems = [
   { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
@@ -249,7 +250,7 @@ const AdminLayout = ({ children }) => {
 
       {/* Main Content */}
       <main className="min-h-screen px-4 pb-8 pt-4 lg:ml-72 lg:px-8 lg:pt-6">
-        {children}
+        <Outlet />
       </main>
     </div>
   );
