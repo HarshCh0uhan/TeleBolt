@@ -1,159 +1,336 @@
+import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminStatCard from '../../components/admin/AdminStatCard';
-import { Activity, BadgeIndianRupee, Layers3, UploadCloud, Clock3, BellRing, ArrowRight } from 'lucide-react';
-import {NavLink} from 'react-router-dom'
-
-const activity = [
-  { title: 'CSV uploaded', meta: 'Today • 10:30 AM', tone: 'success' },
-  { title: 'Plan updated', meta: 'Jio 299 • 4 minutes ago', tone: 'default' },
-  { title: 'Change approved', meta: 'Airtel 349 • Yesterday', tone: 'default' },
-  { title: 'Pending review', meta: '3 plans awaiting approval', tone: 'warning' },
-];
+import {
+  Activity,
+  BadgeIndianRupee,
+  Layers3,
+  Clock3,
+  BellRing,
+  ArrowRight,
+  LayoutDashboard,
+  Plus,
+  UploadCloud,
+  FileClock,
+  Database,
+  Timer,
+  HardDrive,
+  Sparkles,
+  RotateCw,
+} from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { motion } from 'framer-motion';
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    totalPlans: '--',
+    activePlans: '--',
+    pendingChanges: '--',
+    operators: '--',
+  });
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // TODO: fetch stats from backend
+    // Example: const { data } = await getAdminStats();
+    setTimeout(() => {
+      setStats({
+        totalPlans: 24,
+        activePlans: 21,
+        pendingChanges: 3,
+        operators: 3,
+      });
+      setActivity([
+        {
+          title: 'Plan "Jio ₹299" updated',
+          meta: '4 minutes ago',
+          icon: BellRing,
+          tone: 'success',
+        },
+        {
+          title: 'CSV upload completed',
+          meta: 'Today at 10:30 AM',
+          icon: UploadCloud,
+          tone: 'default',
+        },
+        {
+          title: 'Price change approved (Airtel ₹349)',
+          meta: 'Yesterday',
+          icon: BadgeIndianRupee,
+          tone: 'success',
+        },
+        {
+          title: '3 changes pending review',
+          meta: 'Detected by cron',
+          icon: FileClock,
+          tone: 'warning',
+        },
+      ]);
+      setLoading(false);
+    }, 800);
+  }, []);
+
+  const quickActions = [
+    {
+      label: 'Add new plan',
+      to: '/admin/plans/create',
+      icon: Plus,
+      color: 'bg-[#58c28d]/10 text-[#58c28d]',
+      description: 'Manually enter a new telecom plan',
+    },
+    {
+      label: 'Import CSV',
+      to: '/admin/upload-csv',
+      icon: UploadCloud,
+      color: 'bg-blue-500/10 text-blue-400',
+      description: 'Bulk upload plans via CSV file',
+    },
+    {
+      label: 'Review changes',
+      to: '/admin/detected-changes',
+      icon: FileClock,
+      color: 'bg-yellow-500/10 text-yellow-400',
+      description: 'Approve or reject detected updates',
+    },
+    {
+      label: 'View plans',
+      to: '/admin/plans',
+      icon: Layers3,
+      color: 'bg-purple-500/10 text-purple-400',
+      description: 'Manage all plans in catalog',
+    },
+  ];
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 },
+    },
+  };
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
 
   return (
     <AdminLayout>
-      <AdminPageHeader
-        eyebrow="Admin Dashboard"
-        title="Welcome back, Admin"
-        description="Monitor plans, review detected changes, and keep uploads clean from one place."
-        actions={
-          <>
-          {/* Future Plans */}
-            {/* <button
-              type="button"
-              className="rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
-            >
-              View audit log
-            </button> */}
-            
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+        <AdminPageHeader
+          eyebrow="Admin Dashboard"
+          title={`Welcome back, ${user?.username || 'Admin'}`}
+          description="Monitor plans, review detected changes, and keep TeleBolt up to date."
+          actions={
             <NavLink
               to="/admin/plans"
-              className="rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2.5 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
+              className="inline-flex items-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2.5 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
             >
-              Open plans
+              <Layers3 className="h-4 w-4" />
+              Manage plans
             </NavLink>
-          </>
-        }
-      />
+          }
+        />
+      </motion.div>
 
-      {/* <section className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
-        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#58c28d]/30">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div className="max-w-xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-3 py-1 text-xs text-[#dff6ea]">
-                <BellRing className="h-3.5 w-3.5" />
-                Admin console online
-              </div>
-              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                Everything important lives here.
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-                Track plan volume, review incoming changes, and push bulk updates with the same calm TeleBolt look used in the public app.
-              </p>
-            </div>
+      {/* Quick stats */}
+      <motion.section
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-32 rounded-3xl bg-[#262626] animate-pulse" />
+            ))
+          : [
+              <AdminStatCard
+                key="total"
+                label="Total plans"
+                value={stats.totalPlans}
+                hint="All operators combined"
+                icon={Layers3}
+                tone="default"
+              />,
+              <AdminStatCard
+                key="active"
+                label="Active plans"
+                value={stats.activePlans}
+                hint={`${Math.round((stats.activePlans / stats.totalPlans) * 100) || 0}% of catalog`}
+                icon={BadgeIndianRupee}
+                tone="success"
+              />,
+              <AdminStatCard
+                key="pending"
+                label="Pending changes"
+                value={stats.pendingChanges}
+                hint="Needs manual review"
+                icon={Clock3}
+                tone="warning"
+              />,
+              <AdminStatCard
+                key="operators"
+                label="Operators"
+                value={stats.operators}
+                hint="Jio • Airtel • Vi"
+                icon={LayoutDashboard}
+                tone="default"
+              />,
+            ]}
+      </motion.section>
 
-            <div className="grid min-w-55 gap-3 rounded-3xl border border-white/10 bg-[#262626] p-4">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#1f1f1f] p-3">
-                <Clock3 className="h-4.5 w-4.5 text-[#58c28d]" />
-                <div>
-                  <div className="text-sm text-white">Session healthy</div>
-                  <div className="text-xs text-zinc-500">Auto refresh enabled</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#1f1f1f] p-3">
-                <Activity className="h-4.5 w-4.5 text-[#58c28d]" />
-                <div>
-                  <div className="text-sm text-white">Live queue</div>
-                  <div className="text-xs text-zinc-500">4 items waiting</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#58c28d]/30">
+      {/* Quick actions + System status */}
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="mt-5 grid gap-4 lg:grid-cols-2"
+      >
+        {/* Quick actions */}
+        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Quick actions</div>
-              <h3 className="mt-2 text-lg font-medium text-white">Fast entry points</h3>
+              <h3 className="mt-2 text-lg font-medium text-white">Shortcuts</h3>
             </div>
-            <div className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-[#262626] text-[#58c28d]">
-              <ArrowRight className="h-4.5 w-4.5" />
-            </div>
+            <Sparkles className="h-5 w-5 text-[#58c28d]" />
           </div>
-
-          <div className="mt-5 grid gap-3">
-            {['Add plan', 'Import CSV', 'Review changes', 'Open analytics'].map((item) => (
-              <button
-                key={item}
-                type="button"
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {quickActions.map((action) => (
+              <NavLink
+                key={action.label}
+                to={action.to}
+                className="group flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#2b2b2b] hover:-translate-y-0.5"
               >
-                <span>{item}</span>
-                <ArrowRight className="h-4 w-4 text-zinc-500" />
-              </button>
+                <div className={`grid h-10 w-10 place-items-center rounded-xl ${action.color}`}>
+                  <action.icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">{action.label}</div>
+                  <div className="mt-1 text-xs text-zinc-500">{action.description}</div>
+                </div>
+              </NavLink>
             ))}
           </div>
-        </div>
-      </section> */}
+        </motion.div>
 
-      <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <AdminStatCard label="Total plans" value="24" hint="2 added this week" icon={Layers3} tone="success" />
-        <AdminStatCard label="Active plans" value="21" hint="87.5% of catalog" icon={BadgeIndianRupee} />
-        <AdminStatCard label="Pending changes" value="3" hint="Needs manual review" icon={Clock3} tone="warning" />
-        <AdminStatCard label="Uploads today" value="5" hint="1 rejected row" icon={UploadCloud} />
-      </section>
+        {/* System status */}
+        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">System status</div>
+              <h3 className="mt-2 text-lg font-medium text-white">Health check</h3>
+            </div>
+            <Database className="h-5 w-5 text-[#58c28d]" />
+          </div>
+          <div className="mt-5 space-y-3">
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+              <div className="flex items-center gap-3">
+                <Database className="h-4 w-4 text-[#58c28d]" />
+                <span className="text-sm text-zinc-300">Database</span>
+              </div>
+              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">Connected</span>
+            </div>
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+              <div className="flex items-center gap-3">
+                <Timer className="h-4 w-4 text-[#58c28d]" />
+                <span className="text-sm text-zinc-300">Cron scheduler</span>
+              </div>
+              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">Active</span>
+            </div>
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+              <div className="flex items-center gap-3">
+                <HardDrive className="h-4 w-4 text-[#58c28d]" />
+                <span className="text-sm text-zinc-300">Backup</span>
+              </div>
+              <span className="rounded-full bg-yellow-400/10 px-2.5 py-1 text-xs text-yellow-400">
+                Manual only
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+              <div className="flex items-center gap-3">
+                <Activity className="h-4 w-4 text-[#58c28d]" />
+                <span className="text-sm text-zinc-300">Email service</span>
+              </div>
+              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">Online</span>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
 
-      <section className="mt-5 grid">
-        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
-          <div className="flex items-center justify-between gap-3">
+      {/* Recent activity + Chart placeholder */}
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.8fr]"
+      >
+        {/* Recent activity */}
+        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
+          <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Recent activity</div>
               <h3 className="mt-2 text-lg font-medium text-white">Timeline</h3>
             </div>
             <Activity className="h-5 w-5 text-[#58c28d]" />
           </div>
-
           <div className="mt-5 space-y-3">
-            {activity.map((item, index) => (
-              <div
-                key={item.title}
-                className="group flex items-start gap-4 rounded-2xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/30 hover:-translate-y-0.5"
-              >
-                <div className="mt-1 h-2.5 w-2.5 rounded-full bg-[#58c28d] shadow-[0_0_0_4px_rgba(88,194,141,0.08)]" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-medium text-white">{item.title}</div>
-                    <div className="text-xs text-zinc-500">0{index + 1}</div>
+            {loading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-16 rounded-2xl bg-[#262626] animate-pulse" />
+                ))
+              : activity.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="group flex items-start gap-4 rounded-2xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/30 hover:-translate-y-0.5"
+                  >
+                    <div
+                      className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                        item.tone === 'success'
+                          ? 'bg-[#58c28d]'
+                          : item.tone === 'warning'
+                          ? 'bg-yellow-400'
+                          : 'bg-zinc-400'
+                      } shadow-[0_0_0_4px_rgba(88,194,141,0.08)]`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm font-medium text-white">{item.title}</div>
+                        <item.icon className="h-4 w-4 text-zinc-500" />
+                      </div>
+                      <div className="mt-1 text-sm text-zinc-400">{item.meta}</div>
+                    </div>
                   </div>
-                  <div className="mt-1 text-sm text-zinc-400">{item.meta}</div>
-                </div>
-              </div>
-            ))}
+                ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* <div className="grid gap-4">
-          <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#58c28d]/30">
-            <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">System status</div>
-            <div className="mt-2 text-lg font-medium text-white">Admin queue is clear</div>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Approved changes are flowing through as expected. Use the plans screen for fast edits and the CSV screen for batch updates.
-            </p>
+        {/* Chart placeholder */}
+        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Analytics</div>
+              <h3 className="mt-2 text-lg font-medium text-white">Plan trends</h3>
+            </div>
+            <Sparkles className="h-5 w-5 text-[#58c28d]" />
           </div>
-
-          <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#58c28d]/30">
-            <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Reminder</div>
-            <div className="mt-2 text-lg font-medium text-white">Keep the same design tokens</div>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Backgrounds stay dark, cards stay elevated, and green only appears where TeleBolt should feel active.
-            </p>
+          <div className="mt-5 flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626]">
+            <Activity className="h-10 w-10 text-zinc-600" />
+            <p className="mt-4 text-sm font-medium text-zinc-500">Price changes over time</p>
+            <p className="mt-2 text-xs text-zinc-600">Charts will appear here</p>
+            <button
+              disabled
+              className="mt-4 cursor-not-allowed rounded-xl border border-white/10 bg-[#1f1f1f] px-4 py-2 text-xs text-zinc-500"
+            >
+              Coming soon
+            </button>
           </div>
-        </div> */}
-      </section>
+        </motion.div>
+      </motion.div>
     </AdminLayout>
   );
 };

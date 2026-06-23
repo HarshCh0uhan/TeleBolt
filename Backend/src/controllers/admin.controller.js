@@ -6,7 +6,7 @@ import { PriceHistory } from "../models/priceHistory.js";
 
 export const getAllPlans = async (req, res) => {
      try {
-        const plans = await Plans.find() // no filter - returns everything
+        const plans = await Plans.find()
         res.status(200).json({
             success: true,
             plans
@@ -102,7 +102,7 @@ export const deletePlans = async (req, res) => {
 
 export const detectedChanges = async (req, res) => {
     try {
-        const changes = await DetectedChange.find({status: 'Pending'})
+        const changes = await DetectedChange.find()
         if(changes.length === 0) throw new Error("No changes detected")
 
         res.status(200).json({
@@ -168,6 +168,9 @@ export const rejectChange = async (req, res) => {
         const change = await DetectedChange.findById(detectedChangeId)
         if(!change) throw new Error("Change does not exist")
         if(change.status !== 'Pending') throw new Error("Change is not in pending state")
+
+        const plan = await Plans.findById(change.planId);
+        if(!plan) throw new Error("Plan does not exist")
 
         await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Rejected"})
 
