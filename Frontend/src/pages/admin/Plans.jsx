@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Filter, Plus, UploadCloud, RotateCw, ChevronDown, ChevronUp } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminSearchBar from '../../components/admin/AdminSearchBar';
 import AdminTable from '../../components/admin/AdminTable';
@@ -80,7 +79,7 @@ const Plans = () => {
   }, []);
 
   return (
-    <AdminLayout>
+    <>
       {/* Toast */}
       <AnimatePresence>
         {showToast && (
@@ -258,7 +257,7 @@ const Plans = () => {
           />
         )}
       </motion.section>
-    </AdminLayout>
+    </>
   );
 };
 

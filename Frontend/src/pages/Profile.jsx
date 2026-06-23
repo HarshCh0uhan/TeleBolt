@@ -1,4 +1,3 @@
-import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 
 const Profile = () => {
@@ -6,7 +5,6 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      <Navbar/>
       <div className="mx-auto max-w-5xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">

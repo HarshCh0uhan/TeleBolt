@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Check, ChevronRight, CircleDot, Sparkles } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import { Link, useNavigate } from "react-router-dom";
 import {createPlan} from '../../api/admin.api'
@@ -69,7 +68,7 @@ const PlanForm = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <AdminPageHeader
         eyebrow="Admin Dashboard"
         title="Plan form"
@@ -251,7 +250,7 @@ const PlanForm = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

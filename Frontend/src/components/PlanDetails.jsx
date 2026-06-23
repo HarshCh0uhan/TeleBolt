@@ -1,11 +1,12 @@
 import { Link, useParams } from "react-router-dom";
 import { getSinglePlan } from "../api/plans.api";
 import { useEffect, useState } from "react";
+import PriceHistoryChart from "./PriceHistoryChart";
 
 const PlanDetails = () => {
   const [plan, setPlan] = useState(null)
   const { planid } = useParams();
-  
+    
 
   const fetchPlan = async () => {
     try {
@@ -127,7 +128,7 @@ const PlanDetails = () => {
               </p>
 
               <p className="mt-3 text-lg font-semibold text-white">
-                {plan.sms}/day
+                {plan.sms ? `${plan.sms}/day` : plan.isUnlimitedSMS ? "Unlimited" : 'N/A'}
               </p>
             </div>
 
@@ -202,41 +203,26 @@ const PlanDetails = () => {
               </p>
             </div>
           </div>
-
-          {/* TODO:
-              Use backend yearlyCost
-              Use backend yearlyData
-              Show recharge multiplier calculation
-          */}
         </section>
 
         {/* Price History */}
         <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
-          <h2 className="text-2xl font-semibold text-white">
-            Price History
-          </h2>
+          <h2 className="text-2xl font-semibold text-white">Price History</h2>
+          <p className="mt-2 text-zinc-400">
+            Track how this plan's price has changed over time.
+          </p>
 
-          <div className="mt-6 flex h-64 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626]">
-            <div className="text-center">
-              <p className="font-medium text-zinc-400">
-                Price Trend Chart
-              </p>
-
-              <p className="mt-2 text-sm text-zinc-500">
-                Future sparkline / chart goes here
-              </p>
-            </div>
+          <div className="mt-6">
+            <PriceHistoryChart planId={plan?._id} />
           </div>
 
-          {/* TODO:
-              Fetch price history
-              Add sparkline chart
-              Add expandable history table
-          */}
+          {/* TODO: Fetch price history */}
+          {/* TODO: Add sparkline chart */}
+          {/* TODO: Add expandable history table */}
         </section>
 
         {/* Detected Changes */}
-        <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
+        {/* <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
           <h2 className="text-2xl font-semibold text-white">
             Detected Changes
           </h2>
@@ -260,11 +246,7 @@ const PlanDetails = () => {
               </div>
             </div>
           </div>
-
-          {/* TODO:
-              Load detected changes
-          */}
-        </section>
+        </section> */}
       </div>
     </div>
   );
