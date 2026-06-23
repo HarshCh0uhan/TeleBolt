@@ -13,7 +13,7 @@ export const AdminStatsProvider = ({children}) => {
             const pending = (data.detectedChanges || []).filter(c => c.status === 'Pending').length;
             setPendingCount(pending);
             } catch (err) {
-            console.error('Failed to fetch pending count', err);
+            setPendingCount(0);
         }
     }, [])
 

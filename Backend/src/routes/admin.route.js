@@ -14,5 +14,4 @@ adminRouter.delete('/plans/:id',userAuth, isAdmin, deletePlans);
 adminRouter.get('/detected',userAuth, isAdmin, detectedChanges);
 adminRouter.post('/approve/:id',userAuth, isAdmin, approveChange);
 adminRouter.post('/reject/:id',userAuth, isAdmin, rejectChange);
-// adminRouter.get('/price-historu/:id', userAuth, )
 adminRouter.post('/upload-csv', userAuth, isAdmin, upload, uploadCSV)

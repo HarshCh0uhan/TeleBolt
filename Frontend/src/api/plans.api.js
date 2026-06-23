@@ -6,3 +6,4 @@ export const getSinglePlan = (id) => api.get(`/plans/${id}`)
 export const comparePlans = (planIds) => api.get("/plans/compare", {
     params: {planIds: planIds.join(',')}
 })
+export const getPriceHistory = (id) => api.get(`/plans/price-history/${id}`)
