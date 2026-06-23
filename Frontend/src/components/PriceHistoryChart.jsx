@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
+import { getPriceHistory } from '../api/plans.api';
 
 /*
   TODO: You will fetch price history for a specific plan.
@@ -31,12 +32,10 @@ const PriceHistoryChart = ({ planId }) => {
       setLoading(true);
       setError(null);
       try {
-        // const { data } = await getPriceHistory(planId);
-        // setHistory(data.history || []);
-        setTimeout(() => {
-          setHistory(mockPriceHistory);
-          setLoading(false);
-        }, 800);
+        const { data } = await getPriceHistory(planId);
+        console.log(data);        
+        setHistory(data.history);
+        setLoading(false);
       } catch (err) {
         setError('Failed to load price history');
         setLoading(false);

@@ -1,4 +1,5 @@
 import {Plans} from "../models/plans.js"
+import { PriceHistory } from "../models/priceHistory.js";
 import { yearlyPlan } from "../utils/yearlyPlan.js";
 import mongoose from "mongoose"
 
@@ -95,5 +96,22 @@ export const comparePlans = async (req, res) => {
     } catch (err) {
         console.error("Error: ", err.message);
         res.status(400).json(err.message)
+    }
+}
+
+export const getPriceHistory = async (req, res) => {
+    try {
+        const planId = req.params.id;
+        if(!mongoose.Types.ObjectId.isValid(planId)) throw new Error("Invalid Plan ID");
+
+        const history = await PriceHistory.find({planId}).sort({createdAt: -1})
+
+        res.status(200).json({
+            success: true,
+            history
+        });
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message);
     }
 }
