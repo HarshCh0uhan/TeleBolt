@@ -22,6 +22,7 @@ import {
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
+import { useAdminStats } from '../../context/AdminStatsContext';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -33,6 +34,7 @@ const Dashboard = () => {
   });
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const {pendingCount} = useAdminStats()
 
   useEffect(() => {
     // TODO: fetch stats from backend
@@ -167,7 +169,7 @@ const Dashboard = () => {
               <AdminStatCard
                 key="pending"
                 label="Pending changes"
-                value={stats.pendingChanges}
+                value={pendingCount}
                 hint="Needs manual review"
                 icon={Clock3}
                 tone="warning"
