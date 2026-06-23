@@ -10,11 +10,13 @@ import {
 } from 'lucide-react';
 import { detectedChanges, approveChange, rejectChange } from '../../api/admin.api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAdminStats } from '../../context/AdminStatsContext';
 
 const DetectedChanges = () => {
   const [changes, setChanges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const {pendingCount, refreshPendingCount} = useAdminStats();
 
   const fetchChanges = async () => {
     try {
@@ -41,6 +43,7 @@ const DetectedChanges = () => {
           change._id === id ? { ...change, status: 'Approved' } : change
         )
       );
+      refreshPendingCount()
     } catch (err) {
       console.error('Approve failed', err);
     }
@@ -54,12 +57,13 @@ const DetectedChanges = () => {
           change._id === id ? { ...change, status: 'Rejected' } : change
         )
       );
+      refreshPendingCount()
     } catch (err) {
       console.error('Reject failed', err);
     }
   };
 
-  const pendingCount = changes.filter(c => c.status === 'Pending').length;
+  // const pendingCount = changes.filter(c => c.status === 'Pending').length;
   const approvedCount = changes.filter(c => c.status === 'Approved').length;
   const rejectedCount = changes.filter(c => c.status === 'Rejected').length;
 
