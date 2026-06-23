@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 
-import Navbar from "../components/Navbar";
 import FilterSidebar from "../components/FilterSidebar";
 import PlanCard from "../components/PlanCard";
-import PlanTracker from "../components/PlanTracker";
 import { getPlans } from "../api/plans.api";
 
 const Home = () => {
@@ -79,7 +77,6 @@ const Home = () => {
             scrollbar-thumb-[#58c28d]/40
             hover:scrollbar-thumb-[#58c28d]/60
           ">
-      <Navbar />
 
       <div className="mx-auto max-w-7xl px-4 py-6">
         {/* everything else stays exactly same */}
@@ -106,10 +103,6 @@ const Home = () => {
       </div>
 
       {/* <CompareBar /> */}
-
-      {showTracker && (
-        <PlanTracker />
-      )}
       </div>
     </div>
   );

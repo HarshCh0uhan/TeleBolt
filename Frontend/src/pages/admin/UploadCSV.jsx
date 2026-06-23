@@ -11,7 +11,6 @@ import {
   File,
   X,
 } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminStatCard from '../../components/admin/AdminStatCard';
 import CSVDragDrop from '../../components/admin/CSVDragDrop';
@@ -72,7 +71,7 @@ const UploadCSV = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -266,7 +265,7 @@ const UploadCSV = () => {
           </div>
         </div>
       </motion.div>
-    </AdminLayout>
+    </>
   );
 };
 
