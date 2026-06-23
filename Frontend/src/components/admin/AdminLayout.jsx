@@ -17,6 +17,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useAdminStats } from '../../context/AdminStatsContext';
 
 const navItems = [
   { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
@@ -38,6 +39,7 @@ const baseLink =
 const AdminLayout = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const {logoutUser, user} = useAuth()
+  const {pendingCount} = useAdminStats()
 
   const nav = useMemo(() => navItems, []);
   const drawerClass = drawerOpen
@@ -91,7 +93,7 @@ const AdminLayout = ({ children }) => {
                     <span className="flex-1">{item.label}</span>
                     {item.badge ? (
                       <span className="min-w-6 rounded-full bg-[#58c28d] px-2 py-0.5 text-center text-[11px] font-semibold text-[#181818]">
-                        {item.badge}
+                        {pendingCount}
                       </span>
                     ) : (
                       <ChevronRight className="h-4 w-4 text-zinc-500 transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -219,7 +221,7 @@ const AdminLayout = ({ children }) => {
                     <span className="flex-1">{item.label}</span>
                     {item.badge ? (
                       <span className="min-w-6 rounded-full bg-[#58c28d] px-2 py-0.5 text-center text-[11px] font-semibold text-[#181818]">
-                        {item.badge}
+                        {pendingCount}
                       </span>
                     ) : null}
                   </NavLink>
