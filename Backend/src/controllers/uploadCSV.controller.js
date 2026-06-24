@@ -26,7 +26,7 @@ const uploadCSV = async (req, res) => {
                 price: Number(row.price),
                 validityDays: Number(row.validityDays),
                 dailyData: row.dailyData ? Number(row.dailyData) : undefined,
-                totalData: row.totalData ? Number(row.totalData) : undefined,
+                totalData: row.totalData ? Number(row.totalData) : row.dailyData * row.validityDays,
                 sms: row.sms ? Number(row.sms) : undefined,
                 isUnlimitedCalls: row.isUnlimitedCalls === "true",
                 isUnlimitedSMS: row.isUnlimitedSMS === 'true',

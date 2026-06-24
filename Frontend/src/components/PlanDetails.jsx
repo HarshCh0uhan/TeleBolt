@@ -6,7 +6,7 @@ import PriceHistoryChart from "./PriceHistoryChart";
 const PlanDetails = () => {
   const [plan, setPlan] = useState(null)
   const { planid } = useParams();
-    
+  console.log(plan);    
 
   const fetchPlan = async () => {
     try {
@@ -215,10 +215,6 @@ const PlanDetails = () => {
           <div className="mt-6">
             <PriceHistoryChart planId={plan?._id} />
           </div>
-
-          {/* TODO: Fetch price history */}
-          {/* TODO: Add sparkline chart */}
-          {/* TODO: Add expandable history table */}
         </section>
 
         {/* Detected Changes */}
