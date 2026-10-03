@@ -23,15 +23,12 @@ import { Outlet } from 'react-router-dom';
 const navItems = [
   { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
   { label: 'Plans', to: '/admin/plans', icon: ListOrdered },
-  { label: 'Detected Changes', to: '/admin/detected-changes', icon: FileClock, badge: true },
+  { label: 'Detected Changes', to: '/admin/detected-changes', icon: FileClock },
+  { label: 'Pending Reviews', to: '/admin/pending-reviews', icon: History, badge: true },
+  { label: 'Contributions', to: '/admin/contributions', icon: Plus },
+  { label: 'Analytics', to: '/admin/analytics', icon: BarChart3 },
+  { label: 'Audit Logs', to: '/admin/audit-logs', icon: ShieldCheck },
   { label: 'Upload CSV', to: '/admin/upload-csv', icon: UploadCloud },
-];
-
-const futureItems = [
-  { label: 'Pending Reviews', icon: History },
-  { label: 'Contributions', icon: Plus },
-  { label: 'Analytics', icon: BarChart3 },
-  { label: 'Audit Logs', icon: ShieldCheck },
 ];
 
 const baseLink =
@@ -105,41 +102,41 @@ const AdminLayout = ({ children }) => {
             </nav>
           </div>
 
-          <div className="mt-6 rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f]/70 p-3">
+          <div className="mt-6 rounded-3xl border border-white/10 bg-[#1f1f1f] p-3">
             <div className="mb-2 px-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
-              Future modules
+              My account
             </div>
-            <div className="space-y-1">
-              {futureItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.label}
-                    className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-zinc-500"
-                  >
-                    <Icon className="h-4.5 w-4.5 shrink-0" />
-                    <span>{item.label}</span>
-                    <span className="ml-auto rounded-full border border-white/10 bg-[#262626] px-2 py-0.5 text-[10px] uppercase tracking-[0.24em] text-zinc-500">
-                      TODO
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <NavLink
+              to="/admin/profile"
+              className="group flex items-center gap-3 rounded-2xl px-2 py-2.5 text-sm text-zinc-300 transition-all duration-300 hover:bg-[#262626] hover:text-white"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[#58c28d]/20 bg-[#58c28d]/10 text-sm font-bold text-[#58c28d]">
+                {(user?.username || 'A').trim().charAt(0).toUpperCase()}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{user?.username || 'Admin'}</span>
+                <span className="block truncate text-[11px] text-zinc-500">{user?.email}</span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-300 group-hover:translate-x-0.5" />
+            </NavLink>
           </div>
 
           <div className="mt-auto space-y-3 pt-6">
-            <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 transition-all duration-300 hover:border-[#58c28d]/30 hover:-translate-y-0.5">
+            <NavLink
+              to="/admin/profile"
+              className="block rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 transition-all duration-300 hover:border-[#58c28d]/30 hover:-translate-y-0.5"
+            >
               <div className="flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-[#262626] text-[#58c28d]">
                   <ShieldCheck className="h-4.5 w-4.5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-white">{user?.email || 'admin@example.com'}</div>
-                  <div className="text-xs text-zinc-500">Single-admin workspace</div>
+                  <div className="truncate text-sm font-medium text-white">{user?.username || 'Admin'}</div>
+                  <div className="truncate text-xs text-zinc-500">{user?.email || 'admin@example.com'}</div>
                 </div>
+                <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
               </div>
-            </div>
+            </NavLink>
 
             <button
               type="button"

@@ -57,6 +57,9 @@ const Navbar = () => {
                 <div className="h-8 w-32 rounded-lg bg-white/10 animate-pulse" />
             ) : user ? (
               <>
+                <NavLink to="/suggest-plan" className={navLinkClass}>
+                  Suggest a Plan
+                </NavLink>
                 <NavLink to="/profile" className={navLinkClass}>
                   Profile
                 </NavLink>
@@ -131,6 +134,9 @@ const Navbar = () => {
 
               {user ? (
                 <>
+                  <NavLink to="/suggest-plan" className={navLinkClass}>
+                    Suggest a Plan
+                  </NavLink>
                   <NavLink to="/profile" className={navLinkClass}>
                     Profile
                   </NavLink>

@@ -3,6 +3,10 @@ import {Plans} from "../models/plans.js"
 import { validatePlans } from "../utils/validations.js";
 import { DetectedChange } from "../models/detectedChange.js";
 import { PriceHistory } from "../models/priceHistory.js";
+import { PlanSubmission } from "../models/planSubmission.js";
+import { AuditLog } from "../models/auditLog.js";
+import { User } from "../models/user.js";
+import { logAudit } from "../services/audit.service.js";
 
 export const getAllPlans = async (req, res) => {
      try {
@@ -43,6 +47,8 @@ export const createPlans = async (req, res) => {
             isActive
         })
 
+        await logAudit({actor: req.user, action: "create_plan", entity: "Plan", entityId: plan._id, details: `${operator} ₹${price} (${category})`})
+
         res.status(201).json({
             success: true,
             message: "Plan Created Successfully",
@@ -68,6 +74,8 @@ export const updatePlans = async (req, res) => {
         const update = await Plans.findByIdAndUpdate(planId, updateData, {returnDocument: 'after'})
         if(!update) throw new Error("Plan does not exist")
 
+        await logAudit({actor: req.user, action: "update_plan", entity: "Plan", entityId: planId, details: `${update.operator} ₹${update.price}`})
+
         res.status(200).json({
             success: true,
             message: "Plan Update Successful",
@@ -89,6 +97,8 @@ export const deletePlans = async (req, res) => {
         
         const deletePlan = await Plans.findByIdAndDelete(planId);
         if(!deletePlan) throw new Error("Plan does not exist")
+
+        await logAudit({actor: req.user, action: "delete_plan", entity: "Plan", entityId: planId, details: `${deletePlan.operator} ₹${deletePlan.price}`})
 
         res.status(200).json({
             success: true,
@@ -146,7 +156,9 @@ export const approveChange = async(req, res) => {
         else throw new Error("Invalid Old Value")
 
         await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Approved"}, {returnDocument: 'after'})
-        
+
+        await logAudit({actor: req.user, action: "approve_change", entity: "DetectedChange", entityId: detectedChangeId, details: `${change.field}: ${change.oldValue} → ${change.newValue}`})
+
         res.status(200).json({
             success: true,
             message: "Changes Approve Successfuly",
@@ -174,12 +186,182 @@ export const rejectChange = async (req, res) => {
 
         await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Rejected"})
 
+        await logAudit({actor: req.user, action: "reject_change", entity: "DetectedChange", entityId: detectedChangeId, details: `${change.field}: ${change.oldValue} → ${change.newValue}`})
+
         res.status(200).json({
             success: true,
             message: "Change Rejected"
         })
     } catch (err) {
         console.error("Error: ", err.message)
+        res.status(400).json(err.message)
+    }
+}
+
+export const getStats = async (req, res) => {
+    try {
+        const [
+            totalPlans, activePlans,
+            operatorBreakdown, categoryBreakdown,
+            pendingDetected, approvedDetected, rejectedDetected,
+            priceHistoryCount,
+            pendingSubmissions, approvedSubmissions, rejectedSubmissions,
+            usersCount,
+            recentAudit
+        ] = await Promise.all([
+            Plans.countDocuments(),
+            Plans.countDocuments({ isActive: true }),
+            Plans.aggregate([{ $group: { _id: "$operator", count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+            Plans.aggregate([{ $group: { _id: "$category", count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+            DetectedChange.countDocuments({ status: "Pending" }),
+            DetectedChange.countDocuments({ status: "Approved" }),
+            DetectedChange.countDocuments({ status: "Rejected" }),
+            PriceHistory.countDocuments(),
+            PlanSubmission.countDocuments({ status: "Pending" }),
+            PlanSubmission.countDocuments({ status: "Approved" }),
+            PlanSubmission.countDocuments({ status: "Rejected" }),
+            User.countDocuments(),
+            AuditLog.find().sort({ createdAt: -1 }).limit(8).populate("actor", "username email").lean()
+        ]);
+
+        res.status(200).json({
+            success: true,
+            stats: {
+                totalPlans,
+                activePlans,
+                inactivePlans: totalPlans - activePlans,
+                operators: operatorBreakdown,
+                categories: categoryBreakdown,
+                detectedChanges: { pending: pendingDetected, approved: approvedDetected, rejected: rejectedDetected },
+                priceHistoryCount,
+                submissions: { pending: pendingSubmissions, approved: approvedSubmissions, rejected: rejectedSubmissions },
+                usersCount,
+                recentAudit
+            }
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const getAuditLogs = async (req, res) => {
+    try {
+        const { action, entity, actor, limit = "50", skip = "0" } = req.query;
+
+        const filter = {};
+        if (action) filter.action = action;
+        if (entity) filter.entity = entity;
+        if (actor) filter.actor = actor;
+
+        const limitNum = Math.min(Number(limit) || 50, 100);
+        const skipNum = Math.max(Number(skip) || 0, 0);
+
+        const [logs, total] = await Promise.all([
+            AuditLog.find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skipNum)
+                .limit(limitNum)
+                .populate("actor", "username email")
+                .lean(),
+            AuditLog.countDocuments(filter)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            logs,
+            total,
+            hasMore: skipNum + logs.length < total
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const getSubmissions = async (req, res) => {
+    try {
+        const { status } = req.query;
+        const filter = status ? { status } : {};
+
+        const submissions = await PlanSubmission.find(filter)
+            .sort({ createdAt: -1 })
+            .populate("submittedBy", "username email")
+            .populate("reviewedBy", "username email")
+            .lean();
+
+        res.status(200).json({
+            success: true,
+            submissions
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const approveSubmission = async (req, res) => {
+    try {
+        const submissionId = req.params.id;
+        if (!mongoose.Types.ObjectId.isValid(submissionId)) throw new Error("Invalid Id")
+
+        const submission = await PlanSubmission.findById(submissionId)
+        if (!submission) throw new Error("Submission does not exist")
+        if (submission.status !== "Pending") throw new Error("Submission is not pending")
+
+        const plan = await Plans.create({
+            operator: submission.operator,
+            category: submission.category,
+            price: submission.price,
+            validityDays: submission.validityDays,
+            dailyData: submission.dailyData,
+            totalData: submission.totalData,
+            sms: submission.sms,
+            isUnlimitedCalls: submission.isUnlimitedCalls,
+            isUnlimitedSMS: submission.isUnlimitedSMS,
+            ottApps: submission.ottApps,
+            isActive: true
+        })
+
+        submission.status = "Approved";
+        submission.reviewedBy = req.user._id;
+        await submission.save();
+
+        await logAudit({actor: req.user, action: "approve_submission", entity: "PlanSubmission", entityId: submission._id, details: `${submission.operator} ₹${submission.price} → plan created`})
+
+        res.status(200).json({
+            success: true,
+            message: "Submission approved and plan created",
+            plan
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const rejectSubmission = async (req, res) => {
+    try {
+        const submissionId = req.params.id;
+        if (!mongoose.Types.ObjectId.isValid(submissionId)) throw new Error("Invalid Id")
+
+        const submission = await PlanSubmission.findById(submissionId)
+        if (!submission) throw new Error("Submission does not exist")
+        if (submission.status !== "Pending") throw new Error("Submission is not pending")
+
+        submission.status = "Rejected";
+        submission.reviewedBy = req.user._id;
+        submission.reviewNote = typeof req.body?.reviewNote === "string" ? req.body.reviewNote : "";
+        await submission.save();
+
+        await logAudit({actor: req.user, action: "reject_submission", entity: "PlanSubmission", entityId: submission._id, details: `${submission.operator} ₹${submission.price}`})
+
+        res.status(200).json({
+            success: true,
+            message: "Submission rejected"
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
         res.status(400).json(err.message)
     }
 }
