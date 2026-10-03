@@ -1,23 +1,24 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { detectedChanges } from "../api/admin.api";
-
+import { getAdminStats } from "../api/admin.api";
 
 const AdminStatsContext = createContext();
 
 export const AdminStatsProvider = ({children}) => {
-    const [pendingCount, setPendingCount] = useState()
+    const [pendingCount, setPendingCount] = useState(0)
 
     const refreshPendingCount = useCallback(async () => {
         try {
-            const { data } = await detectedChanges();
-            const pending = (data.detectedChanges || []).filter(c => c.status === 'Pending').length;
+            const { data } = await getAdminStats();
+            const stats = data.stats || {};
+            const pending = (stats.detectedChanges?.pending || 0) + (stats.submissions?.pending || 0);
             setPendingCount(pending);
-            } catch (err) {
+        } catch {
+            // Non-admins never reach these pages; a failed refresh just shows 0.
             setPendingCount(0);
         }
     }, [])
 
-    useEffect(() => {refreshPendingCount()}, [refreshPendingCount]);
+    useEffect(() => { refreshPendingCount() }, [refreshPendingCount]);
 
     return (
         <AdminStatsContext.Provider value={{pendingCount, refreshPendingCount}}>

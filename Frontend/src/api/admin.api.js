@@ -9,3 +9,8 @@ export const detectedChanges = () => api.get('/admin/detected');
 export const approveChange = (id) => api.post(`/admin/approve/${id}`);
 export const rejectChange = (id) => api.post(`/admin/reject/${id}`);
 export const uploadCSV = (formData) => api.post('/admin/upload-csv', formData)
+export const getAdminStats = () => api.get('/admin/stats')
+export const getAuditLogs = (params) => api.get('/admin/audit-logs', { params })
+export const getSubmissions = (params) => api.get('/admin/submissions', { params })
+export const approveSubmission = (id) => api.post(`/admin/submissions/${id}/approve`)
+export const rejectSubmission = (id, data) => api.post(`/admin/submissions/${id}/reject`, data)

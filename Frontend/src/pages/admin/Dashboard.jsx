@@ -6,9 +6,6 @@ import {
   BadgeIndianRupee,
   Layers3,
   Clock3,
-  BellRing,
-  ArrowRight,
-  LayoutDashboard,
   Plus,
   UploadCloud,
   FileClock,
@@ -17,101 +14,79 @@ import {
   HardDrive,
   Sparkles,
   RotateCw,
+  Send,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { useAdminStats } from '../../context/AdminStatsContext';
+import { getAdminStats } from '../../api/admin.api';
+
+const ACTION_META = {
+  create_plan: { label: 'created a plan', tone: 'success' },
+  update_plan: { label: 'updated a plan', tone: 'default' },
+  delete_plan: { label: 'deleted a plan', tone: 'danger' },
+  approve_change: { label: 'approved a detected change', tone: 'success' },
+  reject_change: { label: 'rejected a detected change', tone: 'danger' },
+  import_plans: { label: 'imported plans via CSV', tone: 'default' },
+  approve_submission: { label: 'approved a plan submission', tone: 'success' },
+  reject_submission: { label: 'rejected a plan submission', tone: 'danger' },
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState({
-    totalPlans: '--',
-    activePlans: '--',
-    pendingChanges: '--',
-    operators: '--',
-  });
-  const [activity, setActivity] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const {pendingCount} = useAdminStats()
+  const { pendingCount, refreshPendingCount } = useAdminStats();
+  const [stats, setStats] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // TODO: fetch stats from backend
-    // Example: const { data } = await getAdminStats();
-    setTimeout(() => {
-      setStats({
-        totalPlans: 24,
-        activePlans: 21,
-        pendingChanges: 3,
-        operators: 3,
-      });
-      setActivity([
-        {
-          title: 'Plan "Jio ₹299" updated',
-          meta: '4 minutes ago',
-          icon: BellRing,
-          tone: 'success',
-        },
-        {
-          title: 'CSV upload completed',
-          meta: 'Today at 10:30 AM',
-          icon: UploadCloud,
-          tone: 'default',
-        },
-        {
-          title: 'Price change approved (Airtel ₹349)',
-          meta: 'Yesterday',
-          icon: BadgeIndianRupee,
-          tone: 'success',
-        },
-        {
-          title: '3 changes pending review',
-          meta: 'Detected by cron',
-          icon: FileClock,
-          tone: 'warning',
-        },
-      ]);
-      setLoading(false);
-    }, 800);
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const { data } = await getAdminStats();
+        if (cancelled) return;
+        setStats(data.stats);
+        setError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setError(typeof err?.response?.data === 'string' ? err.response.data : 'Could not load stats.');
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
   }, []);
 
+  const refresh = async () => {
+    try {
+      const { data } = await getAdminStats();
+      setStats(data.stats);
+      setError(null);
+    } catch {
+      // keep last known values
+    }
+    await refreshPendingCount();
+  };
+
+  const s = stats || {};
+  const operatorMax = Math.max(...(s.operators || []).map((op) => op.count), 1);
+
   const quickActions = [
-    {
-      label: 'Add new plan',
-      to: '/admin/plans/create',
-      icon: Plus,
-      color: 'bg-[#58c28d]/10 text-[#58c28d]',
-      description: 'Manually enter a new telecom plan',
-    },
-    {
-      label: 'Import CSV',
-      to: '/admin/upload-csv',
-      icon: UploadCloud,
-      color: 'bg-blue-500/10 text-blue-400',
-      description: 'Bulk upload plans via CSV file',
-    },
-    {
-      label: 'Review changes',
-      to: '/admin/detected-changes',
-      icon: FileClock,
-      color: 'bg-yellow-500/10 text-yellow-400',
-      description: 'Approve or reject detected updates',
-    },
-    {
-      label: 'View plans',
-      to: '/admin/plans',
-      icon: Layers3,
-      color: 'bg-purple-500/10 text-purple-400',
-      description: 'Manage all plans in catalog',
-    },
+    { label: 'Add new plan', to: '/admin/plans/create', icon: Plus, color: 'bg-[#58c28d]/10 text-[#58c28d]', description: 'Manually enter a new telecom plan' },
+    { label: 'Import CSV', to: '/admin/upload-csv', icon: UploadCloud, color: 'bg-blue-500/10 text-blue-400', description: 'Bulk upload plans via CSV file' },
+    { label: 'Detected changes', to: '/admin/detected-changes', icon: FileClock, color: 'bg-yellow-500/10 text-yellow-400', description: 'Approve or reject price and validity updates' },
+    { label: 'Pending reviews', to: '/admin/pending-reviews', icon: ShieldCheck, color: 'bg-purple-500/10 text-purple-400', description: 'Community plan submissions awaiting review' },
+    { label: 'View plans', to: '/admin/plans', icon: Layers3, color: 'bg-[#58c28d]/10 text-[#58c28d]', description: 'Manage all plans in the catalog' },
+    { label: 'Audit logs', to: '/admin/audit-logs', icon: Activity, color: 'bg-zinc-500/10 text-zinc-400', description: 'See every admin action with timestamps' },
   ];
 
   const container = {
     hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
+    show: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
   const item = {
     hidden: { opacity: 0, y: 20 },
@@ -124,18 +99,24 @@ const Dashboard = () => {
         <AdminPageHeader
           eyebrow="Admin Dashboard"
           title={`Welcome back, ${user?.username || 'Admin'}`}
-          description="Monitor plans, review detected changes, and keep TeleBolt up to date."
+          description="Monitor plans, review changes and submissions, and keep TeleBolt up to date."
           actions={
-            <NavLink
-              to="/admin/plans"
-              className="inline-flex items-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2.5 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0]"
+            <button
+              onClick={refresh}
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
             >
-              <Layers3 className="h-4 w-4" />
-              Manage plans
-            </NavLink>
+              <RotateCw className="h-4 w-4" />
+              Refresh
+            </button>
           }
         />
       </motion.div>
+
+      {error && (
+        <div className="mb-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {error}
+        </div>
+      )}
 
       {/* Quick stats */}
       <motion.section
@@ -144,53 +125,20 @@ const Dashboard = () => {
         animate="show"
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
-        {loading
+        {!stats
           ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-32 rounded-3xl bg-[#262626] animate-pulse" />
             ))
           : [
-              <AdminStatCard
-                key="total"
-                label="Total plans"
-                value={stats.totalPlans}
-                hint="All operators combined"
-                icon={Layers3}
-                tone="default"
-              />,
-              <AdminStatCard
-                key="active"
-                label="Active plans"
-                value={stats.activePlans}
-                hint={`${Math.round((stats.activePlans / stats.totalPlans) * 100) || 0}% of catalog`}
-                icon={BadgeIndianRupee}
-                tone="success"
-              />,
-              <AdminStatCard
-                key="pending"
-                label="Pending changes"
-                value={pendingCount}
-                hint="Needs manual review"
-                icon={Clock3}
-                tone="warning"
-              />,
-              <AdminStatCard
-                key="operators"
-                label="Operators"
-                value={stats.operators}
-                hint="Jio • Airtel • Vi"
-                icon={LayoutDashboard}
-                tone="default"
-              />,
+              <AdminStatCard key="total" label="Total plans" value={s.totalPlans ?? 0} hint="All operators combined" icon={Layers3} tone="default" />,
+              <AdminStatCard key="active" label="Active plans" value={s.activePlans ?? 0} hint={`${s.inactivePlans ?? 0} inactive`} icon={BadgeIndianRupee} tone="success" />,
+              <AdminStatCard key="pending" label="Pending reviews" value={pendingCount} hint="Detected changes + submissions" icon={Clock3} tone="warning" />,
+              <AdminStatCard key="submissions" label="Submissions" value={(s.submissions?.pending || 0) + (s.submissions?.approved || 0) + (s.submissions?.rejected || 0)} hint={`${s.submissions?.approved || 0} approved so far`} icon={Send} tone="default" />,
             ]}
       </motion.section>
 
       {/* Quick actions + System status */}
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="mt-5 grid gap-4 lg:grid-cols-2"
-      >
+      <motion.div variants={container} initial="hidden" animate="show" className="mt-5 grid gap-4 lg:grid-cols-2">
         {/* Quick actions */}
         <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
           <div className="flex items-center justify-between">
@@ -234,7 +182,9 @@ const Dashboard = () => {
                 <Database className="h-4 w-4 text-[#58c28d]" />
                 <span className="text-sm text-zinc-300">Database</span>
               </div>
-              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">Connected</span>
+              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
+                {stats ? 'Connected' : 'Connecting…'}
+              </span>
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
               <div className="flex items-center gap-3">
@@ -246,89 +196,125 @@ const Dashboard = () => {
             <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
               <div className="flex items-center gap-3">
                 <HardDrive className="h-4 w-4 text-[#58c28d]" />
-                <span className="text-sm text-zinc-300">Backup</span>
+                <span className="text-sm text-zinc-300">Price history entries</span>
               </div>
-              <span className="rounded-full bg-yellow-400/10 px-2.5 py-1 text-xs text-yellow-400">
-                Manual only
+              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
+                {stats ? s.priceHistoryCount : '—'}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
               <div className="flex items-center gap-3">
                 <Activity className="h-4 w-4 text-[#58c28d]" />
-                <span className="text-sm text-zinc-300">Email service</span>
+                <span className="text-sm text-zinc-300">Registered users</span>
               </div>
-              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">Online</span>
+              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
+                {stats ? s.usersCount : '—'}
+              </span>
             </div>
           </div>
         </motion.div>
       </motion.div>
 
-      {/* Recent activity + Chart placeholder */}
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.8fr]"
-      >
+      {/* Recent activity + operator distribution */}
+      <motion.div variants={container} initial="hidden" animate="show" className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
         {/* Recent activity */}
         <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Recent activity</div>
-              <h3 className="mt-2 text-lg font-medium text-white">Timeline</h3>
+              <h3 className="mt-2 text-lg font-medium text-white">Audit timeline</h3>
             </div>
             <Activity className="h-5 w-5 text-[#58c28d]" />
           </div>
           <div className="mt-5 space-y-3">
-            {loading
+            {!stats
               ? Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="h-16 rounded-2xl bg-[#262626] animate-pulse" />
                 ))
-              : activity.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="group flex items-start gap-4 rounded-2xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/30 hover:-translate-y-0.5"
-                  >
+              : (s.recentAudit || []).map((log) => {
+                  const meta = ACTION_META[log.action] || { label: log.action, tone: 'default' };
+                  return (
                     <div
-                      className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                        item.tone === 'success'
-                          ? 'bg-[#58c28d]'
-                          : item.tone === 'warning'
-                          ? 'bg-yellow-400'
-                          : 'bg-zinc-400'
-                      } shadow-[0_0_0_4px_rgba(88,194,141,0.08)]`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-medium text-white">{item.title}</div>
-                        <item.icon className="h-4 w-4 text-zinc-500" />
+                      key={log._id}
+                      className="flex items-start gap-4 rounded-2xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/30"
+                    >
+                      <div
+                        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+                          meta.tone === 'success'
+                            ? 'bg-[#58c28d]'
+                            : meta.tone === 'danger'
+                            ? 'bg-red-400'
+                            : 'bg-zinc-400'
+                        }`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-white">
+                          {log.actor?.email || log.actorEmail} <span className="font-normal text-zinc-400">{meta.label}</span>
+                        </div>
+                        <div className="mt-1 truncate text-xs text-zinc-500">{log.details}</div>
+                        <div className="mt-0.5 text-xs text-zinc-600">
+                          {new Date(log.createdAt).toLocaleString('en-IN')}
+                        </div>
                       </div>
-                      <div className="mt-1 text-sm text-zinc-400">{item.meta}</div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+            {(s.recentAudit || []).length === 0 && stats && (
+              <p className="py-6 text-center text-sm text-zinc-500">No admin activity yet.</p>
+            )}
           </div>
         </motion.div>
 
-        {/* Chart placeholder */}
+        {/* Operator distribution */}
         <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Analytics</div>
-              <h3 className="mt-2 text-lg font-medium text-white">Plan trends</h3>
+              <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Catalog</div>
+              <h3 className="mt-2 text-lg font-medium text-white">Plans by operator</h3>
             </div>
             <Sparkles className="h-5 w-5 text-[#58c28d]" />
           </div>
-          <div className="mt-5 flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626]">
-            <Activity className="h-10 w-10 text-zinc-600" />
-            <p className="mt-4 text-sm font-medium text-zinc-500">Price changes over time</p>
-            <p className="mt-2 text-xs text-zinc-600">Charts will appear here</p>
-            <button
-              disabled
-              className="mt-4 cursor-not-allowed rounded-xl border border-white/10 bg-[#1f1f1f] px-4 py-2 text-xs text-zinc-500"
-            >
-              Coming soon
-            </button>
+          <div className="mt-6 space-y-4">
+            {!stats
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-8 rounded-xl bg-[#262626] animate-pulse" />
+                ))
+              : (s.operators || []).map((op) => (
+                  <div key={op._id}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-zinc-300">{op._id}</span>
+                      <span className="text-zinc-500">{op.count} plans</span>
+                    </div>
+                    <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#262626]">
+                      <div
+                        className="h-full rounded-full bg-[#58c28d]/70 transition-all duration-700"
+                        style={{ width: `${(op.count / operatorMax) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+            {(s.operators || []).length === 0 && stats && (
+              <p className="py-6 text-center text-sm text-zinc-500">No plans in the catalog yet.</p>
+            )}
+          </div>
+
+          {/* Detected changes mini summary */}
+          <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
+            <div className="rounded-2xl bg-[#262626] p-3 text-center">
+              <Clock3 className="mx-auto h-4 w-4 text-yellow-400" />
+              <p className="mt-2 text-lg font-semibold text-white">{s.detectedChanges?.pending ?? '—'}</p>
+              <p className="text-[11px] text-zinc-500">Pending</p>
+            </div>
+            <div className="rounded-2xl bg-[#262626] p-3 text-center">
+              <CheckCircle2 className="mx-auto h-4 w-4 text-[#58c28d]" />
+              <p className="mt-2 text-lg font-semibold text-white">{s.detectedChanges?.approved ?? '—'}</p>
+              <p className="text-[11px] text-zinc-500">Approved</p>
+            </div>
+            <div className="rounded-2xl bg-[#262626] p-3 text-center">
+              <XCircle className="mx-auto h-4 w-4 text-red-400" />
+              <p className="mt-2 text-lg font-semibold text-white">{s.detectedChanges?.rejected ?? '—'}</p>
+              <p className="text-[11px] text-zinc-500">Rejected</p>
+            </div>
           </div>
         </motion.div>
       </motion.div>
