@@ -58,33 +58,24 @@ export const CompareProvider = ({ children }) => {
   const isFull = selectedPlans.length >= MAX_COMPARE;
   const canCompare = selectedPlans.length >= MIN_COMPARE;
 
-  // Returns true when the plan was added, false when the selection was full.
-  const addPlan = useCallback((plan) => {
-    if (!plan?._id) return false;
+  // Returns true when the plan ends up selected, false when the list is already full.
+  const addPlan = useCallback(
+    (plan) => {
+      if (!plan?._id) return false;
 
-    let added = false;
+      if (selectedPlans.some((item) => item._id === plan._id)) return true;
 
-    setSelectedPlans((prev) => {
-      if (prev.some((item) => item._id === plan._id)) {
-        added = true;
-        return prev;
+      if (selectedPlans.length >= MAX_COMPARE) {
+        setNotice(`You can compare up to ${MAX_COMPARE} plans. Remove one to add another.`);
+        return false;
       }
 
-      if (prev.length >= MAX_COMPARE) {
-        added = false;
-        return prev;
-      }
-
-      added = true;
-      return [...prev, plan];
-    });
-
-    if (!added) {
-      setNotice(`You can compare up to ${MAX_COMPARE} plans. Remove one to add another.`);
-    }
-
-    return added;
-  }, []);
+      // Decide from the current selection above, and keep the updater itself pure.
+      setSelectedPlans((prev) => (prev.length >= MAX_COMPARE ? prev : [...prev, plan]));
+      return true;
+    },
+    [selectedPlans]
+  );
 
   const removePlan = useCallback((planId) => {
     setSelectedPlans((prev) => prev.filter((plan) => plan._id !== planId));
