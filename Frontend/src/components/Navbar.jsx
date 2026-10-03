@@ -119,7 +119,14 @@ const Navbar = () => {
               </NavLink>
 
               <NavLink to="/compare" className={navLinkClass}>
-                Compare
+                <span className="flex items-center justify-between">
+                  <span>Compare</span>
+                  {selectedCount > 0 && (
+                    <span className="min-w-5 rounded-full bg-[#58c28d] px-1.5 py-0.5 text-center text-[11px] font-semibold text-[#181818]">
+                      {selectedCount}
+                    </span>
+                  )}
+                </span>
               </NavLink>
 
               {user ? (

@@ -2,6 +2,9 @@ import { Link, useParams } from "react-router-dom";
 import { getSinglePlan } from "../api/plans.api";
 import { useEffect, useState } from "react";
 import PriceHistoryChart from "./PriceHistoryChart";
+import { useCompare, MAX_COMPARE } from "../context/CompareContext";
+import CompareBar from "./CompareBar";
+import { Check, Plus } from "lucide-react";
 
 const PlanDetails = () => {
   const [plan, setPlan] = useState(null)
