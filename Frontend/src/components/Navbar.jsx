@@ -42,6 +42,10 @@ const Navbar = () => {
               Plans
             </NavLink> */}
 
+            <NavLink to="/rankings" className={navLinkClass}>
+              Rankings
+            </NavLink>
+
             <NavLink to="/compare" className={navLinkClass}>
               <span className="flex items-center gap-2">
                 Compare
@@ -119,6 +123,10 @@ const Navbar = () => {
             <div className="flex flex-col gap-4">
               <NavLink to="/plans" className={navLinkClass}>
                 Plans
+              </NavLink>
+
+              <NavLink to="/rankings" className={navLinkClass}>
+                Rankings
               </NavLink>
 
               <NavLink to="/compare" className={navLinkClass}>
