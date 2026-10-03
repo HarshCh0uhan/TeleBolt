@@ -76,7 +76,10 @@ export const comparePlans = async (req, res) => {
     try {
         if(!req.query.planIds) throw new Error("No Plan IDs provided")
 
-        const planIds = req.query.planIds.split(',');
+        const planIds = req.query.planIds.split(',').map((id) => id.trim()).filter(Boolean);
+
+        if(planIds.length < 2) throw new Error("Select at least 2 plans to compare")
+        if(planIds.length > 3) throw new Error("You can compare at most 3 plans")
         
         for(const planId of planIds){
             if(!mongoose.Types.ObjectId.isValid(planId))
@@ -86,7 +89,11 @@ export const comparePlans = async (req, res) => {
         const plansData = await Plans.find({ _id: {$in: planIds}})
         if(plansData.length === 0) throw new Error("No Plans Exist");
 
-        const plansWithYearly = plansData.map((plan) => yearlyPlan(plan));
+        // Mongo does not preserve $in order – keep the order the client selected.
+        const requestedOrder = new Map(planIds.map((id, index) => [id, index]));
+        const plansWithYearly = plansData
+            .sort((a, b) => requestedOrder.get(a._id.toString()) - requestedOrder.get(b._id.toString()))
+            .map((plan) => yearlyPlan(plan));
         
         res.status(200).json({
             success: true,
