@@ -85,6 +85,12 @@ export const CompareProvider = ({ children }) => {
     setSelectedPlans([]);
   }, []);
 
+  const setSelection = useCallback((plans) => {
+    if (!Array.isArray(plans)) return;
+    const valid = plans.filter((p) => p && p._id).slice(0, MAX_COMPARE);
+    setSelectedPlans(valid);
+  }, []);
+
   // Single entry point used by the plan cards.
   const togglePlan = useCallback(
     (plan) => {
@@ -114,6 +120,7 @@ export const CompareProvider = ({ children }) => {
     removePlan,
     togglePlan,
     clearSelection,
+    setSelection,
     notice,
     setNotice,
   };
