@@ -24,7 +24,7 @@ const DetectedChanges = () => {
       setChanges(data.detectedChanges || []);
       setError(null);
     } catch (err) {
-      setError(err.response?.data || 'Failed to load changes');
+      setError(typeof err.response?.data === 'string' ? err.response.data : 'Failed to load changes');
     } finally {
       setLoading(false);
     }

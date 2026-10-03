@@ -31,14 +31,6 @@ const Login = () => {
     }
   };
 
-  // useEffect(() => {
-  //   if (!loading && user) {
-  //       navigate(user.role === 'admin' ? '/admin' : '/')
-  //   }
-  // }, [user, loading])
-
-
-  if (loading) return null
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">

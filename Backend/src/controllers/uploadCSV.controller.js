@@ -2,10 +2,35 @@ import fs from "fs"
 import csv from "csv-parser"
 import { Plans } from "../models/plans.js";
 
+// Common CSV spellings mapped onto the values allowed by the Plans schema.
+const OTT_ALIASES = {
+    hotstar: "JioHotstar",
+    jiohotstar: "JioHotstar",
+    disneyhotstar: "JioHotstar",
+    disney: "JioHotstar",
+    prime: "Prime",
+    amazonprime: "Prime",
+    netflix: "Netflix",
+    sonyliv: "SonyLiv",
+    sony: "SonyLiv",
+    zee5: "Zee5",
+    zee: "Zee5",
+    other: "Other",
+};
+
+const normalizeOtt = (ottApps) => {
+    if (!ottApps) return [];
+    return ottApps
+        .split(',')
+        .map((app) => app.trim())
+        .filter(Boolean)
+        .map((app) => OTT_ALIASES[app.toLowerCase()] || app);
+};
+
 const uploadCSV = async (req, res) => {
     try {
         if(!req.file) throw new Error("No file Uploaded")
-        
+
         const result = []
 
         await new Promise((resolve, reject) => {
@@ -30,13 +55,11 @@ const uploadCSV = async (req, res) => {
                 sms: row.sms ? Number(row.sms) : undefined,
                 isUnlimitedCalls: row.isUnlimitedCalls === "true",
                 isUnlimitedSMS: row.isUnlimitedSMS === 'true',
-                ottApps: row.ottApps ? row.ottApps.split(',') : [],
+                ottApps: normalizeOtt(row.ottApps),
                 isActive: row.isActive === 'true'
             })
             created++;
         }
-
-        fs.unlinkSync(req.file.path)
 
         res.status(201).json({
             success: true,
@@ -45,6 +68,13 @@ const uploadCSV = async (req, res) => {
     } catch (err) {
         console.error("Error: ", err.message);
         res.status(400).json(err.message)
+    } finally {
+        // Remove the uploaded temp file on success and on failure.
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+            try { fs.unlinkSync(req.file.path) } catch (cleanupErr) {
+                console.error("Cleanup error: ", cleanupErr.message);
+            }
+        }
     }
 }
 
