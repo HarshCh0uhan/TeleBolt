@@ -1,6 +1,8 @@
 import {Plans} from "../models/plans.js"
 import { PriceHistory } from "../models/priceHistory.js";
+import { PlanSubmission } from "../models/planSubmission.js";
 import { yearlyPlan } from "../utils/yearlyPlan.js";
+import { validatePlans } from "../utils/validations.js";
 import mongoose from "mongoose"
 
 export const getPlans = async (req, res) => {
@@ -121,5 +123,41 @@ export const getPriceHistory = async (req, res) => {
     } catch (err) {
         console.error("Error: ", err.message);
         res.status(400).json(err.message);
+    }
+}
+
+export const submitPlan = async (req, res) => {
+    try {
+        const {operator, category, price, validityDays, dailyData, totalData, sms,
+            isUnlimitedCalls, isUnlimitedSMS, ottApps, note} = req.body;
+
+        validatePlans({ operator, category, price, validityDays });
+
+        const priceNum = Number(price);
+        const validityNum = Number(validityDays);
+
+        const submission = await PlanSubmission.create({
+            operator,
+            category,
+            price: priceNum,
+            validityDays: validityNum,
+            dailyData: dailyData ? Number(dailyData) : undefined,
+            totalData: totalData ? Number(totalData) : (dailyData && validityNum ? Number(dailyData) * validityNum : undefined),
+            sms: sms ? Number(sms) : undefined,
+            isUnlimitedCalls: isUnlimitedCalls !== false,
+            isUnlimitedSMS: isUnlimitedSMS === true,
+            ottApps: Array.isArray(ottApps) ? ottApps : [],
+            note: typeof note === "string" ? note.slice(0, 500) : "",
+            submittedBy: req.user._id
+        })
+
+        res.status(201).json({
+            success: true,
+            message: "Plan submitted for review",
+            submission
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
     }
 }

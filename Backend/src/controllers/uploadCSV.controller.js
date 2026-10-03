@@ -1,6 +1,7 @@
 import fs from "fs"
 import csv from "csv-parser"
 import { Plans } from "../models/plans.js";
+import { logAudit } from "../services/audit.service.js";
 
 // Common CSV spellings mapped onto the values allowed by the Plans schema.
 const OTT_ALIASES = {
@@ -60,6 +61,8 @@ const uploadCSV = async (req, res) => {
             })
             created++;
         }
+
+        await logAudit({actor: req.user, action: "import_plans", entity: "Plan", details: `${created} plans imported via CSV`})
 
         res.status(201).json({
             success: true,
