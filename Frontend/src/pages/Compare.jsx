@@ -151,26 +151,29 @@ const Compare = () => {
     <div className="min-h-screen bg-[#181818] text-white">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#181818]/95 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-[#58c28d]"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 transition hover:text-[#58c28d]"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Back to Plans
           </Link>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Plan Comparison</h1>
-              <p className="mt-1 text-sm text-zinc-500">
-                Comparing {plans.length} of {MAX_COMPARE} plans side-by-side
+
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Plan Comparison</h1>
+              <p className="text-sm text-zinc-500">
+                Comparing <span className="font-semibold text-[#58c28d]">{plans.length}</span> of{' '}
+                {MAX_COMPARE} plans side-by-side
               </p>
             </div>
+
             {/* Best Value Summary */}
             {metrics?.bestPerGb && (
-              <div className="flex items-center gap-2 rounded-2xl border border-[#58c28d]/20 bg-[#58c28d]/10 px-4 py-2 text-sm">
+              <div className="flex items-center gap-2 rounded-2xl border border-[#58c28d]/20 bg-[#58c28d]/10 px-3 py-1.5 text-sm">
                 <Star className="h-4 w-4 text-[#58c28d]" />
-                <span className="text-zinc-300">Best value:</span>
+                <span className="hidden text-zinc-300 sm:inline">Best value:</span>
                 <span className="font-semibold text-[#58c28d]">
                   {metrics.bestPerGb.operator} ₹{metrics.bestPerGb.price}
                 </span>
@@ -182,14 +185,14 @@ const Compare = () => {
           </div>
 
           {loading && (
-            <p className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
+            <p className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
               Refreshing comparison…
             </p>
           )}
 
           {error && (
-            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200">
+            <div className="mt-2 flex items-start gap-2 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>{error} Showing the last known values.</span>
             </div>
@@ -228,16 +231,17 @@ const Compare = () => {
                       : 'border-white/10 hover:border-[#58c28d]/30'
                   }`}
                 >
-                  {/* Best Value Ribbon */}
-                  {isBestValue && (
-                    <div className="absolute -right-12 top-6 z-10 rotate-45 bg-[#58c28d] px-12 py-1 text-[11px] font-bold uppercase tracking-widest text-[#181818] shadow-lg">
-                      Best Value
-                    </div>
-                  )}
-
-                  {/* Card Number Badge (Plan 1 / Plan 2 / Plan 3) */}
-                  <div className="absolute left-5 top-5 z-10 rounded-lg border border-white/10 bg-[#181818]/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500 backdrop-blur-sm">
-                    Plan {index + 1}
+                  {/* Card Number Badge + Best Value flag (top-left, clear of the remove button) */}
+                  <div className="absolute left-5 top-5 z-10 flex items-center gap-2">
+                    <span className="rounded-lg border border-white/10 bg-[#181818]/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500 backdrop-blur-sm">
+                      Plan {index + 1}
+                    </span>
+                    {isBestValue && (
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-[#58c28d] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#181818] shadow-lg">
+                        <Star className="h-3 w-3" />
+                        Best Value
+                      </span>
+                    )}
                   </div>
 
                   {/* Remove from comparison */}
