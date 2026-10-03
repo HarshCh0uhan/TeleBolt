@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 import {useAuth} from "../context/AuthContext"
+import { useCompare } from "../context/CompareContext";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const {user, logoutUser, loading} = useAuth()
+  const { selectedCount } = useCompare()
 
   const navLinkClass = ({ isActive }) =>
     `transition-colors duration-200 ${
@@ -41,7 +43,14 @@ const Navbar = () => {
             </NavLink> */}
 
             <NavLink to="/compare" className={navLinkClass}>
-              Compare
+              <span className="flex items-center gap-2">
+                Compare
+                {selectedCount > 0 && (
+                  <span className="min-w-5 rounded-full bg-[#58c28d] px-1.5 py-0.5 text-center text-[11px] font-semibold text-[#181818]">
+                    {selectedCount}
+                  </span>
+                )}
+              </span>
             </NavLink>
 
             {loading ? (

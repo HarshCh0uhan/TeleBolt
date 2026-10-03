@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 
 import FilterSidebar from "../components/FilterSidebar";
 import PlanCard from "../components/PlanCard";
+import CompareBar from "../components/CompareBar";
 import { getPlans } from "../api/plans.api";
 
 const Home = () => {
-  const [showTracker, setShowTracker] = useState(false);
   const [plans, setPlans] = useState([])
   const [filters, setFilters] = useState({
     operators: [],
@@ -78,8 +78,8 @@ const Home = () => {
             hover:scrollbar-thumb-[#58c28d]/60
           ">
 
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        {/* everything else stays exactly same */}
+      {/* Extra bottom padding keeps the last row of plans clear of the fixed compare bar */}
+      <div className="mx-auto max-w-7xl px-4 py-6 pb-40">
 
         <div className="flex gap-6">
           <FilterSidebar 
@@ -94,7 +94,6 @@ const Home = () => {
                 <PlanCard
                   key={plan._id}
                   plan={plan}
-                  onTrack={() => setShowTracker(true)}
                 />
               ))}
             </div>
@@ -102,7 +101,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* <CompareBar /> */}
+      <CompareBar />
       </div>
     </div>
   );
