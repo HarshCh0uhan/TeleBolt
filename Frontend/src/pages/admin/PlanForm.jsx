@@ -61,7 +61,11 @@ const PlanForm = () => {
       navigate('/admin/plans', { state: { created: true } });
     } catch (err) {
       console.error(err);
-      setError(err.response?.data || 'Failed to create plan. Please try again.');
+      setError(
+        typeof err.response?.data === 'string'
+          ? err.response.data
+          : 'Failed to create plan. Please try again.'
+      );
     } finally {
       setLoading(false);
     }

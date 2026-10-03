@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Filter, Plus, UploadCloud, RotateCw, ChevronDown, ChevronUp } from 'lucide-react';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminSearchBar from '../../components/admin/AdminSearchBar';
@@ -6,6 +6,7 @@ import AdminTable from '../../components/admin/AdminTable';
 import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminActionButtons from '../../components/admin/AdminActionButtons';
 import AdminEmptyState from '../../components/admin/AdminEmptyState';
+import AdminModal from '../../components/admin/AdminModal';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { deletePlan, getAdminPlans } from '../../api/admin.api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,6 +42,7 @@ const Plans = () => {
   const [adminPlans, setAdminPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showToast, setShowToast] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -56,7 +58,10 @@ const Plans = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget._id;
+    setDeleteTarget(null);
     try {
       await deletePlan(id);
       setAdminPlans(prev => prev.filter(plan => plan._id !== id));
@@ -64,6 +69,26 @@ const Plans = () => {
       console.error("Delete failed", err);
     }
   };
+
+  const filteredPlans = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return adminPlans.filter((plan) => {
+      const matchesSearch =
+        !query ||
+        plan.operator?.toLowerCase().includes(query) ||
+        plan.category?.toLowerCase().includes(query) ||
+        String(plan.price).includes(query);
+
+      const matchesOperator = operatorFilter === 'All operators' || plan.operator === operatorFilter;
+      const matchesCategory = categoryFilter === 'All categories' || plan.category === categoryFilter;
+      const matchesStatus =
+        statusFilter === 'All status' ||
+        (statusFilter === 'Active' ? plan.isActive : !plan.isActive);
+
+      return matchesSearch && matchesOperator && matchesCategory && matchesStatus;
+    });
+  }, [adminPlans, search, operatorFilter, categoryFilter, statusFilter]);
 
   useEffect(() => {
     if (location.state?.created) {
@@ -171,7 +196,7 @@ const Plans = () => {
                   onChange={(e) => setOperatorFilter(e.target.value)}
                   className="rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40"
                 >
-                  {['All operators', 'Jio', 'Airtel', 'Vi'].map((item) => (
+                  {['All operators', 'Jio', 'Airtel', 'VI'].map((item) => (
                     <option key={item}>{item}</option>
                   ))}
                 </select>
@@ -180,7 +205,7 @@ const Plans = () => {
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40"
                 >
-                  {['Daily', 'Non-Daily'].map((item) => (
+                  {['All categories', 'Daily', 'Non-Daily'].map((item) => (
                     <option key={item}>{item}</option>
                   ))}
                 </select>
@@ -195,14 +220,13 @@ const Plans = () => {
                 </select>
               </div>
               <div className="mt-3 flex items-center justify-between text-xs text-zinc-500">
-                <span>Showing {adminPlans.length} plans</span>
+                <span>Showing {filteredPlans.length} of {adminPlans.length} plans</span>
                 <button
                   onClick={() => {
                     setSearch('');
                     setOperatorFilter('All operators');
                     setCategoryFilter('All categories');
                     setStatusFilter('All status');
-                    // TODO: wire clear filters logic
                   }}
                   className="text-[#58c28d] hover:underline"
                 >
@@ -226,7 +250,7 @@ const Plans = () => {
         ) : (
           <AdminTable
             columns={columns}
-            data={adminPlans}
+            data={filteredPlans}
             emptyState={
               <AdminEmptyState
                 title="No plans found"
@@ -248,7 +272,7 @@ const Plans = () => {
                 return (
                   <AdminActionButtons
                     onEdit={() => navigate(`/admin/plans/edit/${row._id}`)}
-                    onDelete={() => handleDelete(row._id)}
+                    onDelete={() => setDeleteTarget(row)}
                   />
                 );
               }
@@ -257,6 +281,21 @@ const Plans = () => {
           />
         )}
       </motion.section>
+
+      {/* Delete confirmation */}
+      <AdminModal
+        isOpen={Boolean(deleteTarget)}
+        title="Delete plan?"
+        message={
+          deleteTarget
+            ? `This permanently removes the ${deleteTarget.operator} ₹${deleteTarget.price} plan. This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 };

@@ -23,7 +23,7 @@ import { Outlet } from 'react-router-dom';
 const navItems = [
   { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
   { label: 'Plans', to: '/admin/plans', icon: ListOrdered },
-  { label: 'Detected Changes', to: '/admin/detected-changes', icon: FileClock, badge: '3' },
+  { label: 'Detected Changes', to: '/admin/detected-changes', icon: FileClock, badge: true },
   { label: 'Upload CSV', to: '/admin/upload-csv', icon: UploadCloud },
 ];
 
@@ -135,7 +135,7 @@ const AdminLayout = ({ children }) => {
                   <ShieldCheck className="h-4.5 w-4.5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-white">admin@example.com</div>
+                  <div className="truncate text-sm font-medium text-white">{user?.email || 'admin@example.com'}</div>
                   <div className="text-xs text-zinc-500">Single-admin workspace</div>
                 </div>
               </div>
