@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import PlanDetails from './components/PlanDetails';
 import Compare from './pages/Compare';
+import Rankings from './pages/Rankings';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
@@ -31,6 +32,7 @@ function App() {
         <Route path="/plans" element={<Home />} />
         <Route path="/plans/:planid" element={<PlanDetails />} />
         <Route path="/compare" element={<Compare />} />
+        <Route path="/rankings" element={<Rankings />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register-admin" element={<Register isAdminRegister />} />

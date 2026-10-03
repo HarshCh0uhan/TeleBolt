@@ -161,3 +161,31 @@ export const submitPlan = async (req, res) => {
         res.status(400).json(err.message)
     }
 }
+
+export const getRankings = async (req, res) => {
+    try {
+        const { operator, category } = req.query;
+
+        const filter = { isActive: true };
+        if (operator) filter.operator = operator;
+        if (category) filter.category = category;
+
+        const plansData = await Plans.find(filter);
+
+        // Rank only plans whose cost per GB can be computed, cheapest first.
+        const rankings = plansData
+            .map((plan) => yearlyPlan(plan))
+            .filter((plan) => Number(plan.costPerGB) > 0)
+            .sort((a, b) => a.costPerGB - b.costPerGB)
+            .map((plan, index) => ({ ...plan, rank: index + 1 }));
+
+        res.status(200).json({
+            success: true,
+            message: "Rankings fetched successfully",
+            rankings
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
