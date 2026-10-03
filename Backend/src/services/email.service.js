@@ -1,4 +1,9 @@
+import dotenv from "dotenv"
 import nodemailer from "nodemailer"
+
+// Load .env before creating the transporter. ESM imports run before app.js can
+// call dotenv.config(), so without this the credentials would be undefined.
+dotenv.config()
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -8,7 +13,7 @@ const transporter = nodemailer.createTransport({
     }
 })
 
-const sendEmailAlert = async() => {
+const sendEmailAlert = async () => {
     await transporter.sendMail({
         from: process.env.EMAIL,
         to: process.env.ADMIN_EMAIL,
