@@ -17,3 +17,5 @@ export const rejectSubmission = (id, data) => api.post(`/admin/submissions/${id}
 export const getPlanSyncSources = () => api.get('/admin/plan-sync/sources')
 export const runPlanSync = (data) => api.post('/admin/plan-sync/run', data)
 export const getPlanSyncRuns = (params) => api.get('/admin/plan-sync/runs', { params })
+export const approveAllNewPlans = (data) => api.post('/admin/approve-new-plans', data)
+export const rejectPendingChanges = (data) => api.post('/admin/reject-pending', data)

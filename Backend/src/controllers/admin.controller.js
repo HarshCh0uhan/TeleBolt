@@ -139,6 +139,34 @@ const APPLICABLE_FIELDS = {
     Sms: "sms",
 };
 
+// Turns a NewPlan proposal into a catalogue plan and marks it approved.
+const createPlanFromProposal = async (change, user) => {
+    const snapshot = change.snapshot || {}
+    const created = await Plans.create({
+        operator: snapshot.operator,
+        category: snapshot.category,
+        price: snapshot.price,
+        validityDays: snapshot.validityDays,
+        dailyData: snapshot.dailyData,
+        totalData: snapshot.totalData,
+        sms: snapshot.sms,
+        isUnlimitedCalls: snapshot.isUnlimitedCalls,
+        isUnlimitedSMS: snapshot.isUnlimitedSMS,
+        ottApps: snapshot.ottApps || [],
+        isActive: true,
+        source: change.source || "manual",
+        sourceRef: change.sourceRef || "",
+    })
+
+    change.status = "Approved"
+    change.planId = created._id
+    await change.save()
+
+    await logAudit({actor: user, action: "approve_new_plan", entity: "Plan", entityId: created._id, details: `${created.operator} ₹${created.price} (${created.validityDays} days) via ${change.source}`})
+
+    return created
+}
+
 export const approveChange = async(req, res) => {
     try {
         const detectedChangeId = req.params.id
@@ -151,28 +179,7 @@ export const approveChange = async(req, res) => {
 
         // A brand new pack proposed by the sync service or a contributor.
         if(change.field === 'NewPlan'){
-            const snapshot = change.snapshot || {}
-            const created = await Plans.create({
-                operator: snapshot.operator,
-                category: snapshot.category,
-                price: snapshot.price,
-                validityDays: snapshot.validityDays,
-                dailyData: snapshot.dailyData,
-                totalData: snapshot.totalData,
-                sms: snapshot.sms,
-                isUnlimitedCalls: snapshot.isUnlimitedCalls,
-                isUnlimitedSMS: snapshot.isUnlimitedSMS,
-                ottApps: snapshot.ottApps || [],
-                isActive: true,
-                source: change.source || "manual",
-                sourceRef: change.sourceRef || "",
-            })
-
-            change.status = "Approved"
-            change.planId = created._id
-            await change.save()
-
-            await logAudit({actor: req.user, action: "approve_new_plan", entity: "Plan", entityId: created._id, details: `${created.operator} ₹${created.price} (${created.validityDays} days) via ${change.source}`})
+            const created = await createPlanFromProposal(change, req.user)
 
             return res.status(200).json({
                 success: true,
@@ -475,6 +482,74 @@ export const getPlanSyncRuns = async (req, res) => {
         res.status(200).json({
             success: true,
             runs
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+// Adds every pending new plan in one go: the first sync can leave dozens of
+// proposals, and approving them one at a time is busy work.
+export const approveAllNewPlans = async (req, res) => {
+    try {
+        const filter = { field: "NewPlan", status: "Pending" }
+        if (typeof req.body?.source === "string" && req.body.source) filter.source = req.body.source
+
+        const pending = await DetectedChange.find(filter).sort({ createdAt: 1 })
+        if (pending.length === 0) throw new Error("No pending new plans to approve")
+
+        let approved = 0
+        const failed = []
+
+        for (const change of pending) {
+            try {
+                await createPlanFromProposal(change, req.user)
+                approved += 1
+            } catch (err) {
+                failed.push(`${change.sourceRef || change._id}: ${err.message}`)
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Added ${approved} new plan(s) to the catalogue${failed.length ? `, ${failed.length} failed` : ""}`,
+            approved,
+            failed
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+// Discards pending field changes without applying them, so a noisy batch can be
+// cleared in one step. New-plan proposals are never touched here.
+export const rejectPendingChanges = async (req, res) => {
+    try {
+        const fields = Array.isArray(req.body?.fields) && req.body.fields.length > 0
+            ? req.body.fields
+            : ["Price", "ValidityDays", "DailyData", "TotalData", "Sms"]
+
+        const filter = {
+            status: "Pending",
+            field: { $in: fields.filter((field) => field !== "NewPlan") },
+        }
+        if (typeof req.body?.source === "string" && req.body.source) filter.source = req.body.source
+
+        const result = await DetectedChange.updateMany(filter, { status: "Rejected" })
+
+        await logAudit({
+            actor: req.user,
+            action: "reject_change",
+            entity: "DetectedChange",
+            details: `bulk rejected ${result.modifiedCount} pending change(s)`,
+        })
+
+        res.status(200).json({
+            success: true,
+            message: `Rejected ${result.modifiedCount} pending change(s)`,
+            rejected: result.modifiedCount
         })
     } catch (err) {
         console.error("Error: ", err.message);

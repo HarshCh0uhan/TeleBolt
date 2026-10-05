@@ -6,7 +6,7 @@ import { SourceNotConfiguredError } from "./planSources/errors.js";
 import { diffPlanFields } from "./planSources/matching.js";
 
 // Safety valve so a first run cannot flood the review queue.
-const MAX_NEW_PER_RUN = Number(process.env.SYNC_MAX_NEW_PER_RUN || 50);
+const MAX_NEW_PER_RUN = Number(process.env.SYNC_MAX_NEW_PER_RUN || 200);
 
 /**
  * Query for a catalogue plan with an identical bundle (operator, daily data,
@@ -95,6 +95,8 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
     }
 
     let newThisRun = 0;
+    // One pending proposal per plan and field, per run and across runs.
+    const proposedThisRun = new Set();
 
     for (const plan of plans) {
         const { plan: existing, matchedBy } = await findMatch(plan, sourceName);
@@ -137,13 +139,15 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
 
         let changed = 0;
         for (const { field, oldValue, newValue } of diffPlanFields(existing, plan)) {
-            const duplicate = await proposalExists({
-                planId: existing._id,
-                field,
-                source: sourceName,
-                newValue,
-            });
-            if (duplicate) continue;
+            // Several upstream packs can share one bundle (Vi sells identical
+            // benefits at ₹348 and ₹349), so without this guard a single
+            // catalogue plan collects a pile of conflicting price proposals.
+            const alreadyProposed =
+                proposedThisRun.has(`${existing._id}:${field}`) ||
+                (await proposalExists({ planId: existing._id, field, source: sourceName }));
+            if (alreadyProposed) continue;
+
+            proposedThisRun.add(`${existing._id}:${field}`);
 
             if (!dryRun) {
                 await DetectedChange.create({
@@ -175,16 +179,17 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
         sourceRef: { $nin: fetchedRefs },
     });
 
-    // Be explicit when the per-run cap held proposals back.
+    // The cap is a safety valve, not a failure: note it on a successful run so
+    // the dashboard does not report a problem where there is none.
     if (result.skipped > 0 && result.newPlans >= maxNew) {
         result.message = [
             result.message,
-            `${result.skipped} plan(s) were not queued because the per-run cap of ${maxNew} new plans was reached - the next run picks them up.`,
+            `${result.skipped} plan(s) were left for the next run because the per-run cap of ${maxNew} new plans was reached.`,
         ]
             .filter(Boolean)
             .join(" ");
-        result.status = "Partial";
     } else if (result.skipped > 0 && result.message) {
+        // Records that could not be parsed are a genuine partial result.
         result.status = "Partial";
     }
 

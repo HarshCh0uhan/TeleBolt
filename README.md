@@ -72,7 +72,7 @@ FRONTEND_URL=http://localhost:5173
 # Daily schedule (cron + timezone) and per-run safety cap for new plans
 # SYNC_CRON=0 3 * * *
 # SYNC_TIMEZONE=Asia/Kolkata
-# SYNC_MAX_NEW_PER_RUN=50
+# SYNC_MAX_NEW_PER_RUN=200
 ```
 
 ### Run Locally
@@ -153,8 +153,9 @@ GET    /api/admin/plan-sync/runs         - Plan sync history
 
 - **Dashboard** — live catalog stats, pending review count, recent audit activity and per-operator split.
 - **Plans** — create, edit, delete (with confirmation), search and filter the catalog.
-- **Detected changes** — review queue for everything the sync service finds, plus a **Run sync now** button
-  and the last run's per-source report.
+- **Detected changes** — review queue for everything the sync service finds, plus a **Run sync now** button,
+  the last run's per-source report, and bulk actions (**Add all N new plans**, **Reject all N pending changes**)
+  so a first sync of ~50 proposals is one click instead of fifty.
 - **Pending reviews** — one queue for detected changes *and* community submissions.
 - **Contributions** — submissions by status plus a per-contributor summary.
 - **Analytics** — operator/category distribution, community stats and recent activity.
