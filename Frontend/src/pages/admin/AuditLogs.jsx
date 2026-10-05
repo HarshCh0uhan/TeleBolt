@@ -15,6 +15,8 @@ const ACTIONS = [
   { value: 'import_plans', label: 'Import CSV' },
   { value: 'approve_submission', label: 'Approve submission' },
   { value: 'reject_submission', label: 'Reject submission' },
+  { value: 'approve_new_plan', label: 'Add new plan' },
+  { value: 'run_plan_sync', label: 'Run plan sync' },
 ];
 
 const ENTITIES = [
@@ -22,6 +24,7 @@ const ENTITIES = [
   { value: 'Plan', label: 'Plan' },
   { value: 'DetectedChange', label: 'Detected change' },
   { value: 'PlanSubmission', label: 'Plan submission' },
+  { value: 'PlanSyncRun', label: 'Plan sync run' },
 ];
 
 const ACTION_LABELS = {
@@ -33,6 +36,8 @@ const ACTION_LABELS = {
   import_plans: 'imported plans via CSV',
   approve_submission: 'approved a plan submission',
   reject_submission: 'rejected a plan submission',
+  approve_new_plan: 'added a new plan from a sync proposal',
+  run_plan_sync: 'ran the plan sync',
 };
 
 const PAGE_SIZE = 30;

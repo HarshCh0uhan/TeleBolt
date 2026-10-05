@@ -6,7 +6,7 @@ import 'rc-slider/assets/index.css';
 const FilterSidebar = ({ filters, onFiltersChange, onApply, onClear }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const operators = ["Jio", "Airtel", "VI"];
+  const operators = ["Jio", "Airtel", "VI", "BSNL"];
   const categories = ["Daily", "Non-Daily"];
   const ottApps = ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5"];
 

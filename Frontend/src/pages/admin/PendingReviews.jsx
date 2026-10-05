@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminEmptyState from '../../components/admin/AdminEmptyState';
+import DetectedChangeCard from '../../components/admin/DetectedChangeCard';
 import {
-  Clock3, FileClock, Send, Check, X, ArrowRight, RefreshCw,
+  Clock3, FileClock, Send, Check, X, RefreshCw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -115,7 +116,7 @@ const PendingReviews = () => {
             {changes.length === 0 ? (
               <AdminEmptyState
                 title="No pending detected changes"
-                message="Price and validity updates from the monitoring service will appear here."
+                message="New plans, price and validity updates found by the daily Vi and BSNL sync will appear here."
               />
             ) : (
               <div className="mt-5 space-y-3">
@@ -127,41 +128,13 @@ const PendingReviews = () => {
                       initial={{ opacity: 0, scale: 0.97 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="rounded-3xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/30"
                     >
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                          <p className="text-sm text-zinc-400">
-                            <span className="font-medium text-zinc-200">{item.field}</span> changed from{' '}
-                            <span className="text-white line-through decoration-zinc-600">
-                              {item.field === 'Price' ? `₹${item.oldValue}` : item.oldValue}
-                            </span>{' '}
-                            <ArrowRight className="mx-1 inline h-3 w-3 text-[#58c28d]" />{' '}
-                            <span className="font-medium text-[#58c28d]">
-                              {item.field === 'Price' ? `₹${item.newValue}` : item.newValue}
-                            </span>
-                          </p>
-                          <p className="mt-1 text-xs text-zinc-500">
-                            Detected {new Date(item.createdAt).toLocaleString('en-IN')}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            disabled={busyId === item._id}
-                            onClick={() => runAction(item._id, () => approveChange(item._id))}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2 text-xs font-semibold text-[#181818] transition hover:bg-[#6dd9a0] disabled:opacity-60"
-                          >
-                            <Check className="h-3.5 w-3.5" /> Approve
-                          </button>
-                          <button
-                            disabled={busyId === item._id}
-                            onClick={() => runAction(item._id, () => rejectChange(item._id))}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#181818] px-4 py-2 text-xs font-medium text-zinc-300 transition hover:border-red-400/30 hover:text-red-400 disabled:opacity-60"
-                          >
-                            <X className="h-3.5 w-3.5" /> Reject
-                          </button>
-                        </div>
-                      </div>
+                      <DetectedChangeCard
+                        change={item}
+                        busy={busyId === item._id}
+                        onApprove={() => runAction(item._id, () => approveChange(item._id))}
+                        onReject={() => runAction(item._id, () => rejectChange(item._id))}
+                      />
                     </motion.div>
                   ))}
                 </AnimatePresence>

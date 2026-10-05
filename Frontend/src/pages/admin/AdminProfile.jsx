@@ -19,6 +19,8 @@ const ACTION_LABELS = {
   import_plans: 'imported plans via CSV',
   approve_submission: 'approved a plan submission',
   reject_submission: 'rejected a plan submission',
+  approve_new_plan: 'added a new plan from a sync proposal',
+  run_plan_sync: 'ran the plan sync',
 };
 
 const Feedback = ({ message }) => {

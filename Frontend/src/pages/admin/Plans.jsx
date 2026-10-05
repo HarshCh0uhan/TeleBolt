@@ -196,7 +196,7 @@ const Plans = () => {
                   onChange={(e) => setOperatorFilter(e.target.value)}
                   className="rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40"
                 >
-                  {['All operators', 'Jio', 'Airtel', 'VI'].map((item) => (
+                  {['All operators', 'Jio', 'Airtel', 'VI', 'BSNL'].map((item) => (
                     <option key={item}>{item}</option>
                   ))}
                 </select>

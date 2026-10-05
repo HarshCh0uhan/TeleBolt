@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { getRankings } from '../api/plans.api';
 import { useCompare, MAX_COMPARE } from '../context/CompareContext';
 
-const OPERATORS = ['All', 'Jio', 'Airtel', 'VI'];
+const OPERATORS = ['All', 'Jio', 'Airtel', 'VI', 'BSNL'];
 const CATEGORIES = ['All', 'Daily', 'Non-Daily'];
 
 const medalClasses = {

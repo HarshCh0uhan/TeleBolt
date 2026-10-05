@@ -146,7 +146,7 @@ const UploadCSV = () => {
             </summary>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-400 pl-4">
               <li>• Accepted columns: operator, category, price, validityDays, dailyData, totalData, sms, isUnlimitedCalls, isUnlimitedSMS, ottApps, isActive</li>
-              <li>• Valid operators: Jio, Airtel, VI</li>
+              <li>• Valid operators: Jio, Airtel, VI, BSNL</li>
               <li>• Category: Daily or Non‑Daily</li>
               <li>• Use the <code className="text-[#58c28d]">true</code>/<code className="text-[#58c28d]">false</code> values for boolean fields.</li>
               <li>• OTT apps: comma‑separated list (e.g. JioHotstar,Prime)</li>
