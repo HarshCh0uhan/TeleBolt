@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  CalendarDays, Mail, ShieldCheck, KeyRound, Save, Check, Loader2, Compass, BadgeCheck,
+  CalendarDays, Mail, ShieldCheck, KeyRound, Save, Check, Loader2, Compass, BadgeCheck, Heart, Trash2,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getPlans } from "../api/plans.api";
+import { getFavoritePlans, removeFavoritePlan } from "../api/auth.api";
 
 const initialsOf = (name = "") => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -42,6 +43,7 @@ const Profile = () => {
   const { user, updateUser } = useAuth();
 
   const [totalPlans, setTotalPlans] = useState(null);
+  const [favoritePlans, setFavoritePlans] = useState([]);
 
   // Identity form
   const [username, setUsername] = useState(user?.username || "");
@@ -60,6 +62,9 @@ const Profile = () => {
     getPlans()
       .then(({ data }) => setTotalPlans(data?.plans?.length ?? 0))
       .catch(() => setTotalPlans(0));
+    getFavoritePlans()
+      .then(({ data }) => setFavoritePlans(data?.favorites || []))
+      .catch(() => setFavoritePlans([]));
   }, []);
 
   const messageFromError = (err, fallback) =>
@@ -106,6 +111,11 @@ const Profile = () => {
     } finally {
       setPasswordSaving(false);
     }
+  };
+
+  const handleRemoveFavorite = async (planId) => {
+    await removeFavoritePlan(planId);
+    setFavoritePlans((plans) => plans.filter((plan) => plan._id !== planId));
   };
 
   return (
@@ -305,6 +315,62 @@ const Profile = () => {
             </form>
           </section>
         </div>
+
+        <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+                <Heart className="h-4.5 w-4.5 text-[#58c28d]" />
+                Saved plans
+              </h3>
+              <p className="mt-1 text-sm text-zinc-500">Plans you marked as favourites.</p>
+            </div>
+            <span className="text-sm text-zinc-500">{favoritePlans.length} saved</span>
+          </div>
+
+          {favoritePlans.length === 0 ? (
+            <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-[#262626] p-6 text-center">
+              <p className="text-sm text-zinc-400">No saved plans yet.</p>
+              <Link to="/" className="mt-3 inline-flex text-sm font-medium text-[#58c28d] hover:underline">
+                Browse plans
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {favoritePlans.map((plan) => (
+                <div key={plan._id} className="rounded-2xl border border-white/10 bg-[#262626] p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <span className="rounded-full bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#58c28d]">
+                        {plan.operator}
+                      </span>
+                      <h4 className="mt-3 text-2xl font-bold text-white">₹{plan.price}</h4>
+                      <p className="mt-1 text-sm text-zinc-400">{plan.validityDays} days • {plan.category}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFavorite(plan._id)}
+                      className="rounded-xl border border-white/10 p-2 text-zinc-500 transition hover:border-red-400/30 hover:text-red-400"
+                      title="Remove saved plan"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between text-sm">
+                    <span className="text-zinc-500">Cost per GB</span>
+                    <span className="font-medium text-[#58c28d]">₹{plan.costPerGB || "—"}/GB</span>
+                  </div>
+                  <Link
+                    to={`/plans/${plan._id}`}
+                    className="mt-4 flex w-full items-center justify-center rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-[#58c28d]/30 hover:text-white"
+                  >
+                    View details
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

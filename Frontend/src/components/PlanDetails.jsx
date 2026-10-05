@@ -2,14 +2,13 @@ import { Link, useParams } from "react-router-dom";
 import { getSinglePlan } from "../api/plans.api";
 import { useEffect, useState } from "react";
 import PriceHistoryChart from "./PriceHistoryChart";
-import { useCompare, MAX_COMPARE } from "../context/CompareContext";
-import CompareBar from "./CompareBar";
-import { Check, Plus } from "lucide-react";
+import { Heart } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const PlanDetails = () => {
   const [plan, setPlan] = useState(null)
   const { planid } = useParams();
-  console.log(plan);    
+  const { user, isFavoritePlan, toggleFavorite } = useAuth();
 
   const fetchPlan = async () => {
     try {
@@ -62,6 +61,29 @@ const PlanDetails = () => {
               <p className="mt-2 text-zinc-400">
                 {plan.validityDays} Days Validity
               </p>
+
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(plan._id)}
+                  className={`mt-5 inline-flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold transition ${
+                    isFavoritePlan(plan._id)
+                      ? "border-red-400/30 bg-red-500/10 text-red-300"
+                      : "border-white/10 bg-[#262626] text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
+                  }`}
+                >
+                  <Heart className={`h-4 w-4 ${isFavoritePlan(plan._id) ? "fill-current" : ""}`} />
+                  {isFavoritePlan(plan._id) ? "Saved Plan" : "Save Plan"}
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-sm font-semibold text-zinc-300 transition hover:border-[#58c28d]/30 hover:text-white"
+                >
+                  <Heart className="h-4 w-4" />
+                  Login to Save
+                </Link>
+              )}
             </div>
 
             {/* Value Metrics */}

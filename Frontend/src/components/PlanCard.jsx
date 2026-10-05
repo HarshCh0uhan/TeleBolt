@@ -1,12 +1,15 @@
 import { Link } from "react-router-dom";
-import { Database, TrendingUp, ArrowRight, Check, Plus } from 'lucide-react';
+import { Database, TrendingUp, ArrowRight, Check, Plus, Heart } from 'lucide-react';
 import { useCompare, MAX_COMPARE } from "../context/CompareContext";
+import { useAuth } from "../context/AuthContext";
 
 const PlanCard = ({ plan }) => {
   const { isSelected, isFull, togglePlan } = useCompare();
+  const { user, isFavoritePlan, toggleFavorite } = useAuth();
 
   const selected = isSelected(plan._id);
   const selectionFull = isFull && !selected;
+  const favorite = isFavoritePlan(plan._id);
 
   return (
     <article
@@ -91,7 +94,29 @@ const PlanCard = ({ plan }) => {
       </Link>
 
       {/* Footer – compare selection */}
-      <div className="mt-auto border-t border-white/10 p-5">
+      <div className="mt-auto space-y-3 border-t border-white/10 p-5">
+        {user ? (
+          <button
+            type="button"
+            onClick={() => toggleFavorite(plan._id)}
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition-all duration-300 ${
+              favorite
+                ? 'border-red-400/30 bg-red-500/10 text-red-300 hover:bg-red-500/15'
+                : 'border-white/10 bg-[#262626] text-zinc-300 hover:border-[#58c28d]/30 hover:text-white'
+            }`}
+          >
+            <Heart className={`h-4 w-4 ${favorite ? 'fill-current' : ''}`} />
+            {favorite ? 'Saved Plan' : 'Save Plan'}
+          </button>
+        ) : (
+          <Link
+            to="/login"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-sm font-semibold text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:text-white"
+          >
+            <Heart className="h-4 w-4" />
+            Login to Save
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => togglePlan(plan)}
