@@ -18,6 +18,11 @@ import {
     mbToGb,
 } from "../src/services/planSources/normalize.js";
 import { listPlanSources } from "../src/services/planSources/index.js";
+import {
+    isSameBundle,
+    diffPlanFields,
+    sameNumber,
+} from "../src/services/planSources/matching.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const readFixture = (name) => JSON.parse(readFileSync(path.join(here, "fixtures", name), "utf8"));
@@ -172,4 +177,51 @@ test("the source registry exposes both operators", () => {
 
     assert.ok(names.includes("vi-sync"));
     assert.ok(names.includes("bsnl-sync"));
+});
+
+test("sameNumber treats missing values as equal and compares with tolerance", () => {
+    assert.equal(sameNumber(null, undefined), true);
+    assert.equal(sameNumber(null, 0), false);
+    assert.equal(sameNumber(1.5, 1.5), true);
+    assert.equal(sameNumber(1.5000001, 1.5), true);
+    assert.equal(sameNumber(10, 11), false);
+});
+
+test("isSameBundle matches only identical bundles", () => {
+    const master = { operator: "VI", dailyData: 1.5, totalData: 42, validityDays: 28 };
+
+    assert.equal(isSameBundle(master, { ...master, price: 999 }), true, "price is ignored on purpose");
+    assert.equal(isSameBundle(master, { ...master, validityDays: 30 }), false);
+    assert.equal(isSameBundle(master, { ...master, dailyData: 2 }), false);
+    assert.equal(isSameBundle(master, { ...master, operator: "BSNL" }), false);
+});
+
+test("isSameBundle refuses the loose matches that produced bad proposals", () => {
+    // Regression from a real dry run: a 365-day 10 GB pack was paired with a
+    // 28-day one, so a ₹1599 plan looked like it had "changed" to ₹348.
+    const yearPack = { operator: "VI", dailyData: null, totalData: 10, validityDays: 365 };
+    const monthPack = { operator: "VI", dailyData: null, totalData: 10, validityDays: 28 };
+    assert.equal(isSameBundle(yearPack, monthPack), false);
+
+    // The same trap for daily packs: ₹219/22 days is not the ₹299/28 day pack.
+    const d22 = { operator: "VI", dailyData: 1, totalData: 22, validityDays: 22 };
+    const d28 = { operator: "VI", dailyData: 1, totalData: 28, validityDays: 28 };
+    assert.equal(isSameBundle(d22, d28), false);
+});
+
+test("diffPlanFields reports only the fields that actually differ", () => {
+    const master = { operator: "VI", price: 219, validityDays: 22, dailyData: 1, totalData: 22, sms: 100 };
+
+    assert.deepEqual(diffPlanFields(master, { ...master }), [], "an unchanged plan proposes nothing");
+
+    assert.deepEqual(diffPlanFields(master, { ...master, price: 299 }), [
+        { key: "price", field: "Price", oldValue: 219, newValue: 299 },
+    ]);
+
+    const both = diffPlanFields(master, { ...master, price: 299, validityDays: 28 });
+    assert.deepEqual(both.map((diff) => diff.field), ["Price", "ValidityDays"]);
+
+    assert.deepEqual(diffPlanFields({ ...master, sms: null }, { ...master, sms: 100 }), [
+        { key: "sms", field: "Sms", oldValue: null, newValue: 100 },
+    ]);
 });

@@ -18,7 +18,8 @@ const sourceResultSchema = new mongoose.Schema({
     adopted: { type: Number, default: 0 },
     // Catalogue plans from this source that no longer appear upstream.
     missingFromSource: { type: Number, default: 0 },
-    errors: [{ type: String }]
+    // Plain notes rather than "errors": that key is reserved by Mongoose.
+    notes: [{ type: String }]
 }, { _id: false })
 
 const planSyncRunSchema = new mongoose.Schema({
