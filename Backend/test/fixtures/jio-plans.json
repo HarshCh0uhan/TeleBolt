@@ -1,0 +1,80 @@
+[
+  {
+    "id": "1033485",
+    "name": "3599",
+    "amount": "3599",
+    "description": "Benefits: Unlimited 5G data, 912.5GB(2.5GB/Day 4G Data), Unlimited Voice, 100 SMS/Day & Subscription to Jio Apps. Validity - 365 Days",
+    "planName": "Rs 3599_365D_2.5GB/D",
+    "categoryLabel": "Popular Plans",
+    "expiryDays": 0,
+    "misc": {
+      "subscriptions": [
+        { "title": "JioTV", "image": "ic_jiotv-n.svg" },
+        { "title": "JioAICloud", "image": "ic_jiocloud-n.svg" }
+      ]
+    },
+    "primeData": {
+      "offerBenefits1": "Unlimited 5G",
+      "offerBenefits2": "+ 2.5 GB/Day",
+      "offerBenefits3": "365",
+      "offerBenefits4": "Days",
+      "subscriptions": "+2 more OTT"
+    }
+  },
+  {
+    "id": "1019863",
+    "name": "19",
+    "amount": "19",
+    "description": "Benefits: Unlimited Data (1GB High Speed Data, thereafter unlimited at 64Kbps). Validity: 1Day",
+    "planName": "MRP 19",
+    "categoryLabel": "Data Packs",
+    "expiryDays": 0,
+    "misc": { "subscriptions": [] },
+    "primeData": {
+      "offerBenefits1": "1",
+      "offerBenefits2": "GB",
+      "offerBenefits3": "1",
+      "offerBenefits4": "Day"
+    }
+  },
+  {
+    "id": "1033555",
+    "name": "1000",
+    "amount": "1000",
+    "description": "Benefits:  1. Subscription to JioShield and Canva Pro 2. Validity - 365 Days 3. 5G Unlimited Data for 28 days",
+    "planName": "MRP 1000",
+    "categoryLabel": "Popular Plans",
+    "expiryDays": 0,
+    "misc": {
+      "subscriptions": [
+        { "title": "Canva", "image": "Z0258.svg" },
+        { "title": "Jio Shield", "image": "Z0262.svg" }
+      ]
+    },
+    "primeData": {
+      "offerBenefits3": "365",
+      "offerBenefits4": "Days",
+      "subscriptions": "Z0258.svg~Z0262.svg"
+    }
+  },
+  {
+    "id": "1032484",
+    "name": "200",
+    "amount": "200",
+    "description": "Benefits: \n1) Unlimited 5G data with active base plan validity, \n2) 30GB  4G/5G data thereafter unlimited at 64Kbps.\n3) 15 Premium OTTs and Jio apps: YouTube Premium, Amazon PVME, JioHotstar Mobile + Hollywood, & OTTs Via JioTV: SonyLiv, Zee5, LionsGateplay, Discovery+.\n5) Validity - 28 Days\nT&C Apply",
+    "planName": "Rs200_30GB_OTT_28D",
+    "categoryLabel": "Popular Plans",
+    "expiryDays": 0,
+    "misc": {
+      "subscriptions": [
+        { "title": "YouTube Premium", "image": "Z0200.svg" },
+        { "title": "Prime Video Mobile", "image": "Z0071.svg" },
+        { "title": "JioHotstar", "image": "Z0127.svg" },
+        { "title": "Sony LIV", "image": "Z0073.svg" },
+        { "title": "ZEE5", "image": "Z0074.svg" },
+        { "title": "Lionsgate Play", "image": "Z0125.svg" }
+      ]
+    },
+    "primeData": { "subscriptions": "+9 more OTT" }
+  }
+]
