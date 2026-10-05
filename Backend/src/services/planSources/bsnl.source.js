@@ -83,11 +83,20 @@ export const normalizeBsnlPlan = (raw, { circle } = {}) => {
 };
 
 /**
- * Fetches BSNL prepaid tariff rows.
+ * Fetches BSNL tariff rows.
  *
- * BSNL serves these through its own Next.js proxy, which answers
- * `401 Authentication required` without a signed-in session (and blocks direct
- * API access with 403). Supply a session cookie to enable this source.
+ * Verified against the live service with a real browser session: a bare request
+ * is refused with 403 "Direct API access is strictly prohibited." (same-origin
+ * check), a same-origin request without a session gets 401 "Authentication
+ * required", and with the site's `bsnl_session` cookie the POST body must also
+ * be AES-encrypted or it answers 403 "Plain text requests are not allowed".
+ *
+ * Even fully authenticated this endpoint returns BROADBAND only - "Bharat Air
+ * Fiber" gives 57 fibre plans and "LANDLINE" gives 8 landline plans. The prepaid
+ * catalogue (recharge-plansnew) answers "No recharge plans found" for BSNL in
+ * every circle, because its real inputs come from fetch-operator, which needs a
+ * live BSNL mobile number plus a captcha. Hence this source is expected to be
+ * Skipped, and BSNL plans belong in the CSV import or Suggest a Plan flow.
  */
 export const fetchBsnlPlans = async ({ circle, svctype, cookie, timeoutMs = 25000 } = {}) => {
     const sessionCookie = cookie || process.env.BSNL_PROXY_COOKIE;
@@ -96,11 +105,10 @@ export const fetchBsnlPlans = async ({ circle, svctype, cookie, timeoutMs = 2500
 
     if (!sessionCookie) {
         throw new SourceNotConfiguredError(
-            "BSNL blocks its tariff API without a browser session (HTTP 401). " +
-                "Open bsnl.co.in/en/pricing-plans/prepaid, DevTools > Network > Fetch/XHR, " +
-                "change the circle so the cofetchtariffnew request appears, then right-click it and " +
-                "use Copy as cURL: put the Cookie header in BSNL_PROXY_COOKIE and any x-* token " +
-                "header in BSNL_EXTRA_HEADERS (JSON) in Backend/.env"
+            "BSNL prepaid plans are not available from any public endpoint. Its tariff API needs a " +
+                "browser session AND an AES-encrypted body, and then returns broadband only " +
+                "(Bharat Air Fiber / Landline). The prepaid lookup requires a live BSNL mobile " +
+                "number plus a captcha. Add BSNL plans via CSV upload or Suggest a Plan instead."
         );
     }
 
