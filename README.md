@@ -63,9 +63,10 @@ FRONTEND_URL=http://localhost:5173
 # Override the Vi catalogue page that is scraped
 # VI_PLANS_URL=https://www.myvi.in/prepaid/unlimited-calls-and-data-plans
 
-# BSNL's tariff API needs a signed-in session cookie. Without it the source is
-# skipped (and reported as skipped) instead of failing.
+# BSNL's tariff API needs a browser session. Without it the source is skipped
+# (and reported as skipped) instead of failing.
 # BSNL_PROXY_COOKIE=
+# BSNL_EXTRA_HEADERS={"x-api-key":"..."}
 # BSNL_CIRCLE=MH
 # BSNL_SVCTYPE=prepaid
 
@@ -189,11 +190,18 @@ admin "Run sync now" ───┼─→ source adapters ─→ normalise ─→ 
 | **Vi** (`vi-sync`) | ✅ live | `myvi.in` renders its whole prepaid catalogue into the Next.js flight payload, so `self.__next_f.push([1,"…"])` chunks contain the plan list as JSON. Each record carries `ITEM_ID`, `UNIT_COST`, `VALIDITY_ATTR`, `DATA_LINE_1`, `DATAUSAGE_ATTR` and `SMS_LINE_1`. A dry run currently reads **88 usable plans** in ~1.5 s. |
 | **BSNL** (`bsnl-sync`) | ⚠️ needs a session | BSNL serves tariffs through its own Next.js proxy: `POST /api/bsnl-proxy/myBsnlApp/rest/cofetchtariffnew` with `{ svctype, circle }`. It answers **`401 Authentication required`** without a signed-in session (and `403 "Direct API access is strictly prohibited."` when hit directly). Set `BSNL_PROXY_COOKIE` to enable it. |
 
-**Enabling BSNL:** open `bsnl.co.in/recharge` in a browser, open DevTools → Network, find the
-`cofetchtariffnew` request, copy its `Cookie` header, and set `BSNL_PROXY_COOKIE` in `Backend/.env`.
-Until then the source reports `Skipped` with that exact instruction — it never fails the run.
-Note that BSNL's proxy bodies are AES-encrypted with a key from their bundle and the mobile-number
-flow requires a captcha, so this route can break whenever they rotate either.
+**Enabling BSNL:** the request only fires on the **pricing-plans page**, not the recharge page (which
+demands a mobile number and a captcha first) and not `portal.bsnl.in`:
+
+1. Open `https://bsnl.co.in/en/pricing-plans/prepaid`
+2. DevTools → Network → filter **Fetch/XHR**, then change the circle dropdown so the request appears
+3. Right-click the `cofetchtariffnew` request → **Copy as cURL**
+4. Put its `Cookie` header in `BSNL_PROXY_COOKIE`, and any `x-*` token header it carries into
+   `BSNL_EXTRA_HEADERS` as JSON, e.g. `BSNL_EXTRA_HEADERS={"x-api-key":"abc123"}`
+
+Until then the source reports `Skipped` with that instruction — it never fails the run. Note that
+BSNL's proxy bodies are AES-encrypted with a key from their bundle, so this route can break whenever
+they rotate the key or the session.
 
 ### What it detects
 
