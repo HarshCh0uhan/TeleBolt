@@ -4,7 +4,7 @@ const planSubmissionSchema = new mongoose.Schema({
     operator: {
         type: String,
         required: true,
-        enum: ["Jio", "Airtel", "VI"],
+        enum: ["Jio", "Airtel", "VI", "BSNL"],
         trim: true
     },
     category: {

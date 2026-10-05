@@ -1,0 +1,57 @@
+[
+  {
+    "ITEM_ID": "MH_0014_2399_MH_0014_2399",
+    "RECHARGEID_ATTR": "MH_0014_2399",
+    "UNIT_COST": "2399",
+    "CGRP_START_RANGE": "2399",
+    "VALIDITY_ATTR": "180.0",
+    "WEB-VALIDITY": "180 Days",
+    "DATA_LINE_1": "1.5GB/Day",
+    "DATAUSAGE_ATTR": "172032.0",
+    "SMS_LINE_1": "100 SMS/Day",
+    "VOICE_LINE_1": "Unlimited",
+    "PRODUCT-CATEGORY": "Unlimited",
+    "RECHARGE_SUBTYPE": "Talktime",
+    "STATUS": "SUCCESS"
+  },
+  {
+    "ITEM_ID": "MH_0014_399_MH_0014_399",
+    "RECHARGEID_ATTR": "MH_0014_399",
+    "UNIT_COST": "399",
+    "CGRP_START_RANGE": "399",
+    "VALIDITY_ATTR": "28.0",
+    "WEB-VALIDITY": "28 Days",
+    "DATA_LINE_1": "Unlimited",
+    "DATAUSAGE_ATTR": "57344.0",
+    "SMS_LINE_1": "100 SMS/Day",
+    "VOICE_LINE_1": "Unlimited",
+    "PRODUCT-CATEGORY": "Unlimited",
+    "RECHARGE_SUBTYPE": "Talktime",
+    "STATUS": "SUCCESS"
+  },
+  {
+    "ITEM_ID": "MH_0014_251_MH_0014_251",
+    "RECHARGEID_ATTR": "MH_0014_251",
+    "UNIT_COST": "251",
+    "CGRP_START_RANGE": "251",
+    "VALIDITY_ATTR": "30.0",
+    "WEB-VALIDITY": "30 Days",
+    "DATA_LINE_1": "10GB",
+    "DATAUSAGE_ATTR": "10240.0",
+    "SERVICEVALIDITY_ATTR": "0",
+    "PRODUCT-CATEGORY": "Internet",
+    "RECHARGE_SUBTYPE": "Data",
+    "STATUS": "SUCCESS"
+  },
+  {
+    "ITEM_ID": "MH_0014_118_MH_0014_118",
+    "RECHARGEID_ATTR": "MH_0014_118",
+    "UNIT_COST": "118",
+    "CGRP_START_RANGE": "118",
+    "VALIDITY_ATTR": "28.0",
+    "WEB-VALIDITY": "28 Days",
+    "PRODUCT-CATEGORY": "Roaming",
+    "RECHARGE_SUBTYPE": "Talktime",
+    "STATUS": "SUCCESS"
+  }
+]

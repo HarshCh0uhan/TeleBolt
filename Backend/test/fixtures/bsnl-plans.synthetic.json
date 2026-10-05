@@ -1,0 +1,31 @@
+[
+  {
+    "PLAN_ID": "BSNL_PRE_187",
+    "PLAN_NAME": "Prepaid Combo 187",
+    "TYPE_OF_PLAN": "Combo",
+    "MRP": "187",
+    "VALIDITY": "28 Days",
+    "DATA": "2GB/Day",
+    "SMS": "100 SMS/Day",
+    "VOICE": "Unlimited"
+  },
+  {
+    "PLAN_ID": "BSNL_PRE_153",
+    "PLAN_NAME": "Prepaid Combo 153",
+    "TYPE_OF_PLAN": "Combo",
+    "MRP": "153",
+    "VALIDITY": "24 Days",
+    "DATA": "1GB/Day",
+    "SMS": "100 SMS/Day",
+    "VOICE": "Unlimited"
+  },
+  {
+    "PLAN_ID": "BSNL_DATA_19",
+    "PLAN_NAME": "Data Add-on 19",
+    "TYPE_OF_PLAN": "Data",
+    "MRP": "19",
+    "VALIDITY": "1 Day",
+    "DATA": "2GB",
+    "VOICE": "N/A"
+  }
+]

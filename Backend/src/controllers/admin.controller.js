@@ -7,6 +7,9 @@ import { PlanSubmission } from "../models/planSubmission.js";
 import { AuditLog } from "../models/auditLog.js";
 import { User } from "../models/user.js";
 import { logAudit } from "../services/audit.service.js";
+import { PlanSyncRun } from "../models/planSyncRun.js";
+import { runPlanSync } from "../services/planSync.service.js";
+import { DEFAULT_SOURCES, getPlanSource, listPlanSources } from "../services/planSources/index.js";
 
 export const getAllPlans = async (req, res) => {
      try {
@@ -127,6 +130,15 @@ export const detectedChanges = async (req, res) => {
     }
 }
 
+// Scalar fields a sync proposal can apply straight onto a plan.
+const APPLICABLE_FIELDS = {
+    Price: "price",
+    ValidityDays: "validityDays",
+    DailyData: "dailyData",
+    TotalData: "totalData",
+    Sms: "sms",
+};
+
 export const approveChange = async(req, res) => {
     try {
         const detectedChangeId = req.params.id
@@ -136,24 +148,55 @@ export const approveChange = async(req, res) => {
         const change = await DetectedChange.findById(detectedChangeId)
         if(!change) throw new Error("Change does not exist")
         if(change.status !== 'Pending') throw new Error("Change is not in pending state")
-                
+
+        // A brand new pack proposed by the sync service or a contributor.
+        if(change.field === 'NewPlan'){
+            const snapshot = change.snapshot || {}
+            const created = await Plans.create({
+                operator: snapshot.operator,
+                category: snapshot.category,
+                price: snapshot.price,
+                validityDays: snapshot.validityDays,
+                dailyData: snapshot.dailyData,
+                totalData: snapshot.totalData,
+                sms: snapshot.sms,
+                isUnlimitedCalls: snapshot.isUnlimitedCalls,
+                isUnlimitedSMS: snapshot.isUnlimitedSMS,
+                ottApps: snapshot.ottApps || [],
+                isActive: true,
+                source: change.source || "manual",
+                sourceRef: change.sourceRef || "",
+            })
+
+            change.status = "Approved"
+            change.planId = created._id
+            await change.save()
+
+            await logAudit({actor: req.user, action: "approve_new_plan", entity: "Plan", entityId: created._id, details: `${created.operator} ₹${created.price} (${created.validityDays} days) via ${change.source}`})
+
+            return res.status(200).json({
+                success: true,
+                message: "New plan added to the catalogue",
+                newPlan: created
+            })
+        }
+
         const plan = await Plans.findById(change.planId);
         if(!plan) throw new Error("Plan does not exist")
-            
-        let newPlan
-        let priceHistory
-        if(change.field === 'Price'){
-            newPlan = await Plans.findByIdAndUpdate(change.planId, {price: change.newValue}, {returnDocument: 'after'})
-            priceHistory = await PriceHistory.create({
+
+        const path = APPLICABLE_FIELDS[change.field]
+        if(!path) throw new Error("Unsupported change type")
+
+        const newPlan = await Plans.findByIdAndUpdate(change.planId, {[path]: change.newValue}, {returnDocument: 'after'})
+
+        // Only a real price change with a known previous value is historic.
+        if(change.field === 'Price' && change.oldValue != null && change.newValue != null){
+            await PriceHistory.create({
                 planId: change.planId,
                 oldPrice: change.oldValue,
                 newPrice: change.newValue
             })
         }
-        else if(change.field === 'ValidityDays'){
-            newPlan = await Plans.findByIdAndUpdate(change.planId, {validityDays: change.newValue}, {returnDocument: 'after'})
-        }
-        else throw new Error("Invalid Old Value")
 
         await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Approved"}, {returnDocument: 'after'})
 
@@ -161,7 +204,7 @@ export const approveChange = async(req, res) => {
 
         res.status(200).json({
             success: true,
-            message: "Changes Approve Successfuly",
+            message: "Change approved successfully",
             newPlan
         })
 
@@ -181,8 +224,11 @@ export const rejectChange = async (req, res) => {
         if(!change) throw new Error("Change does not exist")
         if(change.status !== 'Pending') throw new Error("Change is not in pending state")
 
-        const plan = await Plans.findById(change.planId);
-        if(!plan) throw new Error("Plan does not exist")
+        // NewPlan proposals only get a planId once they are approved.
+        if (change.planId) {
+            const plan = await Plans.findById(change.planId);
+            if(!plan) throw new Error("Plan does not exist")
+        }
 
         await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Rejected"})
 
@@ -359,6 +405,76 @@ export const rejectSubmission = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Submission rejected"
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const getPlanSyncSources = async (req, res) => {
+    try {
+        res.status(200).json({
+            success: true,
+            sources: listPlanSources(),
+            defaults: DEFAULT_SOURCES,
+            cron: process.env.SYNC_CRON || "0 3 * * *",
+            timezone: process.env.SYNC_TIMEZONE || "Asia/Kolkata",
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const triggerPlanSync = async (req, res) => {
+    try {
+        const requested = Array.isArray(req.body?.sources) && req.body.sources.length > 0
+            ? req.body.sources
+            : DEFAULT_SOURCES
+
+        const sources = requested.filter((name) => getPlanSource(name))
+        if (sources.length === 0) throw new Error("No valid plan sources requested")
+
+        const { run, results, totals, status } = await runPlanSync({
+            sources,
+            trigger: "admin",
+            triggeredBy: req.user._id,
+        })
+
+        await logAudit({
+            actor: req.user,
+            action: "run_plan_sync",
+            entity: "PlanSyncRun",
+            entityId: run._id,
+            details: `${status}: fetched=${totals.fetched} new=${totals.newPlans} changes=${totals.changes}`,
+        })
+
+        res.status(200).json({
+            success: true,
+            message: `Plan sync finished (${status})`,
+            run,
+            results,
+            totals,
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const getPlanSyncRuns = async (req, res) => {
+    try {
+        const limit = Math.min(Number(req.query.limit) || 10, 50)
+
+        const runs = await PlanSyncRun.find()
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean()
+
+        res.status(200).json({
+            success: true,
+            runs
         })
     } catch (err) {
         console.error("Error: ", err.message);
