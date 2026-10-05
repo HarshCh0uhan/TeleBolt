@@ -104,9 +104,12 @@ GET  /api/plans/price-history/:id  - Price change history for a plan
 **Authenticated users:**
 
 ```
-GET   /api/auth/me            - Current session user
-PATCH /api/auth/me            - Update username / email / password
-POST  /api/plans/submit       - Suggest a plan for admin review
+GET    /api/auth/me                - Current session user
+PATCH  /api/auth/me                - Update username / email / password
+GET    /api/auth/favorites         - Saved plans for the session user
+POST   /api/auth/favorites/:planId - Save / unsave a plan
+DELETE /api/auth/favorites/:planId - Remove a saved plan
+POST   /api/plans/submit           - Suggest a plan for admin review
 ```
 
 **Admin (requires an admin session):**
@@ -143,6 +146,7 @@ GET    /api/admin/plan-sync/runs         - Plan sync history
 - **Yearly normalization** — yearly cost, yearly data and cost per GB on every card and detail page.
 - **Filters** — operator, price, validity, data allowance, category and OTT benefits.
 - **Accounts** — register, log in, update your profile and change your password.
+- **Saved plans** — bookmark plans from the catalog or a plan detail page and revisit them from your profile.
 - **Suggest a plan** — submit a missing plan; an admin reviews it before it goes live.
 
 ### For Admins
@@ -197,18 +201,27 @@ flow requires a captcha, so this route can break whenever they rotate either.
 - **Data allowance changes** → `DailyData` / `TotalData`
 - **SMS changes** → `Sms`
 
-Vi bakes the price into its plan ids (`MH_0014_2399_MH_0014_2399`), so a price hike arrives as an
-unseen id. The matcher therefore falls back to the plan's *shape* — same data allowance, then same
-validity — which turns a hike into a "Price" proposal rather than a duplicate new plan.
+Matching has two tiers. An unchanged price keeps the same upstream id, so validity/data/SMS changes
+are matched exactly. A price change gives the pack a **new** id, so the fallback requires an
+*identical bundle* — same operator, same daily data, same total data, same validity — before it is
+reported as a "Price" proposal.
+
+That second tier is deliberately strict. A looser version matched on data allowance alone and paired
+a 365-day 10 GB pack with a 28-day one, reporting a ₹1599 plan as "changed" to ₹348. Anything that is
+neither an exact id nor an identical bundle becomes a **new plan**, and packs that disappear upstream
+are counted as `stale` in the run report rather than silently rewritten.
 
 ### Commands
 
 ```bash
-# Check every source against the live sites without touching the database
+# Fetch and normalise from the live sites (no database involved)
 cd Backend && node scripts/plan-sync-dry-run.mjs
 node scripts/plan-sync-dry-run.mjs vi-sync       # one source only
 
-# Source unit tests (normalisers, parsing, schema invariants)
+# Run the real matcher and diff against the database, writing nothing
+node scripts/plan-sync-dry-run.mjs --db
+
+# Source unit tests (normalisers, matching rules, schema invariants)
 cd Backend && node test/planSources.test.mjs
 ```
 
