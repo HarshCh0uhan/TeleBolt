@@ -63,12 +63,11 @@ FRONTEND_URL=http://localhost:5173
 # Override the Vi catalogue page that is scraped
 # VI_PLANS_URL=https://www.myvi.in/prepaid/unlimited-calls-and-data-plans
 
-# BSNL's tariff API needs a browser session. Without it the source is skipped
-# (and reported as skipped) instead of failing.
-# BSNL_PROXY_COOKIE=
-# BSNL_EXTRA_HEADERS={"x-api-key":"..."}
-# BSNL_CIRCLE=MH
-# BSNL_SVCTYPE=prepaid
+# BSNL mints its own anonymous session, so nothing is required here.
+# Circles use BSNL's full names; Delhi and Tamil Nadu answer "no plans".
+# BSNL_CIRCLES=Madhya Pradesh,Maharashtra,Karnataka,Gujarat
+# Only needed if BSNL rotates the passphrase in their bundle:
+# BSNL_PASSPHRASE=
 
 # Daily schedule (cron + timezone) and per-run safety cap for new plans
 # SYNC_CRON=0 3 * * *
@@ -188,32 +187,22 @@ admin "Run sync now" ───┼─→ source adapters ─→ normalise ─→ 
 | Source | Status | How it works |
 |---|---|---|
 | **Vi** (`vi-sync`) | ✅ live | `myvi.in` renders its whole prepaid catalogue into the Next.js flight payload, so `self.__next_f.push([1,"…"])` chunks contain the plan list as JSON. Each record carries `ITEM_ID`, `UNIT_COST`, `VALIDITY_ATTR`, `DATA_LINE_1`, `DATAUSAGE_ATTR` and `SMS_LINE_1`. A dry run currently reads **88 usable plans** in ~1.5 s. |
-| **BSNL** (`bsnl-sync`) | ❌ not available | Its proxy is reachable, but it serves **no prepaid mobile catalogue** — see the evidence below. The source reports `Skipped` and never blocks a run. Add BSNL plans via CSV or Suggest a Plan. |
+| **BSNL** (`bsnl-sync`) | ✅ live | BSNL's recharge page hands an anonymous `bsnl_session` cookie to anyone who loads it, and that is all its plan API needs — **no login, no mobile number, no captcha**. Bodies must be AES-encrypted (CryptoJS/OpenSSL) and responses come back encrypted too; both live in `planSources/cryptoJs.js`. A dry run reads **26 usable plans** in ~1.6 s. |
 
-**BSNL: why it can't be automated (verified against the live service).**
+**How BSNL works.** `POST /api/bsnl-proxy/api/recharge-plansnew` with
+`{ operatorCode: "BSNL", circleCode: "<full circle name>" }`, AES-encrypted, returns `mobilePlans`
+grouped into tabs (`UNLIMITED`, `Voice & Data Packs`, `Data Packs`, …). Two things cost real time to
+find and are worth knowing:
 
-1. A bare request → `403 "Direct API access is strictly prohibited."` (a same-origin check); adding
-   `origin`/`referer` → `401 "Authentication required"`.
-2. With the site's `bsnl_session` cookie it answers — but POST bodies must be **AES-encrypted**
-   (plain JSON → `403 "Plain text requests are not allowed"`). The passphrase sits in their JS bundle
-   and the format is CryptoJS/OpenSSL `Salted__`.
-3. Fully authenticated, `cofetchtariffnew` serves **wireline only**. Its service-type list in the page
-   bundle contains exactly three entries — `BHARAT FIBER Broadband`, `Bharat Air Fiber`, `LANDLINE` —
-   and there is no mobile option. What they return:
+- `circleCode` is the **full circle name** — `"Madhya Pradesh"`, not `"MP"` or `"MH"`. Those short codes
+  come from `fetch-operator`, the endpoint that *does* demand a mobile number and captcha; using the
+  name directly skips that whole flow.
+- Bodies must be encrypted or the proxy answers `403 "Plain text requests are not allowed"`, and a bare
+  request gets `403 "Direct API access is strictly prohibited."` (a same-origin check).
 
-   | `svctype` | Maharashtra | All India |
-   |---|---|---|
-   | `BHARAT FIBER Broadband` | 117 plans | 3,075 plans |
-   | `Bharat Air Fiber` | 57 plans | 1,656 plans |
-   | `LANDLINE` | 8 plans | 234 plans |
-
-   Every field is broadband/landline shaped (`SPEED`, `FUP_SPEED`, `DATA_QUOTA`, `VOICE_QUOTA`, `FMC`).
-4. The prepaid endpoint `recharge-plansnew` answers `"No recharge plans found"` for BSNL across every
-   circle (both `MH` and `CIRCLE_ID 1` from their own circle list). Its real inputs come from
-   `fetch-operator`, which needs a **live BSNL mobile number plus a captcha**.
-
-The only missing input is that `operatorCode`/`circleCode` pair, which BSNL's own recharge flow would
-reveal if run once with a real BSNL number. Until someone does that, BSNL belongs in the manual path.
+Delhi and Tamil Nadu currently answer `"No recharge plans found"`; Madhya Pradesh, Maharashtra,
+Karnataka and Gujarat each return 59–61 rows, mostly the same national catalogue. Set `BSNL_CIRCLES`
+to change which are pulled.
 
 ### What it detects
 
@@ -286,7 +275,7 @@ TeleBolt/
 │   ├── scripts/
 │   │   └── plan-sync-dry-run.mjs        # run sources without touching the DB
 │   ├── test/
-│   │   ├── fixtures/                    # Vi records + synthetic BSNL rows
+│   │   ├── fixtures/                    # real Vi + BSNL plan records
 │   │   └── planSources.test.mjs
 │   └── src/
 │       ├── controllers/
@@ -335,9 +324,9 @@ Plan comparison with yearly normalization, cost-per-GB rankings, budget/operator
 admin dashboard, CSV import, price history, JWT auth.
 
 **V2 — Automation & community (in progress)**
-Daily automated Vi + BSNL plan sync into the detected-changes queue ✅, audit logging ✅,
-community plan submissions with a moderation queue ✅, contributor tracking ✅.
-Still open: duplicate detection, trust scoring, enabling BSNL with a session cookie.
+Daily automated Vi + BSNL plan sync into the detected-changes queue ✅ (BSNL via its self-minted
+session), audit logging ✅, community plan submissions with a moderation queue ✅, contributor
+tracking ✅. Still open: duplicate detection and trust scoring.
 
 **V3 — Platform (planned)**
 Advanced trust algorithms, contributor reputation and badges, spam detection, smart plan

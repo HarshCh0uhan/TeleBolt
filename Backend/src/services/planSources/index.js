@@ -12,7 +12,7 @@ const SOURCES = {
     [BSNL_SOURCE]: {
         name: BSNL_SOURCE,
         operator: "BSNL",
-        label: "BSNL (myBSNL tariff API)",
+        label: "BSNL (myBSNL recharge API)",
         fetch: fetchBsnlPlans,
     },
 };
