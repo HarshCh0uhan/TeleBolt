@@ -197,8 +197,17 @@ admin "Run sync now" ───┼─→ source adapters ─→ normalise ─→ 
 2. With the site's `bsnl_session` cookie it answers — but POST bodies must be **AES-encrypted**
    (plain JSON → `403 "Plain text requests are not allowed"`). The passphrase sits in their JS bundle
    and the format is CryptoJS/OpenSSL `Salted__`.
-3. Fully authenticated, `cofetchtariffnew` returns **broadband only**: `Bharat Air Fiber` → 57 fibre
-   plans, `LANDLINE` → 8 landline plans. It is not a SIM-plan API.
+3. Fully authenticated, `cofetchtariffnew` serves **wireline only**. Its service-type list in the page
+   bundle contains exactly three entries — `BHARAT FIBER Broadband`, `Bharat Air Fiber`, `LANDLINE` —
+   and there is no mobile option. What they return:
+
+   | `svctype` | Maharashtra | All India |
+   |---|---|---|
+   | `BHARAT FIBER Broadband` | 117 plans | 3,075 plans |
+   | `Bharat Air Fiber` | 57 plans | 1,656 plans |
+   | `LANDLINE` | 8 plans | 234 plans |
+
+   Every field is broadband/landline shaped (`SPEED`, `FUP_SPEED`, `DATA_QUOTA`, `VOICE_QUOTA`, `FMC`).
 4. The prepaid endpoint `recharge-plansnew` answers `"No recharge plans found"` for BSNL across every
    circle (both `MH` and `CIRCLE_ID 1` from their own circle list). Its real inputs come from
    `fetch-operator`, which needs a **live BSNL mobile number plus a captcha**.
