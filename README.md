@@ -153,7 +153,10 @@ GET    /api/admin/plan-sync/runs         - Plan sync history
 ### For Admins
 
 - **Dashboard** — live catalog stats, pending review count, recent audit activity and per-operator split.
-- **Plans** — create, edit, delete (with confirmation), search and filter the catalog.
+- **Plans** — create, edit, search and filter the catalog. Rows are tick-selectable, and a single plan, a
+  chosen selection or the **entire catalog** can be deleted — each behind a confirmation dialog. Bulk deletes
+  also clear the affected price history, drop pending proposals that point at deleted plans and remove them
+  from every user's saved plans.
 - **Detected changes** — review queue for everything the sync service finds, plus a **Run sync now** button,
   the last run's per-source report, and bulk actions (**Add all N new plans**, **Reject all N pending changes**)
   so a first sync of ~50 proposals is one click instead of fifty.

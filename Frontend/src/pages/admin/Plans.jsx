@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Filter, Plus, UploadCloud, RotateCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Filter, Plus, UploadCloud, RotateCw, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminSearchBar from '../../components/admin/AdminSearchBar';
 import AdminTable from '../../components/admin/AdminTable';
@@ -8,7 +8,7 @@ import AdminActionButtons from '../../components/admin/AdminActionButtons';
 import AdminEmptyState from '../../components/admin/AdminEmptyState';
 import AdminModal from '../../components/admin/AdminModal';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { deletePlan, getAdminPlans } from '../../api/admin.api';
+import { deletePlansBulk, getAdminPlans } from '../../api/admin.api';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const columns = [
@@ -20,6 +20,7 @@ const columns = [
   { key: 'isActive', header: 'Status' },
   { key: 'updatedAt', header: 'Updated' },
   { key: 'actions', header: 'Actions' },
+  { key: 'select', header: 'Select' },
 ];
 
 const TableSkeleton = ({ rows = 5 }) => (
@@ -41,10 +42,21 @@ const Plans = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [adminPlans, setAdminPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showToast, setShowToast] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const flashToast = (message) => {
+    setToast(message);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 3500);
+  };
+
+  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
 
   const fetchAdminPlans = async () => {
     setLoading(true);
@@ -55,18 +67,6 @@ const Plans = () => {
       console.error(err?.response?.data);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    const id = deleteTarget._id;
-    setDeleteTarget(null);
-    try {
-      await deletePlan(id);
-      setAdminPlans(prev => prev.filter(plan => plan._id !== id));
-    } catch (err) {
-      console.error("Delete failed", err);
     }
   };
 
@@ -90,12 +90,42 @@ const Plans = () => {
     });
   }, [adminPlans, search, operatorFilter, categoryFilter, statusFilter]);
 
+  const allFilteredSelected =
+    filteredPlans.length > 0 && filteredPlans.every((plan) => selectedIds.includes(plan._id));
+
+  const toggleSelected = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
+
+  const toggleSelectAll = () =>
+    setSelectedIds(allFilteredSelected ? [] : filteredPlans.map((plan) => plan._id));
+
+  // One confirmation flow covers a single row, a selection and the whole catalog.
+  const requestDelete = ({ kind, plan = null, ids = [], count = 0 }) =>
+    setConfirmDelete({ kind, plan, ids, count });
+
+  const runDelete = async () => {
+    if (!confirmDelete || busy) return;
+    setBusy(true);
+    try {
+      const payload = confirmDelete.kind === 'all' ? { all: true } : { ids: confirmDelete.ids };
+      const { data } = await deletePlansBulk(payload);
+      flashToast(data.message || 'Plans deleted');
+      await fetchAdminPlans();
+      setSelectedIds([]);
+      setConfirmDelete(null);
+    } catch (err) {
+      flashToast(
+        typeof err?.response?.data === 'string' ? err.response.data : 'Could not delete the plans'
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   useEffect(() => {
     if (location.state?.created) {
-      setShowToast(true);
+      flashToast('Plan created successfully');
       navigate(location.pathname, { replace: true, state: {} });
-      const timer = setTimeout(() => setShowToast(false), 3000);
-      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -107,14 +137,14 @@ const Plans = () => {
     <>
       {/* Toast */}
       <AnimatePresence>
-        {showToast && (
+        {toast && (
           <motion.div
             initial={{ opacity: 0, y: -20, x: 20 }}
             animate={{ opacity: 1, y: 0, x: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className="fixed top-6 right-6 z-50 rounded-2xl border border-[#58c28d]/30 bg-[#1f1f1f] px-5 py-4 text-sm text-[#58c28d] shadow-xl backdrop-blur-sm"
           >
-            ✓ Plan created successfully
+            ✓ {toast}
           </motion.div>
         )}
       </AnimatePresence>
@@ -238,6 +268,49 @@ const Plans = () => {
         </AnimatePresence>
       </motion.section>
 
+      {/* Selection + bulk delete */}
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12, duration: 0.3 }}
+        className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/10 bg-[#1f1f1f] p-4"
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={toggleSelectAll}
+            disabled={filteredPlans.length === 0}
+            className="rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {allFilteredSelected ? 'Clear selection' : `Select all ${filteredPlans.length}`}
+          </button>
+          <span className="text-xs text-zinc-500">
+            {selectedIds.length > 0 ? `${selectedIds.length} selected` : 'Nothing selected'}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => requestDelete({ kind: 'selected', ids: selectedIds, count: selectedIds.length })}
+            disabled={selectedIds.length === 0}
+            className="inline-flex items-center gap-2 rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-2.5 text-sm text-red-300 transition-all duration-300 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete selected{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+          </button>
+          <button
+            type="button"
+            onClick={() => requestDelete({ kind: 'all', count: adminPlans.length })}
+            disabled={adminPlans.length === 0}
+            className="inline-flex items-center gap-2 rounded-2xl border border-red-400/40 bg-red-500/20 px-4 py-2.5 text-sm font-medium text-red-200 transition-all duration-300 hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete all plans
+          </button>
+        </div>
+      </motion.section>
+
       {/* Table */}
       <motion.section
         initial={{ opacity: 0, y: 10 }}
@@ -272,7 +345,18 @@ const Plans = () => {
                 return (
                   <AdminActionButtons
                     onEdit={() => navigate(`/admin/plans/edit/${row._id}`)}
-                    onDelete={() => setDeleteTarget(row)}
+                    onDelete={() => requestDelete({ kind: 'one', plan: row, ids: [row._id], count: 1 })}
+                  />
+                );
+              }
+              if (col.key === 'select') {
+                return (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(row._id)}
+                    onChange={() => toggleSelected(row._id)}
+                    aria-label={`Select ${row.operator} ₹${row.price}`}
+                    className="h-4 w-4 cursor-pointer accent-[#58c28d]"
                   />
                 );
               }
@@ -282,19 +366,31 @@ const Plans = () => {
         )}
       </motion.section>
 
-      {/* Delete confirmation */}
+      {/* Delete confirmation – shared by one row, a selection and the catalog */}
       <AdminModal
-        isOpen={Boolean(deleteTarget)}
-        title="Delete plan?"
-        message={
-          deleteTarget
-            ? `This permanently removes the ${deleteTarget.operator} ₹${deleteTarget.price} plan. This action cannot be undone.`
-            : ''
+        isOpen={confirmDelete !== null}
+        title={
+          confirmDelete?.kind === 'all'
+            ? 'Delete every plan?'
+            : confirmDelete?.kind === 'selected'
+              ? `Delete ${confirmDelete.count} selected plan${confirmDelete.count === 1 ? '' : 's'}?`
+              : 'Delete plan?'
         }
-        confirmLabel="Delete"
+        message={
+          confirmDelete?.kind === 'all'
+            ? `This permanently removes all ${adminPlans.length} plans in the catalog, along with their price history and any pending proposals. This cannot be undone.`
+            : confirmDelete?.kind === 'selected'
+              ? `This permanently removes ${confirmDelete.count} selected plan${confirmDelete.count === 1 ? '' : 's'}, along with their price history. This cannot be undone.`
+              : confirmDelete?.plan
+                ? `This permanently removes the ${confirmDelete.plan.operator} ₹${confirmDelete.plan.price} plan, along with its price history. This cannot be undone.`
+                : ''
+        }
+        confirmLabel={busy ? 'Deleting…' : 'Delete'}
         cancelLabel="Cancel"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onConfirm={runDelete}
+        onCancel={() => {
+          if (!busy) setConfirmDelete(null);
+        }}
       />
     </>
   );

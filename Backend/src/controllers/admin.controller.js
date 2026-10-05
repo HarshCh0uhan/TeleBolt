@@ -556,3 +556,62 @@ export const rejectPendingChanges = async (req, res) => {
         res.status(400).json(err.message)
     }
 }
+
+/**
+ * Deletes a chosen set of plans, or the whole catalogue when `all` is true.
+ *
+ * Deleting plans on their own would leave dangling references, so this also
+ * clears their price history, drops pending proposals that point at them
+ * (decided ones stay as history) and pulls them from every user's saved plans.
+ */
+export const deletePlansBulk = async (req, res) => {
+    try {
+        const { ids, all } = req.body || {}
+        const deleteAll = all === true
+
+        let targetIds
+        if (deleteAll) {
+            targetIds = await Plans.distinct("_id")
+        } else {
+            if (!Array.isArray(ids) || ids.length === 0) throw new Error("No plans selected")
+            const invalid = ids.filter((id) => !mongoose.Types.ObjectId.isValid(id))
+            if (invalid.length > 0) throw new Error("Invalid plan id supplied")
+            targetIds = ids
+        }
+
+        if (targetIds.length === 0) throw new Error("There are no plans to delete")
+
+        const { deletedCount } = await Plans.deleteMany({ _id: { $in: targetIds } })
+
+        const [history, proposals, favourites] = await Promise.all([
+            PriceHistory.deleteMany({ planId: { $in: targetIds } }),
+            DetectedChange.deleteMany({ planId: { $in: targetIds }, status: "Pending" }),
+            User.updateMany(
+                { favoritePlans: { $in: targetIds } },
+                { $pull: { favoritePlans: { $in: targetIds } } }
+            ),
+        ])
+
+        await logAudit({
+            actor: req.user,
+            action: "delete_plan",
+            entity: "Plan",
+            details:
+                `${deleteAll ? "deleted ALL plans" : `bulk deleted ${deletedCount} plan(s)`}` +
+                `; ${history.deletedCount} price history row(s), ${proposals.deletedCount} pending proposal(s), ` +
+                `${favourites.modifiedCount} saved-plan list(s) updated`,
+        })
+
+        res.status(200).json({
+            success: true,
+            message: deleteAll ? `Deleted all ${deletedCount} plans` : `Deleted ${deletedCount} plan(s)`,
+            deleted: deletedCount,
+            priceHistoryRemoved: history.deletedCount,
+            pendingProposalsRemoved: proposals.deletedCount,
+            favouritesUpdated: favourites.modifiedCount,
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
