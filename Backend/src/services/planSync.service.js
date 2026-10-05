@@ -3,29 +3,27 @@ import { DetectedChange } from "../models/detectedChange.js";
 import { PlanSyncRun } from "../models/planSyncRun.js";
 import { DEFAULT_SOURCES, getPlanSource } from "./planSources/index.js";
 import { SourceNotConfiguredError } from "./planSources/errors.js";
+import { diffPlanFields } from "./planSources/matching.js";
 
 // Safety valve so a first run cannot flood the review queue.
 const MAX_NEW_PER_RUN = Number(process.env.SYNC_MAX_NEW_PER_RUN || 50);
 
-const COMPARABLE_FIELDS = [
-    { key: "price", field: "Price" },
-    { key: "validityDays", field: "ValidityDays" },
-    { key: "dailyData", field: "DailyData" },
-    { key: "totalData", field: "TotalData" },
-    { key: "sms", field: "Sms" },
-];
-
-const isNullish = (value) => value === undefined || value === null;
-
-const sameNumber = (a, b) => {
-    if (isNullish(a) && isNullish(b)) return true;
-    if (isNullish(a) || isNullish(b)) return false;
-    return Math.abs(Number(a) - Number(b)) < 0.005;
-};
-
-// Matches "no value" against either null or a missing field.
-const dataClause = (plan) => ({
+/**
+ * Query for a catalogue plan with an identical bundle (operator, daily data,
+ * total data and validity). Mirrors `isSameBundle` in planSources/matching.js,
+ * but excludes plans already bound to a different upstream id.
+ */
+const bundleQuery = (plan, sourceName) => ({
+    operator: plan.operator,
+    validityDays: plan.validityDays,
     $and: [
+        {
+            $or: [
+                { sourceRef: "" },
+                { sourceRef: { $exists: false } },
+                { source: { $ne: sourceName } },
+            ],
+        },
         plan.dailyData
             ? { dailyData: plan.dailyData }
             : { $or: [{ dailyData: null }, { dailyData: { $exists: false } }] },
@@ -39,21 +37,17 @@ const dataClause = (plan) => ({
  * Finds the catalogue plan a source record refers to.
  *
  * Vi bakes the price into its plan ids (MH_0014_2399_MH_0014_2399), so a price
- * hike arrives as an unseen id. Matching therefore falls back to the plan's
- * shape – same data allowance, then same validity – which is what turns a hike
- * into a "Price" proposal instead of a duplicate new plan.
+ * change arrives as an unseen id while a validity or data change keeps the id.
+ * Matching is therefore: exact source id first, then an identical bundle, and
+ * anything else is a new plan. A looser shape match was tried and produced
+ * nonsense proposals - it linked a 365-day 10 GB pack to a 28-day one.
  */
 const findMatch = async (plan, sourceName) => {
     const exact = await Plans.findOne({ source: sourceName, sourceRef: plan.sourceRef });
     if (exact) return { plan: exact, matchedBy: "sourceRef" };
 
-    const shaped = { operator: plan.operator, ...dataClause(plan) };
-
-    const sameValidity = await Plans.findOne({ ...shaped, validityDays: plan.validityDays });
-    if (sameValidity) return { plan: sameValidity, matchedBy: "shape" };
-
-    const anyValidity = await Plans.findOne(shaped).sort({ createdAt: 1 });
-    if (anyValidity) return { plan: anyValidity, matchedBy: "shape-validity" };
+    const bundle = await Plans.findOne(bundleQuery(plan, sourceName));
+    if (bundle) return { plan: bundle, matchedBy: "bundle" };
 
     return { plan: null, matchedBy: null };
 };
@@ -61,7 +55,7 @@ const findMatch = async (plan, sourceName) => {
 // Avoids raising an identical proposal twice while one is still pending.
 const proposalExists = (filter) => DetectedChange.exists({ ...filter, status: "Pending" });
 
-const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN } = {}) => {
+const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false } = {}) => {
     const source = getPlanSource(sourceName);
     if (!source) throw new Error(`Unknown plan source "${sourceName}"`);
 
@@ -76,7 +70,7 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN } = {}) => {
         skipped: 0,
         adopted: 0,
         missingFromSource: 0,
-        errors: [],
+        notes: [],
     };
 
     let fetched;
@@ -90,7 +84,7 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN } = {}) => {
         }
         result.status = "Failed";
         result.message = err.message;
-        result.errors.push(err.message);
+        result.notes.push(err.message);
         return result;
     }
 
@@ -116,13 +110,15 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN } = {}) => {
                 continue;
             }
 
-            await DetectedChange.create({
-                field: "NewPlan",
-                snapshot: plan,
-                source: sourceName,
-                sourceRef: plan.sourceRef,
-                status: "Pending",
-            });
+            if (!dryRun) {
+                await DetectedChange.create({
+                    field: "NewPlan",
+                    snapshot: plan,
+                    source: sourceName,
+                    sourceRef: plan.sourceRef,
+                    status: "Pending",
+                });
+            }
 
             newThisRun += 1;
             result.newPlans += 1;
@@ -130,36 +126,36 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN } = {}) => {
         }
 
         // Link an existing catalogue plan to this source the first time we see it.
-        if (!existing.sourceRef) {
+        if (!existing.sourceRef && !dryRun) {
             existing.source = sourceName;
             existing.sourceRef = plan.sourceRef;
             await existing.save();
             result.adopted += 1;
+        } else if (!existing.sourceRef && dryRun) {
+            result.adopted += 1;
         }
 
         let changed = 0;
-        for (const { key, field } of COMPARABLE_FIELDS) {
-            const oldValue = existing[key];
-            const newValue = plan[key];
-            if (sameNumber(oldValue, newValue)) continue;
-
+        for (const { field, oldValue, newValue } of diffPlanFields(existing, plan)) {
             const duplicate = await proposalExists({
                 planId: existing._id,
                 field,
                 source: sourceName,
-                newValue: isNullish(newValue) ? null : Number(newValue),
+                newValue,
             });
             if (duplicate) continue;
 
-            await DetectedChange.create({
-                planId: existing._id,
-                field,
-                oldValue: isNullish(oldValue) ? null : Number(oldValue),
-                newValue: isNullish(newValue) ? null : Number(newValue),
-                source: sourceName,
-                sourceRef: plan.sourceRef,
-                status: "Pending",
-            });
+            if (!dryRun) {
+                await DetectedChange.create({
+                    planId: existing._id,
+                    field,
+                    oldValue,
+                    newValue,
+                    source: sourceName,
+                    sourceRef: plan.sourceRef,
+                    status: "Pending",
+                });
+            }
             changed += 1;
         }
 
@@ -167,9 +163,7 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN } = {}) => {
         else result.unchanged += 1;
 
         if (matchedBy !== "sourceRef") {
-            result.errors.push(
-                `matched ${plan.sourceRef} to an existing plan by ${matchedBy === "shape" ? "data + validity" : "data alone"}`
-            );
+            result.notes.push(`matched ${plan.sourceRef} to an existing plan with an identical bundle`);
         }
     }
 
@@ -181,7 +175,16 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN } = {}) => {
         sourceRef: { $nin: fetchedRefs },
     });
 
-    if (result.skipped > 0 && result.message) {
+    // Be explicit when the per-run cap held proposals back.
+    if (result.skipped > 0 && result.newPlans >= maxNew) {
+        result.message = [
+            result.message,
+            `${result.skipped} plan(s) were not queued because the per-run cap of ${maxNew} new plans was reached - the next run picks them up.`,
+        ]
+            .filter(Boolean)
+            .join(" ");
+        result.status = "Partial";
+    } else if (result.skipped > 0 && result.message) {
         result.status = "Partial";
     }
 
@@ -192,13 +195,19 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN } = {}) => {
  * Runs every requested source, records the run, and returns a summary.
  * Never throws: a failing source is reported on its own result row.
  */
-export const runPlanSync = async ({ sources = DEFAULT_SOURCES, trigger = "cron", triggeredBy = null } = {}) => {
+export const runPlanSync = async ({
+    sources = DEFAULT_SOURCES,
+    trigger = "cron",
+    triggeredBy = null,
+    dryRun = false,
+    maxNew,
+} = {}) => {
     const startedAt = new Date();
     const results = [];
 
     for (const sourceName of sources) {
         try {
-            results.push(await syncSource(sourceName));
+            results.push(await syncSource(sourceName, dryRun ? { dryRun: true, maxNew } : { maxNew }));
         } catch (err) {
             results.push({
                 source: sourceName,
@@ -211,7 +220,7 @@ export const runPlanSync = async ({ sources = DEFAULT_SOURCES, trigger = "cron",
                 skipped: 0,
                 adopted: 0,
                 missingFromSource: 0,
-                errors: [err.message],
+                notes: [err.message],
             });
         }
     }
@@ -235,7 +244,7 @@ export const runPlanSync = async ({ sources = DEFAULT_SOURCES, trigger = "cron",
           ? "Success"
           : "Partial";
 
-    const run = await PlanSyncRun.create({
+    const runData = {
         trigger,
         status,
         startedAt,
@@ -244,7 +253,12 @@ export const runPlanSync = async ({ sources = DEFAULT_SOURCES, trigger = "cron",
         totals,
         sources: results,
         triggeredBy,
-    });
+    };
+
+    // A dry run reports what would change without recording a run.
+    if (dryRun) return { run: { ...runData, dryRun: true }, results, totals, status };
+
+    const run = await PlanSyncRun.create(runData);
 
     return { run, results, totals, status };
 };
