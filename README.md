@@ -188,20 +188,23 @@ admin "Run sync now" ───┼─→ source adapters ─→ normalise ─→ 
 | Source | Status | How it works |
 |---|---|---|
 | **Vi** (`vi-sync`) | ✅ live | `myvi.in` renders its whole prepaid catalogue into the Next.js flight payload, so `self.__next_f.push([1,"…"])` chunks contain the plan list as JSON. Each record carries `ITEM_ID`, `UNIT_COST`, `VALIDITY_ATTR`, `DATA_LINE_1`, `DATAUSAGE_ATTR` and `SMS_LINE_1`. A dry run currently reads **88 usable plans** in ~1.5 s. |
-| **BSNL** (`bsnl-sync`) | ⚠️ needs a session | BSNL serves tariffs through its own Next.js proxy: `POST /api/bsnl-proxy/myBsnlApp/rest/cofetchtariffnew` with `{ svctype, circle }`. It answers **`401 Authentication required`** without a signed-in session (and `403 "Direct API access is strictly prohibited."` when hit directly). Set `BSNL_PROXY_COOKIE` to enable it. |
+| **BSNL** (`bsnl-sync`) | ❌ not available | Its proxy is reachable, but it serves **no prepaid mobile catalogue** — see the evidence below. The source reports `Skipped` and never blocks a run. Add BSNL plans via CSV or Suggest a Plan. |
 
-**Enabling BSNL:** the request only fires on the **pricing-plans page**, not the recharge page (which
-demands a mobile number and a captcha first) and not `portal.bsnl.in`:
+**BSNL: why it can't be automated (verified against the live service).**
 
-1. Open `https://bsnl.co.in/en/pricing-plans/prepaid`
-2. DevTools → Network → filter **Fetch/XHR**, then change the circle dropdown so the request appears
-3. Right-click the `cofetchtariffnew` request → **Copy as cURL**
-4. Put its `Cookie` header in `BSNL_PROXY_COOKIE`, and any `x-*` token header it carries into
-   `BSNL_EXTRA_HEADERS` as JSON, e.g. `BSNL_EXTRA_HEADERS={"x-api-key":"abc123"}`
+1. A bare request → `403 "Direct API access is strictly prohibited."` (a same-origin check); adding
+   `origin`/`referer` → `401 "Authentication required"`.
+2. With the site's `bsnl_session` cookie it answers — but POST bodies must be **AES-encrypted**
+   (plain JSON → `403 "Plain text requests are not allowed"`). The passphrase sits in their JS bundle
+   and the format is CryptoJS/OpenSSL `Salted__`.
+3. Fully authenticated, `cofetchtariffnew` returns **broadband only**: `Bharat Air Fiber` → 57 fibre
+   plans, `LANDLINE` → 8 landline plans. It is not a SIM-plan API.
+4. The prepaid endpoint `recharge-plansnew` answers `"No recharge plans found"` for BSNL across every
+   circle (both `MH` and `CIRCLE_ID 1` from their own circle list). Its real inputs come from
+   `fetch-operator`, which needs a **live BSNL mobile number plus a captcha**.
 
-Until then the source reports `Skipped` with that instruction — it never fails the run. Note that
-BSNL's proxy bodies are AES-encrypted with a key from their bundle, so this route can break whenever
-they rotate the key or the session.
+The only missing input is that `operatorCode`/`circleCode` pair, which BSNL's own recharge flow would
+reveal if run once with a real BSNL number. Until someone does that, BSNL belongs in the manual path.
 
 ### What it detects
 
