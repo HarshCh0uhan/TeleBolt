@@ -2,3 +2,45 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, sans-serif; }
+
+/*
+ * Brand scrollbar.
+ *
+ * The `scrollbar-thin` / `scrollbar-thumb-*` classes used around the app are
+ * inert: Tailwind v4 does not ship those utilities and tailwind-scrollbar is not
+ * installed, so they generate no CSS. This is where the green scrollbar actually
+ * comes from. Add `scrollbar-brand` to any element that scrolls on its own.
+ */
+html,
+body,
+.scrollbar-brand {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(88, 194, 141, 0.45) #1f1f1f;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.scrollbar-brand::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.scrollbar-brand::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.scrollbar-brand::-webkit-scrollbar-thumb {
+  background: rgba(88, 194, 141, 0.45);
+  border: 2px solid #1f1f1f;
+  border-radius: 9999px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.scrollbar-brand::-webkit-scrollbar-thumb:hover {
+  background: rgba(88, 194, 141, 0.7);
+}

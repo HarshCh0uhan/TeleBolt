@@ -64,19 +64,11 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      <div className="
-            max-h-screen
-            w-full
-            overflow-y-auto
-            border
-            border-white/10
-            bg-[#1f1f1f]
-            shadow-2xl
-            scrollbar-thin
-            scrollbar-track-[#1f1f1f]
-            scrollbar-thumb-[#58c28d]/40
-            hover:scrollbar-thumb-[#58c28d]/60
-          ">
+      {/* Exactly one scroll container: the page itself. This panel used to be
+          `max-h-screen overflow-y-auto`, but it renders below the 64px navbar,
+          so the document overflowed by that much and the browser drew a second
+          scrollbar beside this one. */}
+      <div className="w-full border border-white/10 bg-[#1f1f1f] shadow-2xl">
 
       {/* Extra bottom padding keeps the last row of plans clear of the fixed compare bar */}
       <div className="mx-auto max-w-7xl px-4 py-6 pb-40">
