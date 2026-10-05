@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/axios";
-import {login, register, logout, registerAdmin, updateProfile} from "../api/auth.api"
+import {login, register, logout, registerAdmin, updateProfile, toggleFavoritePlan} from "../api/auth.api"
 
 
 
@@ -49,8 +49,17 @@ export const AuthProvider = ({children}) => {
         return res.data.user;
     };
 
+    const isFavoritePlan = (planId) =>
+        Boolean(user?.favoritePlans?.some((id) => id?.toString?.() === planId || id === planId));
+
+    const toggleFavorite = async (planId) => {
+        const res = await toggleFavoritePlan(planId);
+        setUser((current) => current ? ({ ...current, favoritePlans: res.data.favoritePlans }) : current);
+        return res.data.isFavorite;
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, loginUser, registerUser, registerAdminUser, logoutUser, updateUser }}>
+        <AuthContext.Provider value={{ user, loading, loginUser, registerUser, registerAdminUser, logoutUser, updateUser, isFavoritePlan, toggleFavorite }}>
             {children}
         </AuthContext.Provider>
     );

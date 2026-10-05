@@ -1,7 +1,10 @@
 import {User} from "../models/user.js"
+import { Plans } from "../models/plans.js";
 import bcrypt from "bcryptjs"
+import mongoose from "mongoose";
 import { generateToken } from "../utils/jwt.js";
 import {validateRegister, validateLogin, validateProfileUpdate} from "../utils/validations.js"
+import { yearlyPlan } from "../utils/yearlyPlan.js";
 
 
 export const register = async(req, res) => {
@@ -172,9 +175,71 @@ export const updateProfile = async (req, res) => {
                 username: userData.username,
                 email: userData.email,
                 role: userData.role,
+                favoritePlans: userData.favoritePlans,
                 createdAt: userData.createdAt,
                 updatedAt: userData.updatedAt,
             }
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const getFavoritePlans = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).populate("favoritePlans");
+        res.status(200).json({
+            success: true,
+            favorites: (user.favoritePlans || []).map((plan) => yearlyPlan(plan))
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const toggleFavoritePlan = async (req, res) => {
+    try {
+        const { planId } = req.params;
+        if(!mongoose.Types.ObjectId.isValid(planId)) throw new Error("Invalid Plan ID");
+
+        const plan = await Plans.findOne({ _id: planId, isActive: true });
+        if(!plan) throw new Error("Plan does not exist");
+
+        const user = await User.findById(req.user._id);
+        const exists = user.favoritePlans.some((id) => id.toString() === planId);
+
+        if(exists) user.favoritePlans = user.favoritePlans.filter((id) => id.toString() !== planId);
+        else user.favoritePlans.push(planId);
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            isFavorite: !exists,
+            favoritePlans: user.favoritePlans
+        })
+    } catch (err) {
+        console.error("Error: ", err.message);
+        res.status(400).json(err.message)
+    }
+}
+
+export const removeFavoritePlan = async (req, res) => {
+    try {
+        const { planId } = req.params;
+        if(!mongoose.Types.ObjectId.isValid(planId)) throw new Error("Invalid Plan ID");
+
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            { $pull: { favoritePlans: planId } },
+            { returnDocument: "after" }
+        );
+
+        res.status(200).json({
+            success: true,
+            favoritePlans: user.favoritePlans
         })
     } catch (err) {
         console.error("Error: ", err.message);
