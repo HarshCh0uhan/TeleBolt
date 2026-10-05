@@ -12,8 +12,26 @@ const BROWSER_HEADERS = {
     accept: "application/json, text/plain, */*",
     "accept-language": "en-IN,en;q=0.9",
     "content-type": "application/json",
+    "x-requested-with": "XMLHttpRequest",
     origin: SITE,
     referer: `${SITE}/en/pricing-plans/prepaid`,
+};
+
+/**
+ * Extra headers captured from the browser request, as a JSON object in
+ * BSNL_EXTRA_HEADERS. BSNL's proxy sometimes requires a token header, and this
+ * lets you paste it (e.g. from "Copy as cURL") without touching the code.
+ */
+const extraHeaders = () => {
+    const raw = process.env.BSNL_EXTRA_HEADERS;
+    if (!raw) return {};
+    try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+        console.error("BSNL_EXTRA_HEADERS is not valid JSON - ignoring it");
+        return {};
+    }
 };
 
 const pick = (row, keys) => {
@@ -78,9 +96,11 @@ export const fetchBsnlPlans = async ({ circle, svctype, cookie, timeoutMs = 2500
 
     if (!sessionCookie) {
         throw new SourceNotConfiguredError(
-            "BSNL blocks its tariff API without a signed-in session (HTTP 401). " +
-                "Open bsnl.co.in/recharge in a browser, copy the Cookie header of the " +
-                "cofetchtariffnew request from DevTools > Network, then set BSNL_PROXY_COOKIE in Backend/.env"
+            "BSNL blocks its tariff API without a browser session (HTTP 401). " +
+                "Open bsnl.co.in/en/pricing-plans/prepaid, DevTools > Network > Fetch/XHR, " +
+                "change the circle so the cofetchtariffnew request appears, then right-click it and " +
+                "use Copy as cURL: put the Cookie header in BSNL_PROXY_COOKIE and any x-* token " +
+                "header in BSNL_EXTRA_HEADERS (JSON) in Backend/.env"
         );
     }
 
@@ -90,14 +110,15 @@ export const fetchBsnlPlans = async ({ circle, svctype, cookie, timeoutMs = 2500
     try {
         const response = await fetch(API_URL, {
             method: "POST",
-            headers: { ...BROWSER_HEADERS, cookie: sessionCookie },
+            headers: { ...BROWSER_HEADERS, ...extraHeaders(), cookie: sessionCookie },
             body: JSON.stringify({ svctype: serviceType, circle: selectedCircle }),
             signal: controller.signal,
         });
 
         if (response.status === 401 || response.status === 403) {
             throw new SourceNotConfiguredError(
-                `BSNL rejected the session (HTTP ${response.status}). Refresh BSNL_PROXY_COOKIE from the browser.`
+                `BSNL rejected the session (HTTP ${response.status}). Re-copy the Cookie header, and the ` +
+                    `x-* token header if the request has one, into BSNL_PROXY_COOKIE / BSNL_EXTRA_HEADERS.`
             );
         }
         if (!response.ok) throw new Error(`BSNL returned HTTP ${response.status}`);
