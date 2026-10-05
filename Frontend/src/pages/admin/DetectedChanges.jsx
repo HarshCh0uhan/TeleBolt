@@ -1,21 +1,34 @@
 import { useEffect, useState } from 'react';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminStatCard from '../../components/admin/AdminStatCard';
-import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
-import AdminActionButtons from '../../components/admin/AdminActionButtons';
 import AdminEmptyState from '../../components/admin/AdminEmptyState';
+import DetectedChangeCard from '../../components/admin/DetectedChangeCard';
 import {
-  Clock3, BadgeCheck, XCircle, FileClock, AlertCircle, ArrowRight,
+  Clock3, BadgeCheck, XCircle, FileClock, AlertCircle, RefreshCw, Loader2, Play,
 } from 'lucide-react';
-import { detectedChanges, approveChange, rejectChange } from '../../api/admin.api';
+import {
+  detectedChanges, approveChange, rejectChange, runPlanSync, getPlanSyncRuns,
+} from '../../api/admin.api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdminStats } from '../../context/AdminStatsContext';
+
+const RUN_TONES = {
+  Success: 'border-[#58c28d]/30 bg-[#58c28d]/10 text-[#58c28d]',
+  Partial: 'border-yellow-400/30 bg-yellow-400/10 text-yellow-300',
+  Skipped: 'border-white/15 bg-white/5 text-zinc-300',
+  Failed: 'border-red-400/30 bg-red-500/10 text-red-400',
+};
 
 const DetectedChanges = () => {
   const [changes, setChanges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const {pendingCount, refreshPendingCount} = useAdminStats();
+  const [actionError, setActionError] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [lastRun, setLastRun] = useState(null);
+  const [syncRunning, setSyncRunning] = useState(false);
+  const [syncMessage, setSyncMessage] = useState(null);
+  const { pendingCount, refreshPendingCount } = useAdminStats();
 
   const fetchChanges = async () => {
     try {
@@ -30,55 +43,91 @@ const DetectedChanges = () => {
     }
   };
 
+  const fetchRuns = async () => {
+    try {
+      const { data } = await getPlanSyncRuns({ limit: 1 });
+      setLastRun(data.runs?.[0] || null);
+    } catch {
+      // The sync panel simply stays empty if history cannot be read.
+    }
+  };
+
   useEffect(() => {
-    fetchChanges();
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [changesRes, runsRes] = await Promise.all([
+          detectedChanges(),
+          getPlanSyncRuns({ limit: 1 }),
+        ]);
+        if (cancelled) return;
+        setChanges(changesRes.data.detectedChanges || []);
+        setLastRun(runsRes.data.runs?.[0] || null);
+        setError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setError(typeof err.response?.data === 'string' ? err.response.data : 'Failed to load changes');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   const handleApprove = async (id) => {
+    setBusyId(id);
+    setActionError(null);
     try {
       await approveChange(id);
-      setChanges(prev =>
-        prev.map(change =>
-          change._id === id ? { ...change, status: 'Approved' } : change
-        )
-      );
-      refreshPendingCount()
+      setChanges((prev) => prev.map((change) => (change._id === id ? { ...change, status: 'Approved' } : change)));
+      await refreshPendingCount();
     } catch (err) {
-      console.error('Approve failed', err);
+      setActionError(typeof err?.response?.data === 'string' ? err.response.data : 'Could not approve this change');
+    } finally {
+      setBusyId(null);
     }
   };
 
   const handleReject = async (id) => {
+    setBusyId(id);
+    setActionError(null);
     try {
       await rejectChange(id);
-      setChanges(prev =>
-        prev.map(change =>
-          change._id === id ? { ...change, status: 'Rejected' } : change
-        )
-      );
-      refreshPendingCount()
+      setChanges((prev) => prev.map((change) => (change._id === id ? { ...change, status: 'Rejected' } : change)));
+      await refreshPendingCount();
     } catch (err) {
-      console.error('Reject failed', err);
+      setActionError(typeof err?.response?.data === 'string' ? err.response.data : 'Could not reject this change');
+    } finally {
+      setBusyId(null);
     }
   };
 
-  // const pendingCount = changes.filter(c => c.status === 'Pending').length;
-  const approvedCount = changes.filter(c => c.status === 'Approved').length;
-  const rejectedCount = changes.filter(c => c.status === 'Rejected').length;
+  const handleRunSync = async () => {
+    setSyncRunning(true);
+    setSyncMessage(null);
+    try {
+      const { data } = await runPlanSync();
+      setSyncMessage(data.message || 'Plan sync finished');
+      await Promise.all([fetchChanges(), fetchRuns(), refreshPendingCount()]);
+    } catch (err) {
+      setSyncMessage(typeof err?.response?.data === 'string' ? err.response.data : 'Plan sync failed');
+    } finally {
+      setSyncRunning(false);
+    }
+  };
 
-  const pendingChanges = changes.filter(c => c.status === 'Pending');
+  const approvedCount = changes.filter((c) => c.status === 'Approved').length;
+  const rejectedCount = changes.filter((c) => c.status === 'Rejected').length;
+  const pendingChanges = changes.filter((c) => c.status === 'Pending');
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <AdminPageHeader
           eyebrow="Admin Dashboard"
           title="Detected changes"
-          description="Review incoming edits from the monitoring service. Approve clean changes or reject noisy ones."
+          description="Everything the daily Vi and BSNL sync found, plus manual edits – approve to apply, reject to ignore."
         />
       </motion.div>
 
@@ -94,6 +143,72 @@ const DetectedChanges = () => {
         <AdminStatCard label="Rejected" value={rejectedCount} hint="Kept out of live list" icon={XCircle} tone="danger" />
       </motion.section>
 
+      {/* Plan sync panel */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
+        className="mt-5 rounded-3xl border border-white/10 bg-[#1f1f1f] p-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+            <RefreshCw className="h-4 w-4 text-[#58c28d]" />
+            Plan sync
+          </div>
+          <button
+            type="button"
+            onClick={handleRunSync}
+            disabled={syncRunning}
+            className="inline-flex items-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d]/10 px-4 py-2.5 text-sm font-medium text-[#dff6ea] transition-all duration-300 hover:bg-[#58c28d]/20 disabled:opacity-60"
+          >
+            {syncRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            {syncRunning ? 'Running sync…' : 'Run sync now'}
+          </button>
+        </div>
+
+        {syncMessage && (
+          <p className="mt-3 rounded-2xl border border-white/10 bg-[#262626] px-4 py-2 text-xs text-zinc-300">
+            {syncMessage}
+          </p>
+        )}
+
+        {lastRun ? (
+          <div className="mt-4">
+            <p className="text-xs text-zinc-500">
+              Last run {new Date(lastRun.createdAt).toLocaleString('en-IN')} • {lastRun.trigger} •{' '}
+              {lastRun.totals?.fetched ?? 0} plans read • {lastRun.totals?.newPlans ?? 0} new •{' '}
+              {lastRun.totals?.changes ?? 0} changes
+            </p>
+            <div className="mt-3 space-y-2">
+              {(lastRun.sources || []).map((source) => (
+                <div
+                  key={source.source}
+                  className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">{source.source}</span>
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[11px] ${RUN_TONES[source.status] || RUN_TONES.Skipped}`}>
+                        {source.status}
+                      </span>
+                    </div>
+                    {source.message && <p className="mt-1 text-xs text-zinc-500">{source.message}</p>}
+                  </div>
+                  <p className="shrink-0 text-xs text-zinc-400">
+                    {source.fetched} read • {source.newPlans} new • {source.changes} changes •{' '}
+                    {source.unchanged} unchanged
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="mt-4 text-xs text-zinc-500">
+            No sync has run yet. The daily job runs at 03:00 IST, or trigger one now.
+          </p>
+        )}
+      </motion.section>
+
       {/* Review queue */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
@@ -105,6 +220,12 @@ const DetectedChanges = () => {
           <FileClock className="h-4 w-4 text-[#58c28d]" />
           Review queue {pendingChanges.length > 0 && `(${pendingChanges.length})`}
         </div>
+
+        {actionError && (
+          <p className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-2 text-xs text-red-400">
+            {actionError}
+          </p>
+        )}
 
         {/* Loading skeleton */}
         {loading && (
@@ -133,7 +254,7 @@ const DetectedChanges = () => {
         {!loading && !error && pendingChanges.length === 0 && (
           <AdminEmptyState
             title="No pending changes"
-            message="All changes have been reviewed. The queue will refill when the monitoring service detects plan updates."
+            message="All changes have been reviewed. The queue refills when the daily sync finds new plans or price and validity updates."
           />
         )}
 
@@ -148,38 +269,13 @@ const DetectedChanges = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                  className="rounded-3xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#58c28d]/30"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-medium text-white">
-                          {item.planId?.operator || 'Unknown'} plan
-                        </h3>
-                        <AdminStatusBadge status={item.status} />
-                      </div>
-                      <p className="mt-2 text-sm text-zinc-400">
-                        <span className="text-zinc-300">{item.field}</span> changed from{' '}
-                        <span className="text-white line-through decoration-zinc-600">
-                          {item.field === 'Price' ? `₹${item.oldValue}` : item.oldValue}
-                        </span>{' '}
-                        <ArrowRight className="mx-1 inline h-3 w-3 text-[#58c28d]" />{' '}
-                        <span className="text-[#58c28d] font-medium">
-                          {item.field === 'Price' ? `₹${item.newValue}` : item.newValue}
-                        </span>
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-500">
-                        Detected {new Date(item.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <AdminActionButtons
-                        onApprove={() => handleApprove(item._id)}
-                        onReject={() => handleReject(item._id)}
-                      />
-                    </div>
-                  </div>
+                  <DetectedChangeCard
+                    change={item}
+                    busy={busyId === item._id}
+                    onApprove={() => handleApprove(item._id)}
+                    onReject={() => handleReject(item._id)}
+                  />
                 </motion.div>
               ))}
             </AnimatePresence>

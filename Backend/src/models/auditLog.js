@@ -17,13 +17,14 @@ const auditLogSchema = new mongoose.Schema({
             "create_plan", "update_plan", "delete_plan",
             "approve_change", "reject_change",
             "import_plans",
-            "approve_submission", "reject_submission"
+            "approve_submission", "reject_submission",
+            "run_plan_sync", "approve_new_plan"
         ]
     },
     entity: {
         type: String,
         required: true,
-        enum: ["Plan", "DetectedChange", "PlanSubmission"]
+        enum: ["Plan", "DetectedChange", "PlanSubmission", "PlanSyncRun"]
     },
     entityId: {
         type: mongoose.Schema.Types.ObjectId

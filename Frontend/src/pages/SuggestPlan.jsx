@@ -141,6 +141,7 @@ const SuggestPlan = () => {
                   <option>Jio</option>
                   <option>Airtel</option>
                   <option>VI</option>
+                  <option>BSNL</option>
                 </select>
               </Input>
               <Input label="Category*">

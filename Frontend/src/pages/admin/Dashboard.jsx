@@ -34,6 +34,8 @@ const ACTION_META = {
   import_plans: { label: 'imported plans via CSV', tone: 'default' },
   approve_submission: { label: 'approved a plan submission', tone: 'success' },
   reject_submission: { label: 'rejected a plan submission', tone: 'danger' },
+  approve_new_plan: { label: 'added a new plan from a sync proposal', tone: 'success' },
+  run_plan_sync: { label: 'ran the plan sync', tone: 'default' },
 };
 
 const Dashboard = () => {

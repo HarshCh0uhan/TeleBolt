@@ -4,7 +4,7 @@ const planSchema = new mongoose.Schema({
     operator: {
         type: String,
         required: true,
-        enum: ["Jio", "Airtel", "VI"],
+        enum: ["Jio", "Airtel", "VI", "BSNL"],
         trim: true
     },
     category: {
@@ -47,10 +47,21 @@ const planSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true   
+    },
+    // Provenance for plans imported by the sync service. "manual" means an
+    // admin typed it in or uploaded it by CSV; sourceRef is the operator's id.
+    source: {
+        type: String,
+        default: "manual"
+    },
+    sourceRef: {
+        type: String,
+        default: ""
     }
 }, {timestamps: true})
 
 planSchema.index({ operator: 1, category: 1 });
+planSchema.index({ source: 1, sourceRef: 1 });
 
 planSchema.pre('save', async function(){
     if(this.dailyData === undefined && this.totalData === undefined)
