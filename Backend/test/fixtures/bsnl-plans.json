@@ -1,0 +1,42 @@
+[
+  {
+    "productId": 9011,
+    "productCode": "7945Recharge5813",
+    "productName": "Recharge_58",
+    "price": 58,
+    "validityDesc": "7",
+    "validity": null,
+    "tabName": "Data Packs",
+    "description": "Unlimited data with speed reduced to 40kbps after 8 GB for 7 days. Plan validity extension cannot be done with this voucher"
+  },
+  {
+    "productId": 1,
+    "productCode": "VoiceData1",
+    "productName": "Voice & Data_1",
+    "price": 1,
+    "validityDesc": "24",
+    "validity": null,
+    "tabName": "Voice & Data Packs",
+    "description": "Unlimited Voice calls +Data: 1GB/day (thereafter speed reduced to 40 kbps) +SMS: 100 SMS/day"
+  },
+  {
+    "productId": 2799,
+    "productCode": "VoiceData2799",
+    "productName": "Voice & Data_2799",
+    "price": 2799,
+    "validityDesc": "365",
+    "validity": null,
+    "tabName": "Voice & Data Packs",
+    "description": "Unlimited Voice.3 GB/day (thereafter U/L data with speed reduced to 40Kbps), SMS : 100 SMS/day"
+  },
+  {
+    "productId": 219,
+    "productCode": "VoiceData219",
+    "productName": "Voice & Data_219",
+    "price": 219,
+    "validityDesc": "28",
+    "validity": null,
+    "tabName": "Voice & Data Packs",
+    "description": "UL voice calls + 2 GB/day (thereafter U/L data with speed restricted to 40 kbps) + 100 SMS/day"
+  }
+]

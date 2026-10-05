@@ -54,7 +54,9 @@ export const parseSms = (value) => {
   return { sms: match ? Number(match[1]) : null, unlimitedSms: false };
 };
 
-export const isUnlimitedVoice = (value) => /unlimited/i.test(String(value || ""));
+// "Unlimited" anywhere, plus BSNL's "UL voice" / "UL calls" shorthand.
+export const isUnlimitedVoice = (value) =>
+    /unlimited/i.test(String(value || "")) || /\bUL\b\s*(?:voice|calls?)/i.test(String(value || ""));
 
 // Converts megabytes (some operator APIs return MB) into GB.
 export const mbToGb = (mb) => {

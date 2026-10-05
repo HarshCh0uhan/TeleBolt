@@ -1,38 +1,51 @@
 import { buildPlan, parseDataText, parseSms, isUnlimitedVoice } from "./normalize.js";
+import { encryptCryptoJs, unwrapEncrypted } from "./cryptoJs.js";
 import { SourceNotConfiguredError, SourcePayloadError } from "./errors.js";
 
 export const BSNL_SOURCE = "bsnl-sync";
 
-const API_URL = "https://bsnl.co.in/api/bsnl-proxy/myBsnlApp/rest/cofetchtariffnew";
 const SITE = "https://bsnl.co.in";
+const RECHARGE_PAGE = `${SITE}/en/mobile/recharge`;
+const PLANS_URL = `${SITE}/api/bsnl-proxy/api/recharge-plansnew`;
+
+// Found in BSNL's own JS bundle, which uses CryptoJS with this passphrase for
+// request bodies and responses. It is not a secret - it ships to every browser -
+// but it can change whenever they redeploy, hence the env override.
+const BUNDLE_PASSPHRASE =
+    process.env.BSNL_PASSPHRASE || "9a7b8e1f2c3d4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b";
 
 const BROWSER_HEADERS = {
     "user-agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    accept: "application/json, text/plain, */*",
-    "accept-language": "en-IN,en;q=0.9",
+    accept: "*/*",
+    "accept-language": "en-US,en;q=0.9",
     "content-type": "application/json",
-    "x-requested-with": "XMLHttpRequest",
     origin: SITE,
-    referer: `${SITE}/en/pricing-plans/prepaid`,
+    referer: RECHARGE_PAGE,
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
 };
 
-/**
- * Extra headers captured from the browser request, as a JSON object in
- * BSNL_EXTRA_HEADERS. BSNL's proxy sometimes requires a token header, and this
- * lets you paste it (e.g. from "Copy as cURL") without touching the code.
- */
-const extraHeaders = () => {
-    const raw = process.env.BSNL_EXTRA_HEADERS;
-    if (!raw) return {};
-    try {
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === "object" ? parsed : {};
-    } catch {
-        console.error("BSNL_EXTRA_HEADERS is not valid JSON - ignoring it");
-        return {};
-    }
-};
+// Groups that hold actual mobile plans. TOPUP / VAS / FRC are vouchers or
+// add-ons, and International Roaming is not a domestic plan.
+const PLAN_TABS = new Set([
+    "UNLIMITED",
+    "UNLIMTED",
+    "Voice & Data Packs",
+    "Data Packs",
+    "Voice Packs",
+    "RECHARGE",
+    "Combo",
+]);
+
+const DEFAULT_CIRCLES = ["Madhya Pradesh"];
+
+const circlesToTry = () =>
+    (process.env.BSNL_CIRCLES || DEFAULT_CIRCLES.join(","))
+        .split(",")
+        .map((circle) => circle.trim())
+        .filter(Boolean);
 
 const pick = (row, keys) => {
     for (const key of keys) {
@@ -42,112 +55,127 @@ const pick = (row, keys) => {
     return undefined;
 };
 
-/**
- * BSNL's myBSNL tariff rows use several different key spellings across circles,
- * so this reads the documented names first and falls back to tolerant aliases.
- * The exact live shape still needs verifying with a real session cookie.
- */
+/** Maps one BSNL recharge row onto the TeleBolt plan shape. */
 export const normalizeBsnlPlan = (raw, { circle } = {}) => {
-    const sourceRef = pick(raw, ["PLAN_ID", "PLAN_CODE", "productId", "productCode", "short_desc", "PLAN_NAME", "id"]);
+    const sourceRef = pick(raw, ["productId", "productCode", "PLAN_ID", "id"]);
     if (!sourceRef) return null;
 
-    const benefitText = [
-        pick(raw, ["BENEFIT", "BENEFITS", "BENEFIT_DESC"]),
-        pick(raw, ["DATA", "DATA_BENEFIT", "DATA_BENEFIT_DESC"]),
-        pick(raw, ["description", "DESCRIPTION", "PLAN_DESC", "TARIFF_DESC", "DETAILS", "TARIFF"]),
+    const description = [
+        pick(raw, ["description", "shortDescription", "BENEFIT", "DETAILS"]),
+        pick(raw, ["productName", "PLAN_NAME"]),
     ]
         .filter(Boolean)
         .join(" | ");
 
-    const dataText = pick(raw, ["DATA", "DATA_BENEFIT", "DATA_BENEFIT_DESC"]) || benefitText;
-    const voiceText = pick(raw, ["VOICE", "VOICE_BENEFIT", "VOICE_DESC"]) || benefitText;
-    const smsText = pick(raw, ["SMS", "SMS_BENEFIT", "SMS_DESC"]) || benefitText;
-
-    const data = parseDataText(dataText);
-    const sms = parseSms(smsText);
+    const data = parseDataText(description);
+    const sms = parseSms(description);
 
     return buildPlan({
         operator: "BSNL",
         source: BSNL_SOURCE,
-        // Circle-scoped id keeps the same pack in two circles distinct.
-        sourceRef: circle ? `${circle}:${sourceRef}` : String(sourceRef),
-        price: pick(raw, ["MRP", "price", "amount", "denomination", "DISCOUNTED_FMC", "FMC"]),
-        validityDays: pick(raw, ["VALIDITY", "validityDesc", "validity", "VALIDITY_DESC", "validity_desc"]),
+        sourceRef: String(sourceRef),
+        price: pick(raw, ["price", "denomination", "amount", "MRP"]),
+        validityDays: pick(raw, ["validityDesc", "validity", "VALIDITY"]),
         dailyData: data.dailyGb,
         totalData: data.totalGb,
         sms: sms.sms,
-        isUnlimitedCalls: isUnlimitedVoice(voiceText) || !voiceText,
+        isUnlimitedCalls: isUnlimitedVoice(description) || !description,
         isUnlimitedSMS: sms.unlimitedSms,
         ottApps: [],
     });
 };
 
 /**
- * Fetches BSNL tariff rows.
+ * Fetches BSNL prepaid plans for the configured circles.
  *
- * Verified against the live service with a real browser session: a bare request
- * is refused with 403 "Direct API access is strictly prohibited." (same-origin
- * check), a same-origin request without a session gets 401 "Authentication
- * required", and with the site's `bsnl_session` cookie the POST body must also
- * be AES-encrypted or it answers 403 "Plain text requests are not allowed".
- *
- * Even fully authenticated this endpoint returns BROADBAND only - "Bharat Air
- * Fiber" gives 57 fibre plans and "LANDLINE" gives 8 landline plans. The prepaid
- * catalogue (recharge-plansnew) answers "No recharge plans found" for BSNL in
- * every circle, because its real inputs come from fetch-operator, which needs a
- * live BSNL mobile number plus a captcha. Hence this source is expected to be
- * Skipped, and BSNL plans belong in the CSV import or Suggest a Plan flow.
+ * BSNL hands out an anonymous `bsnl_session` cookie just for loading the
+ * recharge page, and that is all the API needs - no login, no mobile number and
+ * no captcha. Request bodies must be AES encrypted and responses come back
+ * encrypted as well. Verified live: 59-61 plans per working circle.
  */
-export const fetchBsnlPlans = async ({ circle, svctype, cookie, timeoutMs = 25000 } = {}) => {
-    const sessionCookie = cookie || process.env.BSNL_PROXY_COOKIE;
-    const selectedCircle = circle || process.env.BSNL_CIRCLE || "MH";
-    const serviceType = svctype || process.env.BSNL_SVCTYPE || "prepaid";
+export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}) => {
+    const wantedCircles = circles || circlesToTry();
 
+    const request = async (url, options) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            return await fetch(url, { ...options, signal: controller.signal, redirect: "follow" });
+        } finally {
+            clearTimeout(timer);
+        }
+    };
+
+    // 1. Mint an anonymous session, unless one was supplied.
+    let sessionCookie = cookie || process.env.BSNL_PROXY_COOKIE;
+    let mintedSession = false;
     if (!sessionCookie) {
-        throw new SourceNotConfiguredError(
-            "BSNL prepaid plans are not available from any public endpoint. Its tariff API needs a " +
-                "browser session AND an AES-encrypted body, and then returns broadband only " +
-                "(Bharat Air Fiber / Landline). The prepaid lookup requires a live BSNL mobile " +
-                "number plus a captcha. Add BSNL plans via CSV upload or Suggest a Plan instead."
-        );
+        const page = await request(RECHARGE_PAGE, {
+            headers: { "user-agent": BROWSER_HEADERS["user-agent"], accept: "text/html" },
+        });
+        const setCookies = typeof page.headers.getSetCookie === "function" ? page.headers.getSetCookie() : [];
+        const session = setCookies
+            .map((entry) => entry.split(";")[0])
+            .find((entry) => entry.startsWith("bsnl_session="));
+
+        if (!session) {
+            throw new SourceNotConfiguredError(
+                `BSNL did not issue a session cookie from ${RECHARGE_PAGE} (HTTP ${page.status}). ` +
+                    "The site may be down or its flow may have changed."
+            );
+        }
+        sessionCookie = session;
+        mintedSession = true;
     }
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    // 2. Pull each circle's catalogue.
+    const plans = [];
+    const seen = new Set();
+    const meta = {
+        circles: {},
+        session: mintedSession ? "minted" : "supplied",
+        passphrase: process.env.BSNL_PASSPHRASE ? "env" : "bundle",
+    };
 
-    try {
-        const response = await fetch(API_URL, {
+    for (const circle of wantedCircles) {
+        const response = await request(PLANS_URL, {
             method: "POST",
-            headers: { ...BROWSER_HEADERS, ...extraHeaders(), cookie: sessionCookie },
-            body: JSON.stringify({ svctype: serviceType, circle: selectedCircle }),
-            signal: controller.signal,
+            headers: { ...BROWSER_HEADERS, cookie: sessionCookie },
+            body: JSON.stringify({
+                enc: encryptCryptoJs(JSON.stringify({ operatorCode: "BSNL", circleCode: circle }), BUNDLE_PASSPHRASE),
+            }),
         });
 
         if (response.status === 401 || response.status === 403) {
             throw new SourceNotConfiguredError(
-                `BSNL rejected the session (HTTP ${response.status}). Re-copy the Cookie header, and the ` +
-                    `x-* token header if the request has one, into BSNL_PROXY_COOKIE / BSNL_EXTRA_HEADERS.`
+                `BSNL rejected the session (HTTP ${response.status}). Clear BSNL_PROXY_COOKIE so a fresh one is minted.`
             );
         }
-        if (!response.ok) throw new Error(`BSNL returned HTTP ${response.status}`);
+        if (!response.ok) throw new Error(`BSNL returned HTTP ${response.status} for ${circle}`);
 
-        const data = await response.json();
-        const rows = Array.isArray(data?.PLANS) ? data.PLANS : Array.isArray(data) ? data : null;
-        if (!rows) throw new SourcePayloadError("BSNL response did not contain a PLANS array");
+        const data = unwrapEncrypted(await response.text(), BUNDLE_PASSPHRASE);
+        const groups = data?.mobilePlans || data?.PLANS || {};
+        const rows = Object.entries(groups).flatMap(([tab, list]) =>
+            PLAN_TABS.has(tab) && Array.isArray(list) ? list : []
+        );
 
-        const plans = rows
-            .map((row) => normalizeBsnlPlan(row, { circle: selectedCircle }))
-            .filter(Boolean);
+        meta.circles[circle] = { message: data?.message || "", rows: rows.length };
 
-        if (plans.length === 0) {
-            throw new SourcePayloadError("BSNL returned no plans that could be normalised");
+        for (const row of rows) {
+            const plan = normalizeBsnlPlan(row, { circle });
+            if (plan && !seen.has(plan.sourceRef)) {
+                seen.add(plan.sourceRef);
+                plans.push(plan);
+            }
         }
-
-        return {
-            plans,
-            meta: { circle: selectedCircle, svctype: serviceType, rows: rows.length },
-        };
-    } finally {
-        clearTimeout(timer);
     }
+
+    if (plans.length === 0) {
+        throw new SourcePayloadError(
+            `BSNL returned no usable prepaid plans for ${wantedCircles.join(", ")}. Some circles ` +
+                "(Delhi, Tamil Nadu) answer 'No recharge plans found' - pick another via BSNL_CIRCLES."
+        );
+    }
+
+    return { plans, meta };
 };

@@ -18,6 +18,7 @@ import {
     mbToGb,
 } from "../src/services/planSources/normalize.js";
 import { listPlanSources } from "../src/services/planSources/index.js";
+import { encryptCryptoJs, decryptCryptoJs, unwrapEncrypted } from "../src/services/planSources/cryptoJs.js";
 import {
     isSameBundle,
     diffPlanFields,
@@ -29,9 +30,8 @@ const readFixture = (name) => JSON.parse(readFileSync(path.join(here, "fixtures"
 
 // The Vi fixture holds real records captured from myvi.in's embedded catalogue.
 const viFixture = readFixture("vi-plans.json");
-// BSNL's fixture is modelled on the field names documented in BSNL's own JS
-// bundle; the live shape still needs a session cookie to verify.
-const bsnlFixture = readFixture("bsnl-plans.synthetic.json");
+// BSNL rows captured from the live recharge-plansnew response.
+const bsnlFixture = readFixture("bsnl-plans.json");
 
 test("parseValidityDays understands days, months, years and bare numbers", () => {
     assert.equal(parseValidityDays("180 Days"), 180);
@@ -149,27 +149,37 @@ test("parseViPlans extracts, normalises and de-duplicates records", () => {
     assert.equal(plans[0].dailyData, 1);
 });
 
-test("normalizeBsnlPlan maps BSNL tariff rows", () => {
-    const combo = normalizeBsnlPlan(bsnlFixture[0], { circle: "MH" });
+test("normalizeBsnlPlan maps real BSNL recharge rows", () => {
+    // Rows captured from BSNL's own recharge-plansnew response.
+    const combo = normalizeBsnlPlan(bsnlFixture[3], { circle: "Madhya Pradesh" });
 
     assert.equal(combo.operator, "BSNL");
     assert.equal(combo.source, "bsnl-sync");
-    assert.equal(combo.sourceRef, "MH:BSNL_PRE_187", "ids are circle scoped");
-    assert.equal(combo.price, 187);
+    assert.equal(combo.sourceRef, "219", "the product id is the stable key");
+    assert.equal(combo.price, 219);
     assert.equal(combo.validityDays, 28);
     assert.equal(combo.dailyData, 2);
+    assert.equal(combo.totalData, 56, "derived from the daily quota");
     assert.equal(combo.category, "Daily");
     assert.equal(combo.sms, 100);
+    assert.equal(combo.isUnlimitedCalls, true);
 
-    const addOn = normalizeBsnlPlan(bsnlFixture[2], { circle: "MH" });
-    assert.equal(addOn.totalData, 2);
-    assert.equal(addOn.validityDays, 1);
-    assert.equal(addOn.category, "Non-Daily");
+    const yearly = normalizeBsnlPlan(bsnlFixture[2], { circle: "Madhya Pradesh" });
+    assert.equal(yearly.price, 2799);
+    assert.equal(yearly.validityDays, 365);
+    assert.equal(yearly.dailyData, 3);
+
+    // A data voucher with no "/day" quota becomes a total-data plan.
+    const voucher = normalizeBsnlPlan(bsnlFixture[0], { circle: "Madhya Pradesh" });
+    assert.equal(voucher.validityDays, 7);
+    assert.equal(voucher.dailyData, undefined);
+    assert.equal(voucher.totalData, 8);
+    assert.equal(voucher.category, "Non-Daily");
 });
 
 test("normalizeBsnlPlan rejects rows it cannot identify", () => {
-    assert.equal(normalizeBsnlPlan({}, { circle: "MH" }), null);
-    assert.equal(normalizeBsnlPlan({ PLAN_ID: "X", MRP: "0" }, { circle: "MH" }), null);
+    assert.equal(normalizeBsnlPlan({}, { circle: "Madhya Pradesh" }), null);
+    assert.equal(normalizeBsnlPlan({ productId: "X", price: 0 }, { circle: "Madhya Pradesh" }), null);
 });
 
 test("the source registry exposes both operators", () => {
@@ -177,6 +187,22 @@ test("the source registry exposes both operators", () => {
 
     assert.ok(names.includes("vi-sync"));
     assert.ok(names.includes("bsnl-sync"));
+});
+
+test("cryptoJs matches the OpenSSL format BSNL expects", () => {
+    const passphrase = "9a7b8e1f2c3d4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b";
+    const payload = JSON.stringify({ operatorCode: "BSNL", circleCode: "Madhya Pradesh" });
+
+    const cipher = encryptCryptoJs(payload, passphrase);
+    assert.ok(cipher.startsWith("U2FsdGVkX1"), "base64 of the literal Salted__ header");
+
+    assert.equal(decryptCryptoJs(cipher, passphrase), payload, "round trips");
+    assert.throws(() => decryptCryptoJs(cipher, "wrong-passphrase"), "a wrong passphrase fails");
+
+    // Real captured response shape from BSNL.
+    const wrapped = JSON.stringify({ enc: cipher });
+    assert.deepEqual(unwrapEncrypted(wrapped, passphrase), JSON.parse(payload));
+    assert.deepEqual(unwrapEncrypted(JSON.stringify({ ok: true }), passphrase), { ok: true });
 });
 
 test("sameNumber treats missing values as equal and compares with tolerance", () => {
