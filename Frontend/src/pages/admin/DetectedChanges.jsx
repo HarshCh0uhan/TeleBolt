@@ -3,11 +3,13 @@ import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminStatCard from '../../components/admin/AdminStatCard';
 import AdminEmptyState from '../../components/admin/AdminEmptyState';
 import DetectedChangeCard from '../../components/admin/DetectedChangeCard';
+import AdminModal from '../../components/admin/AdminModal';
 import {
-  Clock3, BadgeCheck, XCircle, FileClock, AlertCircle, RefreshCw, Loader2, Play,
+  Clock3, BadgeCheck, XCircle, FileClock, AlertCircle, RefreshCw, Loader2, Play, Check, X,
 } from 'lucide-react';
 import {
   detectedChanges, approveChange, rejectChange, runPlanSync, getPlanSyncRuns,
+  approveAllNewPlans, rejectPendingChanges,
 } from '../../api/admin.api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdminStats } from '../../context/AdminStatsContext';
@@ -28,6 +30,8 @@ const DetectedChanges = () => {
   const [lastRun, setLastRun] = useState(null);
   const [syncRunning, setSyncRunning] = useState(false);
   const [syncMessage, setSyncMessage] = useState(null);
+  const [bulkBusy, setBulkBusy] = useState(null);
+  const [confirmBulk, setConfirmBulk] = useState(null);
   const { pendingCount, refreshPendingCount } = useAdminStats();
 
   const fetchChanges = async () => {
@@ -117,9 +121,26 @@ const DetectedChanges = () => {
     }
   };
 
+  const runBulk = async (kind) => {
+    setConfirmBulk(null);
+    setBulkBusy(kind);
+    setActionError(null);
+    try {
+      const { data } = kind === 'approve' ? await approveAllNewPlans({}) : await rejectPendingChanges({});
+      setSyncMessage(data.message || 'Done');
+      await Promise.all([fetchChanges(), refreshPendingCount()]);
+    } catch (err) {
+      setActionError(typeof err?.response?.data === 'string' ? err.response.data : 'Bulk action failed');
+    } finally {
+      setBulkBusy(null);
+    }
+  };
+
   const approvedCount = changes.filter((c) => c.status === 'Approved').length;
   const rejectedCount = changes.filter((c) => c.status === 'Rejected').length;
   const pendingChanges = changes.filter((c) => c.status === 'Pending');
+  const pendingNewPlans = pendingChanges.filter((c) => c.field === 'NewPlan').length;
+  const pendingFieldChanges = pendingChanges.length - pendingNewPlans;
 
   return (
     <>
@@ -221,6 +242,34 @@ const DetectedChanges = () => {
           Review queue {pendingChanges.length > 0 && `(${pendingChanges.length})`}
         </div>
 
+        {/* Bulk actions: the first sync can leave dozens of proposals */}
+        {pendingChanges.length > 1 && (
+          <div className="mt-4 flex flex-wrap gap-3">
+            {pendingNewPlans > 0 && (
+              <button
+                type="button"
+                onClick={() => setConfirmBulk('approve')}
+                disabled={bulkBusy !== null}
+                className="inline-flex items-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2.5 text-sm font-semibold text-[#181818] transition hover:bg-[#6dd9a0] disabled:opacity-60"
+              >
+                {bulkBusy === 'approve' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Add all {pendingNewPlans} new plans
+              </button>
+            )}
+            {pendingFieldChanges > 0 && (
+              <button
+                type="button"
+                onClick={() => setConfirmBulk('reject')}
+                disabled={bulkBusy !== null}
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-red-400/30 hover:text-red-400 disabled:opacity-60"
+              >
+                {bulkBusy === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                Reject all {pendingFieldChanges} pending changes
+              </button>
+            )}
+          </div>
+        )}
+
         {actionError && (
           <p className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-2 text-xs text-red-400">
             {actionError}
@@ -282,6 +331,20 @@ const DetectedChanges = () => {
           </div>
         )}
       </motion.section>
+
+      <AdminModal
+        isOpen={confirmBulk !== null}
+        title={confirmBulk === 'approve' ? `Add ${pendingNewPlans} new plans?` : `Reject ${pendingFieldChanges} pending changes?`}
+        message={
+          confirmBulk === 'approve'
+            ? 'Every pending new plan is added to the live catalogue. You can still edit or delete any of them afterwards.'
+            : 'These price, validity, data and SMS proposals are discarded without touching the catalogue. This cannot be undone.'
+        }
+        confirmLabel={confirmBulk === 'approve' ? 'Add all' : 'Reject all'}
+        cancelLabel="Cancel"
+        onConfirm={() => runBulk(confirmBulk)}
+        onCancel={() => setConfirmBulk(null)}
+      />
     </>
   );
 };
