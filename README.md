@@ -144,6 +144,7 @@ GET    /api/admin/plan-sync/runs         - Plan sync history
 - **Rankings** — a cost-per-GB leaderboard of every active plan with a top-3 podium, filterable by
   operator and category.
 - **Yearly normalization** — yearly cost, yearly data and cost per GB on every card and detail page.
+- **Network coverage** — check 5G/4G/3G/2G coverage per carrier on an embedded map.
 - **Filters** — operator, price, validity, data allowance, category and OTT benefits.
 - **Accounts** — register, log in, update your profile and change your password.
 - **Saved plans** — bookmark plans from the catalog or a plan detail page and revisit them from your profile.
