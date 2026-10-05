@@ -49,7 +49,10 @@ export const parseDataText = (value) => {
 export const parseSms = (value) => {
   if (!value) return { sms: null, unlimitedSms: false };
   const text = String(value);
-  if (/unlimited/i.test(text)) return { sms: null, unlimitedSms: true };
+  // Only "unlimited SMS" means unlimited SMS. Matching a bare "unlimited" threw
+  // away the count on any plan that also advertised unlimited data or calls,
+  // which is most of them.
+  if (/unlimited\s+(?:sms|messages?)/i.test(text)) return { sms: null, unlimitedSms: true };
   const match = text.match(/(\d+)\s*sms/i);
   return { sms: match ? Number(match[1]) : null, unlimitedSms: false };
 };

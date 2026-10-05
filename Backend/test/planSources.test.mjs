@@ -10,6 +10,7 @@ import {
     extractViPayload,
 } from "../src/services/planSources/vi.source.js";
 import { normalizeBsnlPlan } from "../src/services/planSources/bsnl.source.js";
+import { normalizeJioPlan, EXCLUDED_CATEGORIES } from "../src/services/planSources/jio.source.js";
 import {
     buildPlan,
     parseValidityDays,
@@ -32,6 +33,8 @@ const readFixture = (name) => JSON.parse(readFileSync(path.join(here, "fixtures"
 const viFixture = readFixture("vi-plans.json");
 // BSNL rows captured from the live recharge-plansnew response.
 const bsnlFixture = readFixture("bsnl-plans.json");
+// Jio rows captured from the live mdmdata recharge API.
+const jioFixture = readFixture("jio-plans.json");
 
 test("parseValidityDays understands days, months, years and bare numbers", () => {
     assert.equal(parseValidityDays("180 Days"), 180);
@@ -187,6 +190,60 @@ test("the source registry exposes both operators", () => {
 
     assert.ok(names.includes("vi-sync"));
     assert.ok(names.includes("bsnl-sync"));
+});
+
+test("normalizeJioPlan maps real Jio rows", () => {
+    const yearly = normalizeJioPlan(jioFixture[0]);
+
+    assert.equal(yearly.operator, "Jio");
+    assert.equal(yearly.source, "jio-sync");
+    assert.equal(yearly.sourceRef, "1033485");
+    assert.equal(yearly.price, 3599);
+    assert.equal(yearly.validityDays, 365);
+    assert.equal(yearly.dailyData, 2.5);
+    // Jio states 912.5GB total, which is exactly 2.5GB x 365.
+    assert.equal(yearly.totalData, 912.5);
+    assert.equal(yearly.category, "Daily");
+    assert.equal(yearly.sms, 100);
+    // JioTV and JioAICloud are in-house apps, not OTT brands, so nothing is claimed.
+    assert.deepEqual(yearly.ottApps, []);
+});
+
+test("normalizeJioPlan reads a single-day data pack", () => {
+    const pack = normalizeJioPlan(jioFixture[1]);
+
+    assert.equal(pack.price, 19);
+    assert.equal(pack.validityDays, 1);
+    assert.equal(pack.dailyData, undefined, "no per-day quota is stated");
+    assert.equal(pack.totalData, 1);
+    assert.equal(pack.category, "Non-Daily");
+});
+
+test("normalizeJioPlan maps Jio's OTT bundles onto the schema enum", () => {
+    const plan = normalizeJioPlan(jioFixture[3]);
+
+    assert.equal(plan.price, 200);
+    assert.equal(plan.validityDays, 28);
+    assert.equal(plan.totalData, 30);
+    // Only brands the schema knows about, in a stable order - Lionsgate Play,
+    // YouTube Premium and JioTV are deliberately not claimed.
+    assert.deepEqual(plan.ottApps, ["JioHotstar", "Prime", "SonyLiv", "Zee5"]);
+});
+
+test("normalizeJioPlan drops rows without quantifiable data", () => {
+    // The JioShield plan states no GB figure at all, so it cannot be compared.
+    assert.equal(normalizeJioPlan(jioFixture[2]), null);
+    assert.equal(normalizeJioPlan({}), null);
+    assert.equal(normalizeJioPlan({ id: "1", amount: "0" }), null);
+});
+
+test("Jio's voucher and roaming categories are excluded by default", () => {
+    for (const category of ["Top-up Voucher", "International Roaming", "ISD", "JioSaavn Pro"]) {
+        assert.ok(EXCLUDED_CATEGORIES.includes(category), `${category} should be excluded`);
+    }
+    for (const category of ["Popular Plans", "Annual Plans", "Data Packs", "True 5G Unlimited Plans"]) {
+        assert.ok(!EXCLUDED_CATEGORIES.includes(category), `${category} is a real plan category`);
+    }
 });
 
 test("cryptoJs matches the OpenSSL format BSNL expects", () => {

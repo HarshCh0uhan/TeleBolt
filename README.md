@@ -69,6 +69,10 @@ FRONTEND_URL=http://localhost:5173
 # Only needed if BSNL rotates the passphrase in their bundle:
 # BSNL_PASSPHRASE=
 
+# Jio needs no configuration either. Voucher, roaming, ISD and operator-app
+# categories are skipped by default; override to keep or drop more of them.
+# JIO_EXCLUDE_CATEGORIES=Top-up Voucher,International Roaming,ISD
+
 # Daily schedule (cron + timezone) and per-run safety cap for new plans
 # SYNC_CRON=0 3 * * *
 # SYNC_TIMEZONE=Asia/Kolkata
@@ -190,7 +194,19 @@ admin "Run sync now" ───┼─→ source adapters ─→ normalise ─→ 
 | Source | Status | How it works |
 |---|---|---|
 | **Vi** (`vi-sync`) | ✅ live | `myvi.in` renders its whole prepaid catalogue into the Next.js flight payload, so `self.__next_f.push([1,"…"])` chunks contain the plan list as JSON. Each record carries `ITEM_ID`, `UNIT_COST`, `VALIDITY_ATTR`, `DATA_LINE_1`, `DATAUSAGE_ATTR` and `SMS_LINE_1`. A dry run currently reads **88 usable plans** in ~1.5 s. |
+| **Jio** (`jio-sync`) | ✅ live | Jio publishes the whole catalogue as plain JSON — **one unauthenticated GET**, no session, headers or encryption: `/api/jio-mdmdata-service/mdmdata/recharge/plans?productType=MOBILITY&billingType=1`. It returns 17 categories of `planCategories[].subCategories[].plans[]`; each plan has `id`, `amount`, `description`, `planName` and a `misc.subscriptions[]` list. A dry run reads **62 usable plans** in ~250 ms. |
 | **BSNL** (`bsnl-sync`) | ✅ live | BSNL's recharge page hands an anonymous `bsnl_session` cookie to anyone who loads it, and that is all its plan API needs — **no login, no mobile number, no captcha**. Bodies must be AES-encrypted (CryptoJS/OpenSSL) and responses come back encrypted too; both live in `planSources/cryptoJs.js`. A dry run reads **26 usable plans** in ~1.6 s. |
+
+Together the three sources fetch **176 plans** per run.
+
+**How Jio works.** The `billingType` is `1` for prepaid and `2` for postpaid — *not* the string
+`"PREPAID"`, which their own bundle never sends. Validity comes from `"Validity - 28 Days"` in the
+description (Jio also writes "active base plan validity" in prose, so the parser demands a separator),
+falling back to the `28D` token in `planName`. Two schema details matter: their subscription titles are
+mapped onto our `ottApps` enum, so `JioTV`/`JioAICloud` are deliberately **not** claimed as OTT while
+`JioHotstar`, `Prime`, `SonyLiv`, `Zee5` and `Netflix` are; and plans with no GB figure at all (for
+example the ₹1000 JioShield bundle) are dropped, because a plan with no quantifiable data cannot be
+compared.
 
 **How BSNL works.** `POST /api/bsnl-proxy/api/recharge-plansnew` with
 `{ operatorCode: "BSNL", circleCode: "<full circle name>" }`, AES-encrypted, returns `mobilePlans`
@@ -278,7 +294,7 @@ TeleBolt/
 │   ├── scripts/
 │   │   └── plan-sync-dry-run.mjs        # run sources without touching the DB
 │   ├── test/
-│   │   ├── fixtures/                    # real Vi + BSNL plan records
+│   │   ├── fixtures/                    # real Vi + Jio + BSNL plan records
 │   │   └── planSources.test.mjs
 │   └── src/
 │       ├── controllers/
@@ -327,9 +343,9 @@ Plan comparison with yearly normalization, cost-per-GB rankings, budget/operator
 admin dashboard, CSV import, price history, JWT auth.
 
 **V2 — Automation & community (in progress)**
-Daily automated Vi + BSNL plan sync into the detected-changes queue ✅ (BSNL via its self-minted
-session), audit logging ✅, community plan submissions with a moderation queue ✅, contributor
-tracking ✅. Still open: duplicate detection and trust scoring.
+Daily automated Vi + Jio + BSNL plan sync into the detected-changes queue ✅ (Jio from its public JSON
+API, BSNL via its self-minted session), audit logging ✅, community plan submissions with a moderation
+queue ✅, contributor tracking ✅. Still open: Airtel automation, duplicate detection and trust scoring.
 
 **V3 — Platform (planned)**
 Advanced trust algorithms, contributor reputation and badges, spam detection, smart plan
