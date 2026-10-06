@@ -9,7 +9,7 @@ import {
     parseViPlans,
     extractViPayload,
 } from "../src/services/planSources/vi.source.js";
-import { normalizeBsnlPlan } from "../src/services/planSources/bsnl.source.js";
+import { normalizeBsnlPlan, extractSession } from "../src/services/planSources/bsnl.source.js";
 import { normalizeJioPlan, EXCLUDED_CATEGORIES } from "../src/services/planSources/jio.source.js";
 import {
     buildPlan,
@@ -244,6 +244,22 @@ test("Jio's voucher and roaming categories are excluded by default", () => {
     for (const category of ["Popular Plans", "Annual Plans", "Data Packs", "True 5G Unlimited Plans"]) {
         assert.ok(!EXCLUDED_CATEGORIES.includes(category), `${category} is a real plan category`);
     }
+});
+
+test("BSNL session extraction survives runtimes without getSetCookie", () => {
+    // Modern Node exposes the cookies separately.
+    const modern = {
+        getSetCookie: () => ["NEXT_LOCALE=en; Path=/", "bsnl_session=abc%3D%3D.def; Path=/; HttpOnly"],
+        get: () => null,
+    };
+    assert.equal(extractSession(modern), "bsnl_session=abc%3D%3D.def");
+
+    // Older runtimes only expose the combined header, comma separated.
+    const legacy = { get: () => "NEXT_LOCALE=en; Path=/, bsnl_session=xyz.123; Path=/; HttpOnly" };
+    assert.equal(extractSession(legacy), "bsnl_session=xyz.123");
+
+    assert.equal(extractSession({ get: () => "other=1" }), null);
+    assert.equal(extractSession({ get: () => null }), null);
 });
 
 test("cryptoJs matches the OpenSSL format BSNL expects", () => {

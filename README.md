@@ -218,6 +218,11 @@ find and are worth knowing:
   name directly skips that whole flow.
 - Bodies must be encrypted or the proxy answers `403 "Plain text requests are not allowed"`, and a bare
   request gets `403 "Direct API access is strictly prohibited."` (a same-origin check).
+- **BSNL does not answer every network.** From the datacenter IPs Render uses, a connection to
+  `bsnl.co.in` is dropped outright (`fetch failed`, usually `ECONNRESET` or a connect timeout), while the
+  same code works from a home connection in India. The source retries once, then reports `Skipped` with
+  the reason — it never fails the run — and `scripts/plan-sync-run.mjs bsnl-sync` will sync BSNL from any
+  machine that can reach them, writing to the same database.
 
 Delhi and Tamil Nadu currently answer `"No recharge plans found"`; Madhya Pradesh, Maharashtra,
 Karnataka and Gujarat each return 59–61 rows, mostly the same national catalogue. Set `BSNL_CIRCLES`
@@ -251,6 +256,14 @@ node scripts/plan-sync-dry-run.mjs vi-sync       # one source only
 # Run the real matcher and diff against the database, writing nothing
 node scripts/plan-sync-dry-run.mjs --db
 
+# Run a REAL sync from this machine, exactly like the admin button does
+node scripts/plan-sync-run.mjs bsnl-sync        # one source
+node scripts/plan-sync-run.mjs                  # every source
+node scripts/plan-sync-run.mjs --dry bsnl-sync  # same checks, writes nothing
+
+# What did the last runs actually do? (reads the history, including deployed runs)
+node scripts/plan-sync-runs.mjs 10
+
 # Source unit tests (normalisers, matching rules, schema invariants)
 cd Backend && node test/planSources.test.mjs
 ```
@@ -258,7 +271,7 @@ cd Backend && node test/planSources.test.mjs
 ### Safety and legal notes
 
 - Requests run once a day with a browser-like user agent; nothing is polled aggressively.
-- New plans per run are capped by `SYNC_MAX_NEW_PER_RUN` (default 50) so the queue cannot flood, and
+- New plans per run are capped by `SYNC_MAX_NEW_PER_RUN` (default 200) so the queue cannot flood, and
   identical pending proposals are never raised twice.
 - Operator terms of service generally prohibit automated scraping. This is fine for a low-volume
   personal project; a public product should move to an official/partner API.
@@ -292,7 +305,9 @@ TeleBolt/
 ├── Backend/
 │   ├── app.js
 │   ├── scripts/
-│   │   └── plan-sync-dry-run.mjs        # run sources without touching the DB
+│   │   ├── plan-sync-dry-run.mjs        # run sources without touching the DB
+│   │   ├── plan-sync-run.mjs            # run a real sync from this machine
+│   │   └── plan-sync-runs.mjs           # print recent runs from the database
 │   ├── test/
 │   │   ├── fixtures/                    # real Vi + Jio + BSNL plan records
 │   │   └── planSources.test.mjs
@@ -302,7 +317,7 @@ TeleBolt/
 │       ├── models/                      # Plans, DetectedChange, PlanSyncRun, AuditLog, …
 │       ├── routes/
 │       ├── services/
-│       │   ├── planSources/             # vi.source.js, bsnl.source.js, normalize.js
+│       │   ├── planSources/             # vi.source.js, jio.source.js, bsnl.source.js, normalize.js
 │       │   ├── planSync.service.js      # fetch → normalise → diff → propose
 │       │   ├── scheduler.service.js     # weekly reminder + daily sync
 │       │   ├── audit.service.js
