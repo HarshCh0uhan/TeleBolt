@@ -153,6 +153,27 @@ GET    /api/admin/plan-sync/runs         - Plan sync history
 - **Accounts** — register, log in, update your profile and change your password.
 - **Saved plans** — bookmark plans from the catalog or a plan detail page and revisit them from your profile.
 - **Suggest a plan** — submit a missing plan; an admin reviews it before it goes live.
+- **Works on any screen** — the layout is mobile-first and verified down to a 360px phone and up through
+  768–1024px tablets. See [Responsive layout](#responsive-layout) for the breakpoint contract.
+
+### Responsive layout
+
+Tailwind's breakpoints are `sm` 640px, `md` 768px, `lg` 1024px and `xl` 1280px, and everything is built
+mobile-first — a base class for phones, then `sm:`/`lg:` upgrades. Two decisions are deliberate:
+
+- **The navbar switches at `lg`, not `md`.** The full row (Rankings, Coverage, Compare, Suggest a Plan,
+  Profile, Logout) needs roughly 1000px, so tablets in the 768–1023px range get the menu button instead
+  of a squashed row. Tapping any menu link closes the menu.
+- **The admin console has one sidebar and one drawer.** The fixed sidebar appears at `lg`; below that a
+  slide-over drawer with a backdrop takes over. The page itself is the only scroll container, so there is
+  never a second scrollbar beside a nested one — the trap the plans dashboard fell into.
+
+Other conventions worth keeping: tables that cannot fit become stacked cards under `md` (see
+`components/admin/AdminTable.jsx`), the compare bar's selected-plan chips scroll sideways on phones
+rather than stacking into a tall block, and the bar respects `env(safe-area-inset-bottom)` for the iOS
+home indicator. Any new element that scrolls on its own should carry the `scrollbar-brand` class from
+`index.css` — the `scrollbar-*` utility names some files still use generate no CSS at all, because
+Tailwind v4 does not ship them and `tailwind-scrollbar` is not installed.
 
 ### For Admins
 

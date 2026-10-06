@@ -1,3 +1,4 @@
+import https from "node:https";
 import { buildPlan, parseDataText, parseSms, isUnlimitedVoice } from "./normalize.js";
 import { encryptCryptoJs, unwrapEncrypted } from "./cryptoJs.js";
 import { SourceNotConfiguredError, SourcePayloadError, SourceUnavailableError } from "./errors.js";
@@ -49,6 +50,51 @@ const circlesToTry = () =>
         .filter(Boolean);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const headerBag = (headers) => ({
+    getSetCookie: () => {
+        const cookies = headers["set-cookie"];
+        if (!cookies) return [];
+        return Array.isArray(cookies) ? cookies : [cookies];
+    },
+    get: (name) => {
+        const value = headers[name.toLowerCase()];
+        return Array.isArray(value) ? value.join(", ") : value || null;
+    },
+});
+
+const httpsRequest = (url, { method = "GET", headers = {}, body, timeoutMs = 45000 } = {}) =>
+    new Promise((resolve, reject) => {
+        const target = new URL(url);
+        const req = https.request(
+            target,
+            {
+                method,
+                headers,
+                family: 4,
+                timeout: timeoutMs,
+            },
+            (res) => {
+                const chunks = [];
+                res.on("data", (chunk) => chunks.push(chunk));
+                res.on("end", () => {
+                    const text = Buffer.concat(chunks).toString("utf8");
+                    const status = res.statusCode || 0;
+                    resolve({
+                        status,
+                        ok: status >= 200 && status < 300,
+                        headers: headerBag(res.headers),
+                        text: async () => text,
+                    });
+                });
+            }
+        );
+
+        req.on("timeout", () => req.destroy(new Error(`BSNL request timed out after ${timeoutMs}ms`)));
+        req.on("error", reject);
+        if (body) req.write(body);
+        req.end();
+    });
 
 const pick = (row, keys) => {
     for (const key of keys) {
@@ -162,15 +208,7 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
         passphrase: process.env.BSNL_PASSPHRASE ? "env" : "bundle",
     };
 
-    const request = async (url, options) => {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-            return await fetch(url, { ...options, signal: controller.signal, redirect: "follow" });
-        } finally {
-            clearTimeout(timer);
-        }
-    };
+    const request = async (url, options) => httpsRequest(url, { ...options, timeoutMs });
 
     const mintSession = async () => {
         const page = await request(RECHARGE_PAGE, {
@@ -190,6 +228,8 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
     let sessionMinted = false;
 
     const ensureSession = async () => {
+         // The relay mints its own session; Render cannot reach BSNL directly.
+        if (process.env.BSNL_RELAY_URL) return;
         if (sessionCookie) return;
 
         try {
@@ -207,14 +247,37 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
         }
     };
 
-    const postForCircle = async (circle) =>
-        request(PLANS_URL, {
+    const postForCircle = async (circle) => {
+        const enc = encryptCryptoJs(
+            JSON.stringify({ operatorCode: "BSNL", circleCode: circle }),
+            BUNDLE_PASSPHRASE
+        );
+
+        // When a relay is configured, send the encrypted payload through it. The
+        // relay runs in India, mints BSNL's session and forwards the response
+        // verbatim; Render's own IP cannot reach BSNL at all.
+        const relayUrl = process.env.BSNL_RELAY_URL;
+        if (relayUrl) {
+            const response = await fetch(`${relayUrl.replace(/\/$/, "")}/api/bsnl-proxy`, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ enc }),
+            });
+            const text = await response.text();
+            return {
+                status: response.status,
+                ok: response.ok,
+                headers: headerBag({}),
+                text: async () => text,
+            };
+        }
+
+        return request(PLANS_URL, {
             method: "POST",
             headers: { ...BROWSER_HEADERS, cookie: sessionCookie },
-            body: JSON.stringify({
-                enc: encryptCryptoJs(JSON.stringify({ operatorCode: "BSNL", circleCode: circle }), BUNDLE_PASSPHRASE),
-            }),
+            body: JSON.stringify({ enc }),
         });
+    };
 
     const attempt = async () => {
         const plans = [];
