@@ -355,13 +355,66 @@ recommendations, AI-assisted comparison insights, React Native app.
 
 ## Deployment
 
-| Service | Platform |
-|---|---|
-| Frontend | Vercel |
-| Backend | Render |
-| Database | MongoDB Atlas |
+| Service | Platform | URL |
+|---|---|---|
+| Frontend | Vercel | https://tele-bolt.vercel.app |
+| Backend | Render | https://telebolt.onrender.com |
+| Database | MongoDB Atlas | — |
 
 All tiers used are free. The project is designed to run at zero cost during MVP.
+
+### Backend → Render
+
+`render.yaml` in the repo root describes the service, so the Blueprint flow configures it for you:
+**root directory** `Backend`, **build** `npm install`, **start** `npm start`, **health check** `/health`
+(that route exists in `app.js`). Set these environment variables in the dashboard:
+
+```env
+NODE_ENV=production          # required: makes the auth cookie Secure + SameSite=None
+FRONTEND_URL=https://tele-bolt.vercel.app    # exact origin, no trailing slash, or CORS rejects the app
+MONGODB_URI=...
+JWT_SECRET=...
+ADMIN_SECRET_KEY=...
+ADMIN_EMAIL=...
+EMAIL=...
+EMAIL_PASS=...
+# optional
+BSNL_CIRCLES=Madhya Pradesh,Maharashtra,Karnataka,Gujarat
+JIO_EXCLUDE_CATEGORIES=Top-up Voucher,International Roaming,ISD
+SYNC_CRON=0 3 * * *
+SYNC_TIMEZONE=Asia/Kolkata
+```
+
+**MongoDB Atlas must allow Render.** Free Render services have no static outbound IP, so add
+`0.0.0.0/0` to the Atlas IP Access List. Do not skip this: `app.js` only calls `app.listen()` after
+`connectDB()` resolves, so a blocked database means the service never binds a port and Render reports a
+**failed deploy** rather than a connection error.
+
+### Frontend → Vercel
+
+Import the repo, set the **root directory** to `Frontend`, and use the default Vite settings
+(`npm run build`, output `dist`). `vercel.json` handles the SPA fallback and, importantly, proxies the API:
+
+```json
+{ "source": "/api/(.*)", "destination": "https://telebolt.onrender.com/api/$1" }
+```
+
+That rewrite is what makes authentication work. The API client sends requests to its own origin
+(`/api`), so the auth cookie is **first-party**. Pointing the browser at `onrender.com` directly would
+make it a third-party cookie, which Safari, Firefox and Chrome's tracking protection block — logins
+would appear to do nothing. The proxy also removes CORS from the browser's path entirely, which is why
+**no frontend environment variables are required**; `VITE_API_URL` exists only to override the base URL
+deliberately. If the Render service is ever renamed, update this one line.
+
+### Free-tier behaviour
+
+Render's free web services spin down after ~15 minutes idle, which means:
+
+- the first request afterwards takes 30–60s to wake the service — retry once if a page seems to hang
+- `node-cron` cannot fire while asleep, so the **daily plan sync** and the **weekly reminder email** do
+  not run on their own. Use **Admin → Detected changes → Run sync now**, which runs exactly the same job
+
+Everything else — the catalog, comparisons, rankings, review queue and admin — works normally.
 
 ---
 

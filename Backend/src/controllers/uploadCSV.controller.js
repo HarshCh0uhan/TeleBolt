@@ -1,4 +1,4 @@
-import fs from "fs"
+import { Readable } from "stream"
 import csv from "csv-parser"
 import { Plans } from "../models/plans.js";
 import { logAudit } from "../services/audit.service.js";
@@ -34,8 +34,10 @@ const uploadCSV = async (req, res) => {
 
         const result = []
 
+        // The upload lives in memory (see upload.middleware.js), so stream the
+        // buffer rather than reading a temp file.
         await new Promise((resolve, reject) => {
-            fs.createReadStream(req.file.path)
+            Readable.from(req.file.buffer)
             .pipe(csv())
             .on('data', (row) => {
                 result.push(row)
@@ -71,13 +73,6 @@ const uploadCSV = async (req, res) => {
     } catch (err) {
         console.error("Error: ", err.message);
         res.status(400).json(err.message)
-    } finally {
-        // Remove the uploaded temp file on success and on failure.
-        if (req.file?.path && fs.existsSync(req.file.path)) {
-            try { fs.unlinkSync(req.file.path) } catch (cleanupErr) {
-                console.error("Cleanup error: ", cleanupErr.message);
-            }
-        }
     }
 }
 
