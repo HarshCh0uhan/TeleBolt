@@ -2,7 +2,7 @@ import { Plans } from "../models/plans.js";
 import { DetectedChange } from "../models/detectedChange.js";
 import { PlanSyncRun } from "../models/planSyncRun.js";
 import { DEFAULT_SOURCES, getPlanSource } from "./planSources/index.js";
-import { SourceNotConfiguredError } from "./planSources/errors.js";
+import { SourceNotConfiguredError, SourceUnavailableError } from "./planSources/errors.js";
 import { diffPlanFields } from "./planSources/matching.js";
 
 // Safety valve so a first run cannot flood the review queue.
@@ -77,7 +77,9 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
     try {
         fetched = await source.fetch();
     } catch (err) {
-        if (err instanceof SourceNotConfiguredError) {
+        // A source we cannot reach from this host is skipped with an explanation
+        // rather than reported as a failure of the sync itself.
+        if (err instanceof SourceNotConfiguredError || err instanceof SourceUnavailableError) {
             result.status = "Skipped";
             result.message = err.message;
             return result;
