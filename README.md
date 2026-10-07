@@ -216,9 +216,10 @@ admin "Run sync now" ───┼─→ source adapters ─→ normalise ─→ 
 |---|---|---|
 | **Vi** (`vi-sync`) | ✅ live | `myvi.in` renders its whole prepaid catalogue into the Next.js flight payload, so `self.__next_f.push([1,"…"])` chunks contain the plan list as JSON. Each record carries `ITEM_ID`, `UNIT_COST`, `VALIDITY_ATTR`, `DATA_LINE_1`, `DATAUSAGE_ATTR` and `SMS_LINE_1`. A dry run currently reads **88 usable plans** in ~1.5 s. |
 | **Jio** (`jio-sync`) | ✅ live | Jio publishes the whole catalogue as plain JSON — **one unauthenticated GET**, no session, headers or encryption: `/api/jio-mdmdata-service/mdmdata/recharge/plans?productType=MOBILITY&billingType=1`. It returns 17 categories of `planCategories[].subCategories[].plans[]`; each plan has `id`, `amount`, `description`, `planName` and a `misc.subscriptions[]` list. A dry run reads **62 usable plans** in ~250 ms. |
-| **BSNL** (`bsnl-sync`) | ✅ live | BSNL's recharge page hands an anonymous `bsnl_session` cookie to anyone who loads it, and that is all its plan API needs — **no login, no mobile number, no captcha**. Bodies must be AES-encrypted (CryptoJS/OpenSSL) and responses come back encrypted too; both live in `planSources/cryptoJs.js`. A dry run reads **26 usable plans** in ~1.6 s. |
+| **BSNL** (`bsnl-sync`) | ✅ live | BSNL's recharge page hands an anonymous `bsnl_session` cookie to anyone who loads it, and that is all its plan API needs — **no login, no mobile number, no captcha**. Bodies must be AES-encrypted (CryptoJS/OpenSSL) and responses come back encrypted too; both live in `planSources/cryptoJs.js`. A dry run reads **9 usable plans** in ~1.6 s (single circle). |
+| **Airtel** (`airtel-sync`) | ✅ live | Airtel's own site is a pure JS app, so TeleBolt scrapes **Bajaj Finserv's server-rendered recharge tables** at `bajajfinserv.in/airtel-prepaid-mobile-recharge`. The page exposes multiple HTML tables with Price, Validity, Data, Calls and Extra Benefit columns. A generic table parser extracts ~39 usable plans in ~300 ms. International roaming packs are filtered out. |
 
-Together the three sources fetch **176 plans** per run.
+Together the four sources fetch **~198 plans** per run.
 
 **How Jio works.** The `billingType` is `1` for prepaid and `2` for postpaid — *not* the string
 `"PREPAID"`, which their own bundle never sends. Validity comes from `"Validity - 28 Days"` in the
@@ -248,6 +249,21 @@ find and are worth knowing:
 Delhi and Tamil Nadu currently answer `"No recharge plans found"`; Madhya Pradesh, Maharashtra,
 Karnataka and Gujarat each return 59–61 rows, mostly the same national catalogue. Set `BSNL_CIRCLES`
 to change which are pulled.
+
+**How Airtel works.** Airtel's own recharge page (`airtel.in/recharge/prepaid/`) is a React SPA with
+no public API, so TeleBolt scrapes **Bajaj Finserv's BBPS portal** which publishes the same plans as
+plain server-rendered HTML tables. The page `https://www.bajajfinserv.in/airtel-prepaid-mobile-recharge`
+contains multiple `<table>` elements; a generic parser finds tables with Price, Data and
+(Validity or Calls) headers, then extracts rows. Key details:
+
+- Tables without a Validity column (e.g. long-validity packs) have validity inferred from the
+  "Extra Benefit" text (`"for 3 months"` → 90 days) or from price bands (≥₹1000 → 84 days,
+  ≥₹500 → 56 days, else 28 days).
+- International roaming packs are detected by keywords in the Details column (`abroad`, `USA`,
+  `Europe`, `Gulf`, `IC+OG`, etc.) and excluded.
+- OTT benefits are parsed from the Extra Benefit column and mapped to the schema enum
+  (`JioHotstar`, `Prime`, `Netflix`, `SonyLiv`, `Zee5`).
+- The source requires no authentication, cookies or encryption — a single GET with a browser UA.
 
 ### What it detects
 
@@ -330,7 +346,7 @@ TeleBolt/
 │   │   ├── plan-sync-run.mjs            # run a real sync from this machine
 │   │   └── plan-sync-runs.mjs           # print recent runs from the database
 │   ├── test/
-│   │   ├── fixtures/                    # real Vi + Jio + BSNL plan records
+│   │   ├── fixtures/                    # real Vi + Jio + BSNL + Airtel plan records
 │   │   └── planSources.test.mjs
 │   └── src/
 │       ├── controllers/
@@ -338,7 +354,7 @@ TeleBolt/
 │       ├── models/                      # Plans, DetectedChange, PlanSyncRun, AuditLog, …
 │       ├── routes/
 │       ├── services/
-│       │   ├── planSources/             # vi.source.js, jio.source.js, bsnl.source.js, normalize.js
+│       │   ├── planSources/             # vi.source.js, jio.source.js, bsnl.source.js, airtel.source.js, normalize.js
 │       │   ├── planSync.service.js      # fetch → normalise → diff → propose
 │       │   ├── scheduler.service.js     # weekly reminder + daily sync
 │       │   ├── audit.service.js
@@ -379,9 +395,9 @@ Plan comparison with yearly normalization, cost-per-GB rankings, budget/operator
 admin dashboard, CSV import, price history, JWT auth.
 
 **V2 — Automation & community (in progress)**
-Daily automated Vi + Jio + BSNL plan sync into the detected-changes queue ✅ (Jio from its public JSON
-API, BSNL via its self-minted session), audit logging ✅, community plan submissions with a moderation
-queue ✅, contributor tracking ✅. Still open: Airtel automation, duplicate detection and trust scoring.
+Daily automated Vi + Jio + BSNL + Airtel plan sync into the detected-changes queue ✅ (Jio from its public JSON
+API, BSNL via its self-minted session, Airtel via Bajaj Finserv server-rendered tables), audit logging ✅, community plan submissions with a moderation
+queue ✅, contributor tracking ✅. Still open: duplicate detection and trust scoring.
 
 **V3 — Platform (planned)**
 Advanced trust algorithms, contributor reputation and badges, spam detection, smart plan

@@ -185,11 +185,13 @@ test("normalizeBsnlPlan rejects rows it cannot identify", () => {
     assert.equal(normalizeBsnlPlan({ productId: "X", price: 0 }, { circle: "Madhya Pradesh" }), null);
 });
 
-test("the source registry exposes both operators", () => {
+test("the source registry exposes all four operators", () => {
     const names = listPlanSources().map((source) => source.name);
 
     assert.ok(names.includes("vi-sync"));
     assert.ok(names.includes("bsnl-sync"));
+    assert.ok(names.includes("jio-sync"));
+    assert.ok(names.includes("airtel-sync"));
 });
 
 test("normalizeJioPlan maps real Jio rows", () => {
