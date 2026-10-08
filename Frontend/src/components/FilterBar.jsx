@@ -211,12 +211,25 @@ export default function FilterBar({
   }, [filters, onFiltersChange]);
 
   const handleSliderChange = useCallback((key, value) => {
-    onFiltersChange(key, value);
+    if (key === "price") {
+      onFiltersChange("minPrice", value[0]);
+      onFiltersChange("maxPrice", value[1]);
+    } else if (key === "validity") {
+      onFiltersChange("minValidity", value[0]);
+      onFiltersChange("maxValidity", value[1]);
+    } else if (key === "data") {
+      onFiltersChange("minData", value[0]);
+      onFiltersChange("maxData", value[1]);
+    } else if (key === "dailyData") {
+      onFiltersChange("dailyData", value[0]);
+    } else {
+      onFiltersChange(key, value);
+    }
   }, [onFiltersChange]);
 
-  const priceRange = useMemo(() => ({ min: filters.minPrice, max: filters.maxPrice }), [filters.minPrice, filters.maxPrice]);
-  const validityRange = useMemo(() => ({ min: filters.minValidity, max: filters.maxValidity }), [filters.minValidity, filters.maxValidity]);
-  const dataRange = useMemo(() => ({ min: filters.minData, max: filters.maxData }), [filters.minData, filters.maxData]);
+  const priceRange = useMemo(() => [filters.minPrice, filters.maxPrice], [filters.minPrice, filters.maxPrice]);
+  const validityRange = useMemo(() => [filters.minValidity, filters.maxValidity], [filters.minValidity, filters.maxValidity]);
+  const dataRange = useMemo(() => [filters.minData, filters.maxData], [filters.minData, filters.maxData]);
 
   return (
     <div className="bg-[#181818] border-b border-white/10">
