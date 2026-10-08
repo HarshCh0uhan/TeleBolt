@@ -8,7 +8,8 @@ import mongoose from "mongoose"
 export const getPlans = async (req, res) => {
     try {
         const {operator, category, minPrice, maxPrice, minValidity, maxValidity, ottApps,
-        dailyData, minData, maxData, isActive, isUnlimitedCalls, isUnlimitedSMS} = req.query;
+        dailyData, minData, maxData, isActive, isUnlimitedCalls, isUnlimitedSMS,
+        page = 1, limit = 12} = req.query;
 
         const filter ={isActive: true}
 
@@ -31,18 +32,23 @@ export const getPlans = async (req, res) => {
             if(minData) filter.totalData.$gte = Number(minData)
             if(maxData) filter.totalData.$lte = Number(maxData)
         }
-        // if(isUnlimitedCalls) filter.isUnlimitedCalls = isUnlimitedCalls === 'true'
-        // if(isUnlimitedSMS) filter.isUnlimitedSMS = isUnlimitedSMS === 'true'
-        
-        const plansData = await Plans.find(filter);
-        if(plansData.length === 0) throw new Error("No Plans Exist");
+
+        const pageNum = Math.max(1, Number(page));
+        const limitNum = Math.min(50, Math.max(1, Number(limit)));
+        const skip = (pageNum - 1) * limitNum;
+
+        const [plansData, total] = await Promise.all([
+            Plans.find(filter).skip(skip).limit(limitNum).lean(),
+            Plans.countDocuments(filter)
+        ]);
 
         const plansWithYearly = plansData.map((plan) => yearlyPlan(plan))
 
         res.status(200).json({
             success: true,
             message: "All Plans Fetched Successfully",
-            plans: plansWithYearly
+            plans: plansWithYearly,
+            pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
         })
 
     } catch (err) {
