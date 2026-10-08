@@ -1,6 +1,7 @@
 import './App.css'
 import { Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import PlanDetails from './components/PlanDetails';
 import Compare from './pages/Compare';
@@ -26,7 +27,8 @@ import AdminLayout from './layouts/AdminLayout';
 function App() {
 
   return (
-    <Routes>
+    <ErrorBoundary>
+      <Routes>
       {/* Public Routes */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
@@ -58,6 +60,7 @@ function App() {
         <Route path="/admin/upload-csv" element={<UploadCSV />} />
       </Route>
     </Routes>
+    </ErrorBoundary>
   )
 }
 

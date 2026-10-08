@@ -120,8 +120,6 @@ function RangeSlider({
   );
 }
 
-const thumbRefs = [typeof window !== "undefined" ? useRef(null) : null, typeof window !== "undefined" ? useRef(null) : null];
-
 function ChipButton({ label, selected, onClick, disabled = false }) {
   return (
     <button
