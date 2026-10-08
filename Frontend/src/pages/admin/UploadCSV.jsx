@@ -121,7 +121,7 @@ const UploadCSV = () => {
         className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.9fr]"
       >
         {/* Upload zone */}
-        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5">
+        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
             <UploadCloud className="h-4 w-4 text-[#58c28d]" />
             Upload area
@@ -144,7 +144,7 @@ const UploadCSV = () => {
             <summary className="cursor-pointer text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
               Upload guidelines
             </summary>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-400 pl-4">
+            <ul className="mt-3 space-y-2 break-words pl-4 text-sm leading-6 text-zinc-400">
               <li>• Accepted columns: operator, category, price, validityDays, dailyData, totalData, sms, isUnlimitedCalls, isUnlimitedSMS, ottApps, isActive</li>
               <li>• Valid operators: Jio, Airtel, VI, BSNL</li>
               <li>• Category: Daily or Non‑Daily</li>
@@ -157,7 +157,7 @@ const UploadCSV = () => {
         {/* Side panel – file info & upload */}
         <div className="grid gap-4">
           {/* File card */}
-          <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5">
+          <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
             <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               Selected file
             </div>
@@ -212,12 +212,12 @@ const UploadCSV = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="rounded-3xl border border-[#58c28d]/30 bg-[#1f1f1f] p-5"
+                className="rounded-3xl border border-[#58c28d]/30 bg-[#1f1f1f] p-5 sm:p-6"
               >
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-[#58c28d]" />
-                  <div>
-                    <p className="text-sm font-medium text-white">{uploadResult.message}</p>
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-[#58c28d]" />
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-medium text-white">{uploadResult.message}</p>
                     <p className="mt-1 text-xs text-zinc-400">Plans have been imported successfully.</p>
                   </div>
                 </div>
@@ -234,12 +234,12 @@ const UploadCSV = () => {
 
           {/* Error message */}
           {error && (
-            <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-5">
+            <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 sm:p-6">
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-red-400" />
-                <div>
+                <AlertCircle className="h-5 w-5 shrink-0 text-red-400" />
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-red-400">Upload failed</p>
-                  <p className="mt-1 text-xs text-red-300/80">{error}</p>
+                  <p className="mt-1 break-words text-xs text-red-300/80">{error}</p>
                 </div>
               </div>
               <button
@@ -252,7 +252,7 @@ const UploadCSV = () => {
           )}
 
           {/* Preview panel placeholder – TODO for you */}
-          <div className="rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f]/70 p-5">
+          <div className="rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f]/70 p-5 sm:p-6">
             <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               Preview panel
             </div>

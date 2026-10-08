@@ -1,44 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 import FilterBar from "../components/FilterBar";
 import PlanCard from "../components/PlanCard";
 import { PlanCardSkeleton } from "../components/PlanCardSkeleton";
 import CompareBar from "../components/CompareBar";
 import { getPlans } from "../api/plans.api";
+import { DEFAULT_FILTERS, toApiParams } from "../utils/filterConfig";
 
 const SKELETON_COUNT = 6;
+const PAGE_SIZE = 12;
 
 export default function Home() {
   const [plans, setPlans] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    operators: [],
-    category: "",
-    dailyData: 0,
-    minValidity: 1,
-    maxValidity: 365,
-    minData: 1,
-    maxData: 500,
-    ottApps: [],
-    minPrice: 99,
-    maxPrice: 3000,
-  });
-
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (filters.operators?.length) count += filters.operators.length;
-    if (filters.category) count++;
-    if (filters.dailyData > 0) count++;
-    if (filters.minData > 1 || filters.maxData < 500) count++;
-    if (filters.minPrice > 99 || filters.maxPrice < 3000) count++;
-    if (filters.minValidity > 1 || filters.maxValidity < 365) count++;
-    if (filters.ottApps?.length) count += filters.ottApps.length;
-    return count;
-  }, [filters]);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const loadMoreRef = useRef(null);
   const observerRef = useRef(null);
@@ -96,24 +75,8 @@ export default function Home() {
     <div className="min-h-screen bg-[#181818]">
       <FilterBar
         filters={filters}
-        onFiltersChange={(key, value) => setFilters((prev) => ({ ...prev, [key]: value }))}
-        onApply={fetchPlans}
-        onClear={() => {
-          setFilters({
-            operators: [],
-            minPrice: 99,
-            maxPrice: 3000,
-            minData: 1,
-            maxData: 500,
-            dailyData: 0,
-            minValidity: 1,
-            maxValidity: 365,
-            category: "",
-            ottApps: [],
-          });
-          fetchPlans(true);
-        }}
-        activeCount={activeFilterCount}
+        onApply={(next) => setFilters(next)}
+        onClear={() => setFilters(DEFAULT_FILTERS)}
       />
 
       <main className="mx-auto max-w-7xl px-4 py-6 pb-56 sm:pb-48 lg:pb-40">

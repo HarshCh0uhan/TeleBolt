@@ -176,7 +176,7 @@ const PlanForm = () => {
                 </div>
                 <p className="mt-2 text-sm text-zinc-400">Chips switch on and off with the same active-green feel used everywhere else.</p>
               </div>
-              <div className="text-xs text-zinc-500">{selectedOtt.length} selected</div>
+              <div className="shrink-0 text-xs text-zinc-500">{selectedOtt.length} selected</div>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
@@ -225,7 +225,7 @@ const PlanForm = () => {
 
           {/* Error Display */}
           {error && (
-            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+            <div className="break-words rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -234,14 +234,14 @@ const PlanForm = () => {
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Link
               to="/admin/plans"
-              className="rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
+              className="w-full rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-center text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white sm:w-auto"
             >
               Cancel
             </Link>
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="group flex rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-70"
+              className="group flex w-full justify-center rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
             >
               {loading ? (
                 <div className="flex items-center gap-3">

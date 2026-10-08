@@ -32,11 +32,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 py-8">
+    <div className="flex min-h-dvh items-center justify-center bg-black px-4 py-8 text-white">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8 md:p-10 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 md:p-10">
           {/* Logo */}
-          <div className="flex items-center justify-center mb-8">
+          <div className="mb-6 flex items-center justify-center sm:mb-8">
             <img
               src={logo}
               alt="TeleBolt"
@@ -45,7 +45,7 @@ const Login = () => {
           </div>
 
           {/* Heading */}
-          <div className="text-center mb-8">
+          <div className="mb-6 text-center sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
               Welcome Back
             </h1>
@@ -118,7 +118,7 @@ const Login = () => {
           </form>
 
           {/* Register */}
-          <div className="mt-8 border-t border-white/10 pt-6 text-center">
+          <div className="mt-6 border-t border-white/10 pt-6 text-center sm:mt-8">
             <p className="text-sm text-zinc-400">
               Don't have an account?{" "}
               <Link

@@ -109,11 +109,11 @@ const AuditLogs = () => {
 
       {/* Filters */}
       <section className="mb-5 flex flex-wrap items-center gap-3 rounded-3xl border border-white/10 bg-[#1f1f1f] p-4">
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="appearance-none rounded-2xl border border-white/10 bg-[#262626] py-2.5 pl-4 pr-10 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40"
+            className="w-full appearance-none rounded-2xl border border-white/10 bg-[#262626] py-2.5 pl-4 pr-10 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40 sm:w-auto"
           >
             {ACTIONS.map((a) => (
               <option key={a.value} value={a.value}>{a.label}</option>
@@ -121,11 +121,11 @@ const AuditLogs = () => {
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
         </div>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             value={entityFilter}
             onChange={(e) => setEntityFilter(e.target.value)}
-            className="appearance-none rounded-2xl border border-white/10 bg-[#262626] py-2.5 pl-4 pr-10 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40"
+            className="w-full appearance-none rounded-2xl border border-white/10 bg-[#262626] py-2.5 pl-4 pr-10 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40 sm:w-auto"
           >
             {ENTITIES.map((e) => (
               <option key={e.value} value={e.value}>{e.label}</option>
@@ -157,19 +157,19 @@ const AuditLogs = () => {
             logs.map((log) => (
               <div
                 key={log._id}
-                className="flex items-start gap-4 rounded-2xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/30"
+                className="flex flex-wrap items-start gap-x-4 gap-y-2 rounded-2xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/30"
               >
                 <div className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${toneFor(log.action)}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-zinc-300">
+                <div className="min-w-[12rem] flex-1">
+                  <p className="break-words text-sm text-zinc-300">
                     <span className="font-medium text-white">{log.actor?.email || log.actorEmail}</span>{' '}
                     {ACTION_LABELS[log.action] || log.action}
                   </p>
-                  {log.details && <p className="mt-0.5 text-xs text-zinc-500">{log.details}</p>}
+                  {log.details && <p className="mt-0.5 break-words text-xs text-zinc-500">{log.details}</p>}
                 </div>
-                <div className="shrink-0 text-right">
+                <div className="flex w-full shrink-0 flex-wrap items-center gap-x-2 text-left sm:w-auto sm:flex-col sm:items-end sm:text-right">
                   <p className="text-xs text-zinc-500">{log.entity}</p>
-                  <p className="mt-0.5 text-[11px] text-zinc-600">{new Date(log.createdAt).toLocaleString('en-IN')}</p>
+                  <p className="text-[11px] text-zinc-600 sm:mt-0.5">{new Date(log.createdAt).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             ))

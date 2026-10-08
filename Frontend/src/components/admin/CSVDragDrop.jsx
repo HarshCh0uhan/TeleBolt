@@ -34,25 +34,25 @@ const CSVDragDrop = ({ onFile }) => {
         setIsDragging(false);
         handleSelect(e.dataTransfer.files?.[0]);
       }}
-      className={`rounded-3xl border border-dashed p-6 transition-all duration-300 ${borderClass}`}
+      className={`rounded-3xl border border-dashed p-5 transition-all duration-300 sm:p-6 ${borderClass}`}
     >
-      <div className="flex flex-col items-center gap-4 text-center">
+      <div className="flex min-w-0 flex-col items-center gap-4 text-center">
         <div className={`grid h-16 w-16 place-items-center rounded-2xl border border-white/10 transition-all duration-300 ${isDragging ? 'bg-[#58c28d]/15 text-[#58c28d]' : 'bg-[#262626] text-zinc-300'}`}>
           {fileName ? <CheckCircle2 className="h-7 w-7" /> : <UploadCloud className="h-7 w-7" />}
         </div>
 
-        <div>
-          <h3 className="text-lg font-medium text-white">
+        <div className="min-w-0 max-w-full">
+          <h3 className="break-words text-lg font-medium text-white">
             {fileName ? fileName : 'Drop CSV here'}
           </h3>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">{helperText}</p>
+          <p className="mt-2 break-words text-sm leading-6 text-zinc-400">{helperText}</p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="flex w-full flex-wrap items-center justify-center gap-3">
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-white transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10"
+            className="w-full rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-white transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 sm:w-auto"
           >
             Browse file
           </button>

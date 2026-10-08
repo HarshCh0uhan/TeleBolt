@@ -111,7 +111,7 @@ const SuggestPlan = () => {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      <div className="mx-auto max-w-4xl px-4 py-10">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 transition hover:text-[#58c28d]"
@@ -121,7 +121,7 @@ const SuggestPlan = () => {
         </Link>
 
         <div className="mt-4">
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Suggest a Plan</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Suggest a Plan</h1>
           <p className="mt-2 text-sm text-zinc-400">
             Spotted a plan that TeleBolt is missing? Send it in — an admin will review it before it
             goes live.
@@ -130,7 +130,7 @@ const SuggestPlan = () => {
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           {/* Basic information */}
-          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
+          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-6">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               <Sparkles className="h-4 w-4 text-[#58c28d]" />
               Basic information
@@ -177,7 +177,7 @@ const SuggestPlan = () => {
           </section>
 
           {/* Data benefits */}
-          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
+          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-6">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               <CircleDot className="h-4 w-4 text-[#58c28d]" />
               Data benefits
@@ -218,7 +218,7 @@ const SuggestPlan = () => {
           </section>
 
           {/* Calling & SMS toggles */}
-          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
+          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-6">
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
@@ -252,10 +252,10 @@ const SuggestPlan = () => {
           </section>
 
           {/* OTT */}
-          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-4">
+          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
               <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
-                <ChevronRight className="h-4 w-4 text-[#58c28d]" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-[#58c28d]" />
                 OTT benefits
               </div>
               <div className="text-xs text-zinc-500">{selectedOtt.length} selected</div>
@@ -282,7 +282,7 @@ const SuggestPlan = () => {
           </section>
 
           {/* Note */}
-          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
+          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-6">
             <Input label="Anything else? (optional)">
               <textarea
                 value={note}
@@ -305,14 +305,14 @@ const SuggestPlan = () => {
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Link
               to="/"
-              className="rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
+              className="w-full rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-center text-sm text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white sm:w-auto"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
             >
               {saving ? (
                 <>

@@ -188,7 +188,7 @@ const Analytics = () => {
               <p className="mt-2 text-2xl font-bold text-white">{s.usersCount ?? '—'}</p>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-3">
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-[#262626] p-3 text-center">
               <p className="text-lg font-semibold text-yellow-400">{s.submissions?.pending ?? '—'}</p>
               <p className="text-[11px] text-zinc-500">Pending</p>

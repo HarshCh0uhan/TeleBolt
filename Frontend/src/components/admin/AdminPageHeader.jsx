@@ -10,8 +10,8 @@ const AdminPageHeader = ({ eyebrow, title, description, actions }) => {
         </div>
       ) : null}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-2xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl bg-linear-to-r from-white to-zinc-200 bg-clip-text">
+        <div className="min-w-0 max-w-2xl">
+          <h1 className="break-words text-2xl font-semibold tracking-tight text-white sm:text-3xl bg-linear-to-r from-white to-zinc-200 bg-clip-text">
             {title}
           </h1>
           {description ? (

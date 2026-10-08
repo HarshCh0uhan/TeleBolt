@@ -34,7 +34,7 @@ const navItems = [
 const baseLink =
   'group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-300 ease-out';
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const {logoutUser, user} = useAuth()
   const {pendingCount} = useAdminStats()
@@ -45,10 +45,9 @@ const AdminLayout = ({ children }) => {
     : '-translate-x-full opacity-0 pointer-events-none';
 
   return (
-    <div className="min-h-screen bg-[#181818] text-white max-h-screen w-full overflow-y-auto scrollbar-thin scrollbar-track-[#1f1f1f] scrollbar-thumb-[#58c28d]/40 hover:scrollbar-thumb-[#58c28d]/60">
+    <div className="min-h-screen w-full bg-[#181818] text-white">
       {/* Desktop View */}
-      <aside className="max-h-screen overflow-y-auto border border-white/10 scrollbar-thin scrollbar-track-[#1f1f1f]
-      scrollbar-thumb-[#58c28d]/40 hover:scrollbar-thumb-[#58c28d]/60 fixed inset-y-0 left-0 hidden w-72 flex-col border-r lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden max-h-screen w-72 flex-col overflow-y-auto border border-white/10 border-r scrollbar-brand lg:flex">
         <div className="flex h-full flex-col px-3 py-5 ">
           <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] py-3">
             <div className="flex items-center justify-center gap-3">

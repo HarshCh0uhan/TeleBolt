@@ -176,25 +176,25 @@ const Contributions = () => {
                           {sub.dailyData ? `${sub.dailyData} GB/day` : `${sub.totalData} GB total`}
                           {sub.ottApps?.length > 0 && <span className="text-zinc-500"> • {sub.ottApps.join(', ')}</span>}
                         </p>
-                        <p className="mt-1 text-xs text-zinc-600">
+                        <p className="mt-1 break-words text-xs text-zinc-600">
                           By {sub.submittedBy?.email || 'user'} • {new Date(sub.createdAt).toLocaleString('en-IN')}
                           {sub.reviewedBy?.email && ` • reviewed by ${sub.reviewedBy.email}`}
                         </p>
                       </div>
 
                       {sub.status === 'Pending' && (
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                           <button
                             disabled={busyId === sub._id}
                             onClick={() => handleAction(sub._id, () => approveSubmission(sub._id))}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2 text-xs font-semibold text-[#181818] transition hover:bg-[#6dd9a0] disabled:opacity-60"
+                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2 text-xs font-semibold text-[#181818] transition hover:bg-[#6dd9a0] disabled:opacity-60 sm:w-auto"
                           >
                             <Check className="h-3.5 w-3.5" /> Approve & create plan
                           </button>
                           <button
                             disabled={busyId === sub._id}
                             onClick={() => handleAction(sub._id, () => rejectSubmission(sub._id))}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#181818] px-4 py-2 text-xs font-medium text-zinc-300 transition hover:border-red-400/30 hover:text-red-400 disabled:opacity-60"
+                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#181818] px-4 py-2 text-xs font-medium text-zinc-300 transition hover:border-red-400/30 hover:text-red-400 disabled:opacity-60 sm:w-auto"
                           >
                             <X className="h-3.5 w-3.5" /> Reject
                           </button>

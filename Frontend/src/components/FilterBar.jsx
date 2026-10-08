@@ -1,378 +1,346 @@
-"use client";
-
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  SlidersHorizontal,
-  X,
   ChevronDown,
-  ChevronUp,
-  Filter as FilterIcon,
-  Tag,
-  DollarSign,
-  Calendar,
-  Database,
-  Sparkles,
+  Layers3,
+  RadioTower,
   RotateCcw,
-  Check,
-  Minus,
-  Plus,
+  SlidersHorizontal,
+  Sparkles,
 } from "lucide-react";
+import {
+  CATEGORIES,
+  DAILY_DATA_OPTIONS,
+  DEFAULT_FILTERS,
+  LIMITS,
+  OPERATORS,
+  OTT_APPS,
+  countActive,
+  isPriceActive,
+  isValidityActive,
+  sameFilters,
+} from "../utils/filterConfig";
 
-const operators = ["Jio", "Airtel", "VI", "BSNL"];
-const categories = ["Daily", "Non-Daily"];
-const ottApps = ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5"];
+/* ---------- small building blocks (module level, so they never remount) ---------- */
 
-function RangeSlider({
-  label,
-  min,
-  max,
-  value,
-  onChange,
-  format = (v) => v,
-  step = 1,
-  unit = "",
-  disabled = false,
-}) {
-  const [localValue, setLocalValue] = useState(value);
-  const thumbRefs = useMemo(() => [useRef(null), useRef(null)], []);
-  const trackRef = useRef(null);
+// Selected = green tint + green border. No tick icon.
+const Chip = ({ active, disabled, onClick, children }) => (
+  <button
+    type="button"
+    aria-pressed={active}
+    disabled={disabled}
+    onClick={onClick}
+    className={`rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors duration-200 ${
+      active
+        ? "border-[#58c28d]/50 bg-[#58c28d]/20 text-[#dff6ea]"
+        : "border-white/10 bg-[#262626] text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
+    } ${disabled ? "cursor-not-allowed opacity-40" : ""}`}
+  >
+    {children}
+  </button>
+);
 
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleChange = useCallback((index, newVal) => {
-    const arr = [...localValue];
-    arr[index] = Math.max(min, Math.min(max, newVal));
-    if (arr[0] > arr[1]) arr[1] = arr[0];
-    setLocalValue(arr);
-    onChange(arr);
-  }, [localValue, min, max, onChange]);
-
-  const getPercent = useCallback((val) => ((val - min) / (max - min)) * 100, [min, max]);
-
-  return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between text-xs mb-2">
-        <span className="font-medium text-zinc-300">{label}</span>
-        <span className="text-[#58c28d] font-mono">
-          {format(localValue[0])}{unit} – {format(localValue[1])}{unit}
-        </span>
-      </div>
-      <div className="relative h-6" role="slider" aria-label={label} aria-valuemin={localValue[0]} aria-valuemax={localValue[1]} tabIndex={0}>
-        <div
-          ref={trackRef}
-          className="absolute inset-0 h-1 bg-zinc-800 rounded-full overflow-hidden"
-        >
-          <div
-            className="absolute h-full bg-[#58c28d] rounded-full"
-            style={{
-              left: `${getPercent(localValue[0])}%`,
-              width: `${getPercent(localValue[1]) - getPercent(localValue[0])}%`,
-            }}
-          />
-        </div>
-        {[0, 1].map((i) => (
-          <button
-            key={i}
-            ref={thumbRefs[i]}
-            type="button"
-            disabled={disabled}
-            className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white border-2 border-[#58c28d] shadow-lg transition-transform focus:outline-none focus:ring-2 focus:ring-[#58c28d] focus:ring-offset-2 focus:ring-offset-[#181818] ${
-              disabled ? "opacity-50 cursor-not-allowed" : "hover:scale-110 active:scale-125"
-            }`}
-            style={{ left: `calc(${getPercent(localValue[i])}% - 12px)` }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              if (disabled) return;
-              const startX = e.clientX;
-              const startVal = localValue[i];
-              const move = (me) => {
-                const dx = me.clientX - startX;
-                const trackWidth = trackRef.current?.offsetWidth || 300;
-                const stepPx = trackWidth / (max - min);
-                const newVal = Math.round(startVal + dx / stepPx);
-                handleChange(i, newVal);
-              };
-              const up = () => {
-                window.removeEventListener("mousemove", move);
-                window.removeEventListener("mouseup", up);
-              };
-              window.addEventListener("mousemove", move);
-              window.addEventListener("mouseup", up);
-            }}
-            onKeyDown={(e) => {
-              const step = (max - min) * 0.02;
-              if (e.key === "ArrowRight" || e.key === "ArrowUp") handleChange(i, localValue[i] + step);
-              if (e.key === "ArrowLeft" || e.key === "ArrowDown") handleChange(i, localValue[i] - step);
-              if (e.key === "Home") handleChange(i, min);
-              if (e.key === "End") handleChange(i, max);
-            }}
-            aria-label={`${label} ${i === 0 ? "minimum" : "maximum"}`}
-          />
-        ))}
-      </div>
-      <div className="flex justify-between text-[10px] text-zinc-500 mt-1">
-        <span>{format(min)}{unit}</span>
-        <span>{format(max)}{unit}</span>
-      </div>
+const Section = ({ title, hint, children }) => (
+  <div>
+    <div className="mb-2.5 flex items-baseline justify-between gap-3">
+      <h4 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">{title}</h4>
+      {hint && <span className="text-[11px] text-zinc-500">{hint}</span>}
     </div>
-  );
-}
+    {children}
+  </div>
+);
 
-function ChipButton({ label, selected, onClick, disabled = false }) {
-  return (
+const Dropdown = ({ label, icon: Icon, count, open, onToggle, panelClass = "", children }) => (
+  <div className="sm:relative">
     <button
       type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-        selected
-          ? "bg-[#58c28d]/20 border border-[#58c28d]/40 text-[#58c28d] ring-1 ring-[#58c28d]/20"
-          : "bg-[#1f1f1f] border border-white/10 text-zinc-300 hover:border-[#58c28d]/30 hover:text-white hover:bg-[#262626]"
-      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function RadioButton({ label, selected, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-        selected
-          ? "bg-[#58c28d]/20 border border-[#58c28d]/40 text-[#58c28d]"
-          : "bg-[#1f1f1f] border border-white/10 text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-haspopup="true"
+      className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors duration-200 ${
+        count > 0 || open
+          ? "border-[#58c28d]/40 bg-[#58c28d]/10 text-white"
+          : "border-white/10 bg-[#1f1f1f] text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
       }`}
     >
-      {label}
+      <Icon className="h-4 w-4 text-[#58c28d]" />
+      <span>{label}</span>
+      {count > 0 && (
+        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#58c28d] px-1 text-[10px] font-bold text-[#181818]">
+          {count}
+        </span>
+      )}
+      <ChevronDown
+        className={`h-4 w-4 text-zinc-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+      />
     </button>
-  );
-}
 
-function CollapsibleSection({ title, icon, children, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen);
-  const contentRef = useRef(null);
-  const [height, setHeight] = useState(0);
+    {open && (
+      <div
+        className={`absolute left-4 right-4 top-full z-40 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#1f1f1f] p-4 shadow-2xl shadow-black/50 sm:left-0 sm:right-auto ${panelClass}`}
+      >
+        {children}
+      </div>
+    )}
+  </div>
+);
 
-  useEffect(() => {
-    if (contentRef.current) {
-      setHeight(open ? contentRef.current.scrollHeight : 0);
-    }
-  }, [open]);
+// Two native range inputs layered on one track: touch + keyboard work for free.
+const RangeSlider = ({ label, min, max, step, value, onChange, format }) => {
+  const [lo, hi] = value;
+  const pct = (v) => ((v - min) / (max - min)) * 100;
+  // When both thumbs sit at the far end, keep the low one on top so it stays draggable.
+  const lowOnTop = lo > (min + max) / 2;
 
   return (
-    <div className="border-t border-white/10">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-3 py-3 text-left"
-        aria-expanded={open}
-      >
-        <div className="flex items-center gap-2 text-sm font-medium text-zinc-300">
-          {icon && <icon className="h-4 w-4 text-[#58c28d] shrink-0" />}
-          <span className="uppercase tracking-wider">{title}</span>
+    <div>
+      <div className="mb-2 flex items-center justify-between text-xs">
+        <span className="font-medium text-zinc-300">{label}</span>
+        <span className="font-mono text-[#58c28d]">
+          {format(lo)} – {format(hi)}
+        </span>
+      </div>
+
+      <div className="relative h-5">
+        {/* Visual rail, inset by half a thumb so it lines up with native thumb travel */}
+        <div className="absolute left-2.5 right-2.5 top-1/2 h-1 -translate-y-1/2 rounded-full bg-white/10">
+          <div
+            className="absolute h-full rounded-full bg-[#58c28d]"
+            style={{ left: `${pct(lo)}%`, width: `${pct(hi) - pct(lo)}%` }}
+          />
         </div>
-        {open ? <ChevronUp className="h-4 w-4 text-zinc-500 shrink-0" /> : <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />}
-      </button>
-      <div className="overflow-hidden transition-all duration-300 ease-out" style={{ height: `${height}px` }}>
-        <div ref={contentRef} className="pb-3 pt-1">
-          {children}
-        </div>
+
+        <input
+          type="range"
+          className={`dual-range absolute inset-0 h-5 w-full ${lowOnTop ? "z-20" : "z-10"}`}
+          min={min}
+          max={max}
+          step={step}
+          value={lo}
+          aria-label={`${label} minimum`}
+          onChange={(e) => onChange([Math.min(Number(e.target.value), hi - step), hi])}
+        />
+        <input
+          type="range"
+          className="dual-range absolute inset-0 z-10 h-5 w-full"
+          min={min}
+          max={max}
+          step={step}
+          value={hi}
+          aria-label={`${label} maximum`}
+          onChange={(e) => onChange([lo, Math.max(Number(e.target.value), lo + step)])}
+        />
       </div>
     </div>
   );
-}
+};
 
-export default function FilterBar({
-  filters,
-  onFiltersChange,
-  onApply,
-  onClear,
-  activeCount,
-}) {
-  const [expanded, setExpanded] = useState(false);
+/* ---------- the filter bar ---------- */
 
-  const hasActiveFilters = activeCount > 0;
+export default function FilterBar({ filters, onApply, onClear }) {
+  const [draft, setDraft] = useState(filters);
+  const [prevFilters, setPrevFilters] = useState(filters);
+  const [openName, setOpenName] = useState(null);
+  const rootRef = useRef(null);
 
-  const toggleChip = useCallback((key, value) => {
-    const current = filters[key] || [];
-    const updated = current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value];
-    onFiltersChange(key, updated);
-  }, [filters, onFiltersChange]);
+  // If the applied filters change from outside, reset the draft to match.
+  if (prevFilters !== filters) {
+    setPrevFilters(filters);
+    setDraft(filters);
+  }
 
-  const toggleRadio = useCallback((key, value) => {
-    onFiltersChange(key, filters[key] === value ? "" : value);
-  }, [filters, onFiltersChange]);
+  // Close on outside click / Esc.
+  useEffect(() => {
+    if (!openName) return undefined;
+    const onPointerDown = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) setOpenName(null);
+    };
+    const onKey = (e) => e.key === "Escape" && setOpenName(null);
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openName]);
 
-  const handleSliderChange = useCallback((key, value) => {
-    if (key === "price") {
-      onFiltersChange("minPrice", value[0]);
-      onFiltersChange("maxPrice", value[1]);
-    } else if (key === "validity") {
-      onFiltersChange("minValidity", value[0]);
-      onFiltersChange("maxValidity", value[1]);
-    } else if (key === "data") {
-      onFiltersChange("minData", value[0]);
-      onFiltersChange("maxData", value[1]);
-    } else if (key === "dailyData") {
-      onFiltersChange("dailyData", value[0]);
-    } else {
-      onFiltersChange(key, value);
-    }
-  }, [onFiltersChange]);
+  const update = (patch) => setDraft((d) => ({ ...d, ...patch }));
+  const toggleOpen = (name) => setOpenName((cur) => (cur === name ? null : name));
 
-  const priceRange = useMemo(() => [filters.minPrice, filters.maxPrice], [filters.minPrice, filters.maxPrice]);
-  const validityRange = useMemo(() => [filters.minValidity, filters.maxValidity], [filters.minValidity, filters.maxValidity]);
-  const dataRange = useMemo(() => [filters.minData, filters.maxData], [filters.minData, filters.maxData]);
+  const toggleInList = (key, value) =>
+    update({
+      [key]: draft[key].includes(value)
+        ? draft[key].filter((v) => v !== value)
+        : [...draft[key], value],
+    });
+
+  const setCategory = (cat) =>
+    update({
+      category: draft.category === cat ? "" : cat,
+      // Daily-data only makes sense for Daily plans.
+      ...(cat === "Non-Daily" ? { dailyData: 0 } : {}),
+    });
+
+  const dirty = !sameFilters(draft, filters);
+  const hasAnything = countActive(draft) > 0 || countActive(filters) > 0;
+
+  const othersCount =
+    (draft.dailyData > 0 ? 1 : 0) + (isPriceActive(draft) ? 1 : 0) + (isValidityActive(draft) ? 1 : 0);
+
+  const handleApply = () => {
+    onApply(draft);
+    setOpenName(null);
+  };
+
+  const handleClear = () => {
+    setDraft(DEFAULT_FILTERS);
+    setOpenName(null);
+    onClear();
+  };
 
   return (
-    <div className="bg-[#181818] border-b border-white/10">
-      {/* Compact Bar - Always Visible, NOT sticky */}
-      <div className="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center gap-3">
-        {/* Filter Badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1f1f1f] border border-white/10 shrink-0">
-          <FilterIcon className="h-4 w-4 text-[#58c28d]" />
-          <span className="text-sm font-medium text-zinc-300 hidden sm:inline">Filters</span>
-          {activeCount > 0 && (
-            <span className="ml-1 h-5 w-5 rounded-full bg-[#58c28d] flex items-center justify-center text-[10px] font-bold text-[#181818]">
-              {activeCount}
-            </span>
-          )}
+    <div ref={rootRef} className="relative z-30 border-b border-white/10 bg-[#181818]">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-zinc-400">
+          <SlidersHorizontal className="h-4 w-4 text-[#58c28d]" />
+          <span className="hidden sm:inline">Filters</span>
         </div>
 
-        {/* Quick Operator Chips */}
-        <div className="flex flex-wrap gap-2 flex-1 min-w-0">
-          {operators.map((op) => (
-            <ChipButton
-              key={op}
-              label={op}
-              selected={filters.operators?.includes(op)}
-              onClick={() => toggleChip("operators", op)}
-            />
-          ))}
-        </div>
-
-        {/* Expand Toggle */}
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1f1f1f] border border-white/10 text-sm text-zinc-400 transition hover:border-[#58c28d]/30 hover:text-white shrink-0"
+        {/* Operator – multi select */}
+        <Dropdown
+          label="Operator"
+          icon={RadioTower}
+          count={draft.operators.length}
+          open={openName === "operator"}
+          onToggle={() => toggleOpen("operator")}
+          panelClass="sm:w-72"
         >
-          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          <span className="hidden sm:inline">Advanced</span>
-        </button>
+          <Section title="Operators" hint="Pick one or more">
+            <div className="flex flex-wrap gap-2">
+              {OPERATORS.map((op) => (
+                <Chip key={op} active={draft.operators.includes(op)} onClick={() => toggleInList("operators", op)}>
+                  {op}
+                </Chip>
+              ))}
+            </div>
+          </Section>
+        </Dropdown>
 
-        {/* Actions - Fixed alignment */}
-        <div className="flex items-center gap-2 shrink-0">
-          {hasActiveFilters && (
+        {/* Category – single select */}
+        <Dropdown
+          label="Category"
+          icon={Layers3}
+          count={draft.category ? 1 : 0}
+          open={openName === "category"}
+          onToggle={() => toggleOpen("category")}
+          panelClass="sm:w-64"
+        >
+          <Section title="Category" hint="Pick one">
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => (
+                <Chip key={cat} active={draft.category === cat} onClick={() => setCategory(cat)}>
+                  {cat}
+                </Chip>
+              ))}
+            </div>
+          </Section>
+        </Dropdown>
+
+        {/* OTT – multi select */}
+        <Dropdown
+          label="OTT Apps"
+          icon={Sparkles}
+          count={draft.ottApps.length}
+          open={openName === "ott"}
+          onToggle={() => toggleOpen("ott")}
+          panelClass="sm:w-80"
+        >
+          <Section title="OTT apps" hint="Pick one or more">
+            <div className="flex flex-wrap gap-2">
+              {OTT_APPS.map((app) => (
+                <Chip key={app} active={draft.ottApps.includes(app)} onClick={() => toggleInList("ottApps", app)}>
+                  {app}
+                </Chip>
+              ))}
+            </div>
+          </Section>
+        </Dropdown>
+
+        {/* Others – data/day, budget, validity */}
+        <Dropdown
+          label="Others"
+          icon={SlidersHorizontal}
+          count={othersCount}
+          open={openName === "others"}
+          onToggle={() => toggleOpen("others")}
+          panelClass="sm:w-[24rem]"
+        >
+          <div className="space-y-5">
+            <Section
+              title="Data / day"
+              hint={draft.category === "Non-Daily" ? "Daily plans only" : "Exact GB per day"}
+            >
+              <div className="flex flex-wrap gap-2">
+                {DAILY_DATA_OPTIONS.map((gb) => (
+                  <Chip
+                    key={gb}
+                    disabled={draft.category === "Non-Daily"}
+                    active={draft.dailyData === gb}
+                    onClick={() => update({ dailyData: draft.dailyData === gb ? 0 : gb })}
+                  >
+                    {gb} GB
+                  </Chip>
+                ))}
+              </div>
+            </Section>
+
+            <div className="border-t border-white/10 pt-5">
+              <Section title="Budget">
+                <RangeSlider
+                  label="Price"
+                  {...LIMITS.price}
+                  value={[draft.minPrice, draft.maxPrice]}
+                  onChange={([a, b]) => update({ minPrice: a, maxPrice: b })}
+                  format={(v) => `₹${v.toLocaleString("en-IN")}`}
+                />
+              </Section>
+            </div>
+
+            <div className="border-t border-white/10 pt-5">
+              <Section title="Validity">
+                <RangeSlider
+                  label="Days"
+                  {...LIMITS.validity}
+                  value={[draft.minValidity, draft.maxValidity]}
+                  onChange={([a, b]) => update({ minValidity: a, maxValidity: b })}
+                  format={(v) => `${v}d`}
+                />
+              </Section>
+            </div>
+          </div>
+        </Dropdown>
+
+        {/* Actions */}
+        <div className="ml-auto flex items-center gap-2">
+          {hasAnything && (
             <button
               type="button"
-              onClick={onClear}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-white/10 text-sm font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
+              onClick={handleClear}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
             >
               <RotateCcw className="h-4 w-4" />
-              <span>Clear</span>
+              Clear
             </button>
           )}
           <button
             type="button"
-            onClick={onApply}
-            disabled={!hasActiveFilters}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#58c28d] text-sm font-semibold text-[#181818] transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleApply}
+            disabled={!dirty}
+            className="rounded-xl bg-[#58c28d] px-5 py-2 text-sm font-semibold text-[#181818] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <Check className="h-4 w-4" />
-            <span>Apply</span>
+            Apply
           </button>
         </div>
       </div>
-
-      {/* Expanded Advanced Filters */}
-      {expanded && (
-        <div className="border-t border-white/10 bg-[#181818] animate-slide-down p-4">
-          <div className="mx-auto max-w-7xl grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <CollapsibleSection title="Category" icon={Tag} defaultOpen>
-              <div className="flex gap-2">
-                {categories.map((cat) => (
-                  <RadioButton
-                    key={cat}
-                    label={cat}
-                    selected={filters.category === cat}
-                    onClick={() => toggleRadio("category", cat)}
-                  />
-                ))}
-              </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Budget" icon={DollarSign} defaultOpen>
-              <RangeSlider
-                label="Price Range"
-                min={99}
-                max={3000}
-                value={priceRange}
-                onChange={(v) => handleSliderChange("price", v)}
-                format={(v) => `₹${v.toLocaleString()}`}
-                step={1}
-              />
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Validity" icon={Calendar} defaultOpen>
-              <RangeSlider
-                label="Validity (days)"
-                min={1}
-                max={365}
-                value={validityRange}
-                onChange={(v) => handleSliderChange("validity", v)}
-                step={1}
-                unit="d"
-              />
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Data" icon={Database} defaultOpen>
-              {filters.category === "Daily" ? (
-                <RangeSlider
-                  label="Daily Data (GB/day)"
-                  min={0}
-                  max={5}
-                  value={[filters.dailyData, 5]}
-                  onChange={(v) => handleSliderChange("dailyData", [v[0], 5])}
-                  step={0.5}
-                  unit=" GB"
-                  format={(v) => v.toFixed(1)}
-                />
-              ) : (
-                <RangeSlider
-                  label="Total Data (GB)"
-                  min={1}
-                  max={500}
-                  value={dataRange}
-                  onChange={(v) => handleSliderChange("data", v)}
-                  step={1}
-                  unit=" GB"
-                />
-              )}
-            </CollapsibleSection>
-
-            <CollapsibleSection title="OTT Apps" icon={Sparkles} defaultOpen={false}>
-              <div className="flex flex-wrap gap-2">
-                {ottApps.map((app) => (
-                  <ChipButton
-                    key={app}
-                    label={app}
-                    selected={filters.ottApps?.includes(app)}
-                    onClick={() => toggleChip("ottApps", app)}
-                  />
-                ))}
-              </div>
-            </CollapsibleSection>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

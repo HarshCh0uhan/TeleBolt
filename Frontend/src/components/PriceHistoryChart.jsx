@@ -47,7 +47,7 @@ const PriceHistoryChart = ({ planId }) => {
   // --- States ---
   if (loading) {
     return (
-      <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626]">
+      <div className="flex h-56 w-full items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626] px-4 text-center sm:h-72">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#58c28d]/30 border-t-[#58c28d]" />
           <p className="text-sm text-zinc-500">Loading price history...</p>
@@ -58,18 +58,18 @@ const PriceHistoryChart = ({ planId }) => {
 
   if (error) {
     return (
-      <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626]">
-        <p className="text-sm text-red-400">{error}</p>
+      <div className="flex h-56 w-full items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626] px-4 text-center sm:h-72">
+        <p className="break-words text-sm text-red-400">{error}</p>
       </div>
     );
   }
 
   if (history.length === 0) {
     return (
-      <div className="flex h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626]">
+      <div className="flex h-56 w-full flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#262626] px-4 text-center sm:h-72">
         <Sparkles className="h-10 w-10 text-zinc-600" />
         <p className="mt-4 text-sm font-medium text-zinc-500">No price history yet</p>
-        <p className="mt-2 text-xs text-zinc-600">Changes will appear here once detected and approved</p>
+        <p className="mt-2 max-w-xs text-xs text-zinc-600">Changes will appear here once detected and approved</p>
       </div>
     );
   }
@@ -120,27 +120,27 @@ const PriceHistoryChart = ({ planId }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="relative rounded-2xl border border-white/10 bg-[#262626] p-5"
+      className="relative min-w-0 rounded-2xl border border-white/10 bg-[#262626] p-4 sm:p-5"
     >
       {/* Header */}
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <div className="flex min-w-0 items-center gap-2">
           {isTrendingUp ? (
-            <TrendingUp className="h-5 w-5 text-red-400" />
+            <TrendingUp className="h-5 w-5 shrink-0 text-red-400" />
           ) : (
-            <TrendingDown className="h-5 w-5 text-[#58c28d]" />
+            <TrendingDown className="h-5 w-5 shrink-0 text-[#58c28d]" />
           )}
           <span className="text-sm font-medium text-white">Price trend</span>
         </div>
-        <div className="flex items-center gap-4 text-xs text-zinc-500">
+        <div className="flex items-center gap-3 text-xs text-zinc-500 sm:gap-4">
           <span>Min: <span className="text-white">₹{minPrice}</span></span>
           <span>Max: <span className="text-white">₹{maxPrice}</span></span>
         </div>
       </div>
 
       {/* SVG Line Graph */}
-      <div className="relative">
-        <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto">
+      <div className="relative w-full min-w-0">
+        <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="h-auto w-full">
           {/* Gradient definition */}
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">

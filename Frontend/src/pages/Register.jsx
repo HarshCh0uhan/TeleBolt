@@ -42,11 +42,11 @@ const Register = ({ isAdminRegister = false }) => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 py-8">
+    <div className="flex min-h-dvh items-center justify-center bg-black px-4 py-8 text-white">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8 md:p-10">
+        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8 md:p-10">
           {/* Logo */}
-          <div className="flex justify-center mb-8">
+          <div className="mb-6 flex justify-center sm:mb-8">
             <img
               src={logo}
               alt="TeleBolt"
@@ -57,7 +57,7 @@ const Register = ({ isAdminRegister = false }) => {
           {/* Admin Warning */}
           {isAdminRegister && (
             <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
-              <div className="flex items-start gap-3">
+              <div className="flex min-w-0 items-start gap-3">
                 <div className="mt-1 h-2 w-2 rounded-full bg-red-500" />
 
                 <div>
@@ -75,7 +75,7 @@ const Register = ({ isAdminRegister = false }) => {
           )}
 
           {/* Heading */}
-          <div className="text-center mb-8">
+          <div className="mb-6 text-center sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
               {isAdminRegister
                 ? "Create Admin Account"
@@ -204,7 +204,7 @@ const Register = ({ isAdminRegister = false }) => {
           </form>
 
           {/* Login Link */}
-          <div className="mt-8 border-t border-white/10 pt-6 text-center">
+          <div className="mt-6 border-t border-white/10 pt-6 text-center sm:mt-8">
             <p className="text-sm text-zinc-400">
               Already have an account?{" "}
               <Link

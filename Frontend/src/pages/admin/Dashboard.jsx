@@ -142,7 +142,7 @@ const Dashboard = () => {
       {/* Quick actions + System status */}
       <motion.div variants={container} initial="hidden" animate="show" className="mt-5 grid gap-4 lg:grid-cols-2">
         {/* Quick actions */}
-        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
+        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Quick actions</div>
@@ -170,7 +170,7 @@ const Dashboard = () => {
         </motion.div>
 
         {/* System status */}
-        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
+        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">System status</div>
@@ -179,37 +179,37 @@ const Dashboard = () => {
             <Database className="h-5 w-5 text-[#58c28d]" />
           </div>
           <div className="mt-5 space-y-3">
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <Database className="h-4 w-4 text-[#58c28d]" />
                 <span className="text-sm text-zinc-300">Database</span>
               </div>
-              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
+              <span className="shrink-0 whitespace-nowrap rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
                 {stats ? 'Connected' : 'Connecting…'}
               </span>
             </div>
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <Timer className="h-4 w-4 text-[#58c28d]" />
                 <span className="text-sm text-zinc-300">Cron scheduler</span>
               </div>
-              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">Active</span>
+              <span className="shrink-0 whitespace-nowrap rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">Active</span>
             </div>
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <HardDrive className="h-4 w-4 text-[#58c28d]" />
                 <span className="text-sm text-zinc-300">Price history entries</span>
               </div>
-              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
+              <span className="shrink-0 whitespace-nowrap rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
                 {stats ? s.priceHistoryCount : '—'}
               </span>
             </div>
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <Activity className="h-4 w-4 text-[#58c28d]" />
                 <span className="text-sm text-zinc-300">Registered users</span>
               </div>
-              <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
+              <span className="shrink-0 whitespace-nowrap rounded-full bg-[#58c28d]/10 px-2.5 py-1 text-xs text-[#58c28d]">
                 {stats ? s.usersCount : '—'}
               </span>
             </div>
@@ -220,7 +220,7 @@ const Dashboard = () => {
       {/* Recent activity + operator distribution */}
       <motion.div variants={container} initial="hidden" animate="show" className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
         {/* Recent activity */}
-        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
+        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Recent activity</div>
@@ -250,7 +250,7 @@ const Dashboard = () => {
                         }`}
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-white">
+                        <div className="break-words text-sm font-medium text-white">
                           {log.actor?.email || log.actorEmail} <span className="font-normal text-zinc-400">{meta.label}</span>
                         </div>
                         <div className="mt-1 truncate text-xs text-zinc-500">{log.details}</div>
@@ -268,7 +268,7 @@ const Dashboard = () => {
         </motion.div>
 
         {/* Operator distribution */}
-        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
+        <motion.div variants={item} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Catalog</div>
@@ -301,7 +301,7 @@ const Dashboard = () => {
           </div>
 
           {/* Detected changes mini summary */}
-          <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
+          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-5 sm:grid-cols-3">
             <div className="rounded-2xl bg-[#262626] p-3 text-center">
               <Clock3 className="mx-auto h-4 w-4 text-yellow-400" />
               <p className="mt-2 text-lg font-semibold text-white">{s.detectedChanges?.pending ?? '—'}</p>

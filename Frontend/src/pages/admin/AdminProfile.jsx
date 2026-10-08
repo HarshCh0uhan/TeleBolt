@@ -123,26 +123,26 @@ const AdminProfile = () => {
       />
 
       {/* Identity card */}
-      <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+      <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-5">
-            <div className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl border border-[#58c28d]/20 bg-[#58c28d]/10 text-3xl font-bold text-[#58c28d]">
+          <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl border border-[#58c28d]/20 bg-[#58c28d]/10 text-2xl font-bold text-[#58c28d] sm:h-20 sm:w-20 sm:text-3xl">
               {initialsOf(user?.username)}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl font-semibold text-white">{user?.username}</h2>
+                <h2 className="break-words text-xl font-semibold text-white sm:text-2xl">{user?.username}</h2>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#dff6ea]">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Admin
                 </span>
               </div>
-              <p className="mt-1 flex items-center gap-2 text-sm text-zinc-400">
-                <Mail className="h-3.5 w-3.5 text-zinc-500" />
+              <p className="mt-1 flex items-center gap-2 break-words text-sm text-zinc-400">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
                 {user?.email}
               </p>
-              <p className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
-                <CalendarDays className="h-3.5 w-3.5" />
+              <p className="mt-1 flex items-center gap-2 break-words text-xs text-zinc-500">
+                <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                 Admin since{' '}
                 {user?.createdAt
                   ? new Date(user.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -160,7 +160,7 @@ const AdminProfile = () => {
 
       {/* Forms */}
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+        <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
           <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
             <KeyRound className="h-4.5 w-4.5 text-[#58c28d]" />
             Account details
@@ -213,7 +213,7 @@ const AdminProfile = () => {
           </form>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+        <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
           <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
             <ShieldCheck className="h-4.5 w-4.5 text-[#58c28d]" />
             Change password
@@ -276,7 +276,7 @@ const AdminProfile = () => {
       </div>
 
       {/* Recent activity */}
-      <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+      <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
           <Activity className="h-4 w-4 text-[#58c28d]" />
           Your recent actions
@@ -290,7 +290,7 @@ const AdminProfile = () => {
               <div key={log._id} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-[#262626]/60 px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-zinc-300">{ACTION_LABELS[log.action] || log.action}</p>
-                  {log.details && <p className="text-[11px] text-zinc-600">{log.details}</p>}
+                  {log.details && <p className="break-words text-[11px] text-zinc-600">{log.details}</p>}
                 </div>
                 <p className="shrink-0 text-[11px] text-zinc-600">{new Date(log.createdAt).toLocaleString('en-IN')}</p>
               </div>

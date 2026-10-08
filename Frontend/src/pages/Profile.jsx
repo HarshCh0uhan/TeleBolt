@@ -120,7 +120,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      <div className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
         {/* Header */}
         <div className="mb-8">
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[#58c28d]">
@@ -133,15 +133,15 @@ const Profile = () => {
         </div>
 
         {/* Identity card */}
-        <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+        <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-5">
-              <div className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl border border-[#58c28d]/20 bg-[#58c28d]/10 text-3xl font-bold text-[#58c28d]">
+            <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl border border-[#58c28d]/20 bg-[#58c28d]/10 text-2xl font-bold text-[#58c28d] sm:h-20 sm:w-20 sm:text-3xl">
                 {initialsOf(user?.username)}
               </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-2xl font-semibold text-white">{user?.username}</h2>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <h2 className="min-w-0 break-words text-xl font-semibold text-white sm:text-2xl">{user?.username}</h2>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#dff6ea]">
                     {user?.role === "admin" ? (
                       <>
@@ -156,12 +156,12 @@ const Profile = () => {
                     )}
                   </span>
                 </div>
-                <p className="mt-1 flex items-center gap-2 text-sm text-zinc-400">
-                  <Mail className="h-3.5 w-3.5 text-zinc-500" />
-                  {user?.email}
+                <p className="mt-1 flex min-w-0 items-start gap-2 text-sm text-zinc-400">
+                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" />
+                  <span className="min-w-0 break-words">{user?.email}</span>
                 </p>
                 <p className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
-                  <CalendarDays className="h-3.5 w-3.5" />
+                  <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                   Member since {formatDate(user?.createdAt)}
                 </p>
               </div>
@@ -169,7 +169,7 @@ const Profile = () => {
 
             <Link
               to="/"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-sm font-medium text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white"
+              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-5 py-3 text-sm font-medium text-zinc-300 transition-all duration-300 hover:border-[#58c28d]/30 hover:bg-[#58c28d]/10 hover:text-white sm:w-auto"
             >
               <Compass className="h-4 w-4 text-[#58c28d]" />
               Browse plans
@@ -198,9 +198,9 @@ const Profile = () => {
         {/* Forms */}
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
           {/* Account details */}
-          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
             <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-              <KeyRound className="h-4.5 w-4.5 text-[#58c28d]" />
+              <KeyRound className="h-4.5 w-4.5 shrink-0 text-[#58c28d]" />
               Account details
             </h3>
             <p className="mt-1 text-sm text-zinc-500">Update your name and email address.</p>
@@ -252,9 +252,9 @@ const Profile = () => {
           </section>
 
           {/* Password */}
-          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+          <section className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
             <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-              <ShieldCheck className="h-4.5 w-4.5 text-[#58c28d]" />
+              <ShieldCheck className="h-4.5 w-4.5 shrink-0 text-[#58c28d]" />
               Change password
             </h3>
             <p className="mt-1 text-sm text-zinc-500">
@@ -316,11 +316,11 @@ const Profile = () => {
           </section>
         </div>
 
-        <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 sm:p-8">
+        <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-                <Heart className="h-4.5 w-4.5 text-[#58c28d]" />
+                <Heart className="h-4.5 w-4.5 shrink-0 text-[#58c28d]" />
                 Saved plans
               </h3>
               <p className="mt-1 text-sm text-zinc-500">Plans you marked as favourites.</p>
@@ -340,25 +340,25 @@ const Profile = () => {
               {favoritePlans.map((plan) => (
                 <div key={plan._id} className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <span className="rounded-full bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#58c28d]">
+                    <div className="min-w-0">
+                      <span className="inline-flex max-w-full rounded-full bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#58c28d]">
                         {plan.operator}
                       </span>
-                      <h4 className="mt-3 text-2xl font-bold text-white">₹{plan.price}</h4>
-                      <p className="mt-1 text-sm text-zinc-400">{plan.validityDays} days • {plan.category}</p>
+                      <h4 className="mt-3 break-words text-xl font-bold text-white sm:text-2xl">₹{plan.price}</h4>
+                      <p className="mt-1 break-words text-sm text-zinc-400">{plan.validityDays} days • {plan.category}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveFavorite(plan._id)}
-                      className="rounded-xl border border-white/10 p-2 text-zinc-500 transition hover:border-red-400/30 hover:text-red-400"
+                      className="shrink-0 rounded-xl border border-white/10 p-2 text-zinc-500 transition hover:border-red-400/30 hover:text-red-400"
                       title="Remove saved plan"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="mt-4 flex items-center justify-between text-sm">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
                     <span className="text-zinc-500">Cost per GB</span>
-                    <span className="font-medium text-[#58c28d]">₹{plan.costPerGB || "—"}/GB</span>
+                    <span className="min-w-0 break-words font-medium text-[#58c28d]">₹{plan.costPerGB || "—"}/GB</span>
                   </div>
                   <Link
                     to={`/plans/${plan._id}`}

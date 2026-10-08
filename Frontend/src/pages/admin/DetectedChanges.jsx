@@ -188,7 +188,7 @@ const DetectedChanges = () => {
         </div>
 
         {syncMessage && (
-          <p className="mt-3 rounded-2xl border border-white/10 bg-[#262626] px-4 py-2 text-xs text-zinc-300">
+          <p className="mt-3 break-words rounded-2xl border border-white/10 bg-[#262626] px-4 py-2 text-xs text-zinc-300">
             {syncMessage}
           </p>
         )}
@@ -250,7 +250,7 @@ const DetectedChanges = () => {
                 type="button"
                 onClick={() => setConfirmBulk('approve')}
                 disabled={bulkBusy !== null}
-                className="inline-flex items-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2.5 text-sm font-semibold text-[#181818] transition hover:bg-[#6dd9a0] disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-4 py-2.5 text-sm font-semibold text-[#181818] transition hover:bg-[#6dd9a0] disabled:opacity-60 sm:w-auto"
               >
                 {bulkBusy === 'approve' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Add all {pendingNewPlans} new plans
@@ -261,7 +261,7 @@ const DetectedChanges = () => {
                 type="button"
                 onClick={() => setConfirmBulk('reject')}
                 disabled={bulkBusy !== null}
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-red-400/30 hover:text-red-400 disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-2.5 text-sm text-zinc-300 transition hover:border-red-400/30 hover:text-red-400 disabled:opacity-60 sm:w-auto"
               >
                 {bulkBusy === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                 Reject all {pendingFieldChanges} pending changes

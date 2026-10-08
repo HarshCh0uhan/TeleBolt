@@ -42,7 +42,7 @@ const NetworkCoverage = () => {
 
   return (
     <div className="min-h-screen bg-[#181818] text-white">
-      <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[#58c28d]">
@@ -67,7 +67,7 @@ const NetworkCoverage = () => {
         </div>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-[320px_1fr]">
-          <aside className="space-y-4 rounded-3xl border border-white/10 bg-[#1f1f1f] p-5">
+          <aside className="min-w-0 space-y-4 rounded-3xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-5">
             <div>
               <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-300">
                 <RadioTower className="h-4 w-4 text-[#58c28d]" />
@@ -99,7 +99,7 @@ const NetworkCoverage = () => {
                 <Signal className="h-4 w-4 text-[#58c28d]" />
                 Network
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                 {NETWORKS.map((item) => (
                   <button
                     key={item}
@@ -150,7 +150,7 @@ const NetworkCoverage = () => {
               key={`${carrier.id}-${mapKey}`}
               src={carrier.url}
               title={`${carrier.label} coverage map`}
-              className="h-[72vh] min-h-[540px] w-full bg-[#181818]"
+              className="h-[60vh] min-h-[420px] w-full bg-[#181818] sm:h-[72vh] sm:min-h-[540px]"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             />

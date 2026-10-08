@@ -49,19 +49,19 @@ const AdminTable = ({ columns = [], data = [], renderCell, emptyState }) => {
             className="rounded-3xl border border-white/10 bg-[#262626] p-4 transition-all duration-300 hover:border-[#58c28d]/25 hover:-translate-y-0.5"
           >
             <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-sm font-medium text-white">
+              <div className="min-w-0 break-words text-sm font-medium text-white">
                 {renderCell ? renderCell(row, columns[0]) : row[columns[0]?.key]}
               </div>
-              <ChevronDown className="h-4 w-4 text-zinc-500" />
+              <ChevronDown className="h-4 w-4 shrink-0 text-zinc-500" />
             </div>
 
             <div className="grid gap-2">
               {columns.slice(1).map((col) => (
                 <div key={col.key} className="flex items-start justify-between gap-3 border-t border-white/10 pt-2 first:border-t-0 first:pt-0">
-                  <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+                  <div className="shrink-0 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
                     {col.header}
                   </div>
-                  <div className="text-right text-sm text-zinc-200">
+                  <div className="min-w-0 break-words text-right text-sm text-zinc-200">
                     {renderCell ? renderCell(row, col) : row[col.key]}
                   </div>
                 </div>

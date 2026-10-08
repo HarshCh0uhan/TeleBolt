@@ -2,7 +2,7 @@ import { Inbox } from 'lucide-react';
 
 const AdminEmptyState = ({ title, message, action }) => {
   return (
-    <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-8 text-center">
+    <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-6 text-center sm:p-8">
       <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-[#262626] text-[#58c28d]">
         <Inbox className="h-6 w-6" />
       </div>

@@ -25,7 +25,7 @@ const PlanDetails = () => {
 
   if (!plan) {
     return (
-      <div className="min-h-screen bg-[#181818] flex items-center justify-center text-white">
+      <div className="min-h-[60vh] bg-[#181818] flex items-center justify-center px-4 py-16 text-center text-white sm:py-0">
         Plan not found
       </div>
     );
@@ -35,7 +35,7 @@ const PlanDetails = () => {
     <div className="min-h-screen bg-[#181818]">
       {/* Breadcrumb */}
       <div className="border-b border-white/10 bg-[#1f1f1f]">
-        <div className="mx-auto max-w-7xl px-4 py-4">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 sm:py-4">
           <Link
             to="/"
             className="text-sm text-zinc-500 transition hover:text-[#58c28d]"
@@ -45,16 +45,16 @@ const PlanDetails = () => {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         {/* Hero Section */}
-        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-8">
+        <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <span className="inline-flex rounded-full bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#58c28d]">
+            <div className="min-w-0">
+              <span className="inline-flex max-w-full rounded-full bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#58c28d]">
                 {plan.operator}
               </span>
 
-              <h1 className="mt-4 text-5xl font-bold text-white">
+              <h1 className="mt-4 break-words text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
                 ₹{plan.price}
               </h1>
 
@@ -87,7 +87,7 @@ const PlanDetails = () => {
             </div>
 
             {/* Value Metrics */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:shrink-0 lg:grid-cols-1 xl:grid-cols-2">
               {/* <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
                   Yearly Cost
@@ -102,7 +102,7 @@ const PlanDetails = () => {
                   Total Data
                 </p>
 
-                <p className="mt-2 text-xl font-semibold text-[#58c28d]">
+                <p className="mt-2 break-words text-xl font-semibold text-[#58c28d]">
                   {plan.totalData}
                 </p>
               </div>
@@ -122,7 +122,7 @@ const PlanDetails = () => {
                   Cost / GB
                 </p>
 
-                <p className="mt-2 text-xl font-semibold text-white">
+                <p className="mt-2 break-words text-xl font-semibold text-white">
                   ₹{plan.costPerGB}/GB
                 </p>
               </div>
@@ -132,12 +132,12 @@ const PlanDetails = () => {
 
         {/* Current Benefits */}
         <section className="mt-8">
-          <h2 className="mb-5 text-2xl font-semibold text-white">
+          <h2 className="mb-5 text-xl font-semibold text-white sm:text-2xl">
             Current Benefits
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-5">
+            <div className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-5">
               <p className="text-xs uppercase tracking-wider text-zinc-500">
                 Daily Data
               </p>
@@ -147,7 +147,7 @@ const PlanDetails = () => {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-5">
+            <div className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-5">
               <p className="text-xs uppercase tracking-wider text-zinc-500">
                 SMS
               </p>
@@ -157,7 +157,7 @@ const PlanDetails = () => {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-5">
+            <div className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-5">
               <p className="text-xs uppercase tracking-wider text-zinc-500">
                 Calling
               </p>
@@ -167,14 +167,14 @@ const PlanDetails = () => {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-5">
+            <div className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-4 sm:p-5">
               <p className="text-xs uppercase tracking-wider text-zinc-500">
                 OTT
               </p>
 
               <div className="mt-3 flex flex-wrap gap-2">
                   {plan.ottApps.length ? plan.ottApps.map((ott) => (
-                    <span key={ott} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">
+                    <span key={ott} className="max-w-full break-words rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">
                         {ott}
                     </span>
                   )) : 
@@ -187,8 +187,8 @@ const PlanDetails = () => {
         </section>
 
         {/* Yearly Normalization */}
-        <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
-          <h2 className="text-2xl font-semibold text-white">
+        <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
+          <h2 className="text-xl font-semibold text-white sm:text-2xl">
             Yearly Normalization
           </h2>
 
@@ -197,8 +197,8 @@ const PlanDetails = () => {
             year if you continuously recharge this plan.
           </p>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-[#262626] p-5">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <div className="rounded-2xl bg-[#262626] p-4 sm:p-5">
               <p className="text-sm text-zinc-500">
                 Recharges Needed
               </p>
@@ -208,17 +208,17 @@ const PlanDetails = () => {
               </p>
             </div>
 
-            <div className="rounded-2xl bg-[#262626] p-5">
+            <div className="rounded-2xl bg-[#262626] p-4 sm:p-5">
               <p className="text-sm text-zinc-500">
                 Total Yearly Cost
               </p>
 
-              <p className="mt-2 text-2xl font-bold text-[#58c28d]">
+              <p className="mt-2 break-words text-2xl font-bold text-[#58c28d]">
                 ₹{plan.yearlyCost}
               </p>
             </div>
 
-            <div className="rounded-2xl bg-[#262626] p-5">
+            <div className="rounded-2xl bg-[#262626] p-4 sm:p-5">
               <p className="text-sm text-zinc-500">
                 Total Yearly Data
               </p>
@@ -231,8 +231,8 @@ const PlanDetails = () => {
         </section>
 
         {/* Price History */}
-        <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
-          <h2 className="text-2xl font-semibold text-white">Price History</h2>
+        <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
+          <h2 className="text-xl font-semibold text-white sm:text-2xl">Price History</h2>
           <p className="mt-2 text-zinc-400">
             Track how this plan's price has changed over time.
           </p>
