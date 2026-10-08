@@ -33,22 +33,13 @@ function RangeSlider({
   unit = "",
   disabled = false,
 }) {
-  // Ensure value is always a valid array with 2 numbers
-  const safeValue = useMemo(() => {
-    if (!Array.isArray(value)) return [min, max];
-    return [
-      typeof value[0] === "number" ? value[0] : min,
-      typeof value[1] === "number" ? value[1] : max,
-    ];
-  }, [value, min, max]);
-
-  const [localValue, setLocalValue] = useState(safeValue);
+  const [localValue, setLocalValue] = useState(value);
   const thumbRefs = useMemo(() => [useRef(null), useRef(null)], []);
   const trackRef = useRef(null);
 
   useEffect(() => {
-    setLocalValue(safeValue);
-  }, [safeValue]);
+    setLocalValue(value);
+  }, [value]);
 
   const handleChange = useCallback((index, newVal) => {
     const arr = [...localValue];
@@ -197,41 +188,27 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false }) {
 }
 
 export default function FilterBar({
-  filters = {},
+  filters,
   onFiltersChange,
   onApply,
   onClear,
-  activeCount = 0,
+  activeCount,
 }) {
   const [expanded, setExpanded] = useState(false);
-
-  // Ensure filters and its array properties are always defined
-  const safeFilters = useMemo(() => ({
-    operators: Array.isArray(filters.operators) ? filters.operators : [],
-    category: filters.category || "",
-    dailyData: typeof filters.dailyData === "number" ? filters.dailyData : 0,
-    minValidity: typeof filters.minValidity === "number" ? filters.minValidity : 1,
-    maxValidity: typeof filters.maxValidity === "number" ? filters.maxValidity : 365,
-    minData: typeof filters.minData === "number" ? filters.minData : 1,
-    maxData: typeof filters.maxData === "number" ? filters.maxData : 500,
-    ottApps: Array.isArray(filters.ottApps) ? filters.ottApps : [],
-    minPrice: typeof filters.minPrice === "number" ? filters.minPrice : 99,
-    maxPrice: typeof filters.maxPrice === "number" ? filters.maxPrice : 3000,
-  }), [filters]);
 
   const hasActiveFilters = activeCount > 0;
 
   const toggleChip = useCallback((key, value) => {
-    const current = safeFilters[key] || [];
+    const current = filters[key] || [];
     const updated = current.includes(value)
       ? current.filter((v) => v !== value)
       : [...current, value];
     onFiltersChange(key, updated);
-  }, [safeFilters, onFiltersChange]);
+  }, [filters, onFiltersChange]);
 
   const toggleRadio = useCallback((key, value) => {
-    onFiltersChange(key, safeFilters[key] === value ? "" : value);
-  }, [safeFilters, onFiltersChange]);
+    onFiltersChange(key, filters[key] === value ? "" : value);
+  }, [filters, onFiltersChange]);
 
   const handleSliderChange = useCallback((key, value) => {
     if (key === "price") {
@@ -250,9 +227,9 @@ export default function FilterBar({
     }
   }, [onFiltersChange]);
 
-  const priceRange = useMemo(() => [safeFilters.minPrice, safeFilters.maxPrice], [safeFilters.minPrice, safeFilters.maxPrice]);
-  const validityRange = useMemo(() => [safeFilters.minValidity, safeFilters.maxValidity], [safeFilters.minValidity, safeFilters.maxValidity]);
-  const dataRange = useMemo(() => [safeFilters.minData, safeFilters.maxData], [safeFilters.minData, safeFilters.maxData]);
+  const priceRange = useMemo(() => [filters.minPrice, filters.maxPrice], [filters.minPrice, filters.maxPrice]);
+  const validityRange = useMemo(() => [filters.minValidity, filters.maxValidity], [filters.minValidity, filters.maxValidity]);
+  const dataRange = useMemo(() => [filters.minData, filters.maxData], [filters.minData, filters.maxData]);
 
   return (
     <div className="bg-[#181818] border-b border-white/10">
@@ -275,7 +252,7 @@ export default function FilterBar({
             <ChipButton
               key={op}
               label={op}
-              selected={safeFilters.operators.includes(op)}
+              selected={filters.operators?.includes(op)}
               onClick={() => toggleChip("operators", op)}
             />
           ))}
@@ -325,7 +302,7 @@ export default function FilterBar({
                   <RadioButton
                     key={cat}
                     label={cat}
-                    selected={safeFilters.category === cat}
+                    selected={filters.category === cat}
                     onClick={() => toggleRadio("category", cat)}
                   />
                 ))}
@@ -362,7 +339,7 @@ export default function FilterBar({
                   label="Daily Data (GB/day)"
                   min={0}
                   max={5}
-                  value={[safeFilters.dailyData, 5]}
+                  value={[filters.dailyData, 5]}
                   onChange={(v) => handleSliderChange("dailyData", [v[0], 5])}
                   step={0.5}
                   unit=" GB"
@@ -387,7 +364,7 @@ export default function FilterBar({
                   <ChipButton
                     key={app}
                     label={app}
-                    selected={safeFilters.ottApps.includes(app)}
+                    selected={filters.ottApps?.includes(app)}
                     onClick={() => toggleChip("ottApps", app)}
                   />
                 ))}
