@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   SlidersHorizontal,
   X,
@@ -14,6 +14,8 @@ import {
   Sparkles,
   RotateCcw,
   Check,
+  Minus,
+  Plus,
 } from "lucide-react";
 
 const operators = ["Jio", "Airtel", "VI", "BSNL"];
@@ -32,22 +34,22 @@ function RangeSlider({
   disabled = false,
 }) {
   const [localValue, setLocalValue] = useState(value);
-  const thumbRefs = [useRef(null), useRef(null)];
+  const thumbRefs = useMemo(() => [useRef(null), useRef(null)], []);
   const trackRef = useRef(null);
 
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
 
-  const handleChange = (index, newVal) => {
+  const handleChange = useCallback((index, newVal) => {
     const arr = [...localValue];
     arr[index] = Math.max(min, Math.min(max, newVal));
     if (arr[0] > arr[1]) arr[1] = arr[0];
     setLocalValue(arr);
     onChange(arr);
-  };
+  }, [localValue, min, max, onChange]);
 
-  const getPercent = (val) => ((val - min) / (max - min)) * 100;
+  const getPercent = useCallback((val) => ((val - min) / (max - min)) * 100, [min, max]);
 
   return (
     <div className="mb-4">
@@ -118,33 +120,38 @@ function RangeSlider({
   );
 }
 
-function ChipGroup({ label, options, selected, onToggle, icon }) {
+const thumbRefs = [typeof window !== "undefined" ? useRef(null) : null, typeof window !== "undefined" ? useRef(null) : null];
+
+function ChipButton({ label, selected, onClick, disabled = false }) {
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-2">
-        {icon && <icon className="h-3.5 w-3.5 text-[#58c28d]" />}
-        <span className="uppercase tracking-wider">{label}</span>
-        {selected.length > 0 && (
-          <span className="ml-auto text-[10px] text-[#58c28d] font-mono">{selected.length}</span>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onToggle(opt)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-              selected.includes(opt)
-                ? "bg-[#58c28d]/20 border border-[#58c28d]/40 text-[#58c28d] ring-1 ring-[#58c28d]/20"
-                : "bg-[#1f1f1f] border border-white/10 text-zinc-300 hover:border-[#58c28d]/30 hover:text-white hover:bg-[#262626]"
-            }`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+        selected
+          ? "bg-[#58c28d]/20 border border-[#58c28d]/40 text-[#58c28d] ring-1 ring-[#58c28d]/20"
+          : "bg-[#1f1f1f] border border-white/10 text-zinc-300 hover:border-[#58c28d]/30 hover:text-white hover:bg-[#262626]"
+      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function RadioButton({ label, selected, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+        selected
+          ? "bg-[#58c28d]/20 border border-[#58c28d]/40 text-[#58c28d]"
+          : "bg-[#1f1f1f] border border-white/10 text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -190,30 +197,34 @@ export default function FilterBar({
   activeCount,
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [showAll, setShowAll] = useState(false);
 
   const hasActiveFilters = activeCount > 0;
 
-  const toggleChip = (key, value) => {
+  const toggleChip = useCallback((key, value) => {
     const current = filters[key] || [];
     const updated = current.includes(value)
       ? current.filter((v) => v !== value)
       : [...current, value];
     onFiltersChange(key, updated);
-  };
+  }, [filters, onFiltersChange]);
 
-  const toggleRadio = (key, value) => {
+  const toggleRadio = useCallback((key, value) => {
     onFiltersChange(key, filters[key] === value ? "" : value);
-  };
+  }, [filters, onFiltersChange]);
 
-  const handleSliderChange = (key, value) => {
+  const handleSliderChange = useCallback((key, value) => {
     onFiltersChange(key, value);
-  };
+  }, [onFiltersChange]);
+
+  const priceRange = useMemo(() => ({ min: filters.minPrice, max: filters.maxPrice }), [filters.minPrice, filters.maxPrice]);
+  const validityRange = useMemo(() => ({ min: filters.minValidity, max: filters.maxValidity }), [filters.minValidity, filters.maxValidity]);
+  const dataRange = useMemo(() => ({ min: filters.minData, max: filters.maxData }), [filters.minData, filters.maxData]);
 
   return (
-    <div className="sticky top-16 z-40 bg-[#181818]/95 backdrop-blur-md border-b border-white/10">
-      {/* Compact Bar - Always Visible */}
+    <div className="bg-[#181818] border-b border-white/10">
+      {/* Compact Bar - Always Visible, NOT sticky */}
       <div className="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center gap-3">
+        {/* Filter Badge */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1f1f1f] border border-white/10 shrink-0">
           <FilterIcon className="h-4 w-4 text-[#58c28d]" />
           <span className="text-sm font-medium text-zinc-300 hidden sm:inline">Filters</span>
@@ -224,21 +235,15 @@ export default function FilterBar({
           )}
         </div>
 
-        {/* Quick Chips - Most Used */}
+        {/* Quick Operator Chips */}
         <div className="flex flex-wrap gap-2 flex-1 min-w-0">
           {operators.map((op) => (
-            <button
+            <ChipButton
               key={op}
-              type="button"
+              label={op}
+              selected={filters.operators?.includes(op)}
               onClick={() => toggleChip("operators", op)}
-              className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
-                filters.operators?.includes(op)
-                  ? "bg-[#58c28d]/20 border border-[#58c28d]/40 text-[#58c28d]"
-                  : "bg-[#1f1f1f] border border-white/10 text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
-              }`}
-            >
-              {op}
-            </button>
+            />
           ))}
         </div>
 
@@ -249,52 +254,46 @@ export default function FilterBar({
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1f1f1f] border border-white/10 text-sm text-zinc-400 transition hover:border-[#58c28d]/30 hover:text-white shrink-0"
         >
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          <span className="hidden sm:inline">More</span>
+          <span className="hidden sm:inline">Advanced</span>
         </button>
 
-        {/* Actions */}
+        {/* Actions - Fixed alignment */}
         <div className="flex items-center gap-2 shrink-0">
           {hasActiveFilters && (
             <button
               type="button"
               onClick={onClear}
-              className="px-4 py-1.5 rounded-xl border border-white/10 text-sm font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-white/10 text-sm font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
             >
-              <RotateCcw className="h-4 w-4 mr-1.5" />
-              Clear
+              <RotateCcw className="h-4 w-4" />
+              <span>Clear</span>
             </button>
           )}
           <button
             type="button"
             onClick={onApply}
             disabled={!hasActiveFilters}
-            className="px-4 py-1.5 rounded-xl bg-[#58c28d] text-sm font-semibold text-[#181818] transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#58c28d] text-sm font-semibold text-[#181818] transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Check className="h-4 w-4 mr-1.5" />
-            Apply
+            <Check className="h-4 w-4" />
+            <span>Apply</span>
           </button>
         </div>
       </div>
 
       {/* Expanded Advanced Filters */}
       {expanded && (
-        <div className="border-t border-white/10 bg-[#181818] animate-slide-down">
-          <div className="mx-auto max-w-7xl px-4 py-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="border-t border-white/10 bg-[#181818] animate-slide-down p-4">
+          <div className="mx-auto max-w-7xl grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <CollapsibleSection title="Category" icon={Tag} defaultOpen>
               <div className="flex gap-2">
                 {categories.map((cat) => (
-                  <button
+                  <RadioButton
                     key={cat}
-                    type="button"
+                    label={cat}
+                    selected={filters.category === cat}
                     onClick={() => toggleRadio("category", cat)}
-                    className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                      filters.category === cat
-                        ? "bg-[#58c28d]/20 border border-[#58c28d]/40 text-[#58c28d]"
-                        : "bg-[#1f1f1f] border border-white/10 text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
-                    }`}
-                  >
-                    {cat}
-                  </button>
+                  />
                 ))}
               </div>
             </CollapsibleSection>
@@ -304,7 +303,7 @@ export default function FilterBar({
                 label="Price Range"
                 min={99}
                 max={3000}
-                value={[filters.minPrice, filters.maxPrice]}
+                value={priceRange}
                 onChange={(v) => handleSliderChange("price", v)}
                 format={(v) => `₹${v.toLocaleString()}`}
                 step={1}
@@ -316,7 +315,7 @@ export default function FilterBar({
                 label="Validity (days)"
                 min={1}
                 max={365}
-                value={[filters.minValidity, filters.maxValidity]}
+                value={validityRange}
                 onChange={(v) => handleSliderChange("validity", v)}
                 step={1}
                 unit="d"
@@ -340,7 +339,7 @@ export default function FilterBar({
                   label="Total Data (GB)"
                   min={1}
                   max={500}
-                  value={[filters.minData, filters.maxData]}
+                  value={dataRange}
                   onChange={(v) => handleSliderChange("data", v)}
                   step={1}
                   unit=" GB"
@@ -348,21 +347,15 @@ export default function FilterBar({
               )}
             </CollapsibleSection>
 
-            <CollapsibleSection title="OTT Apps" icon={Sparkles}>
+            <CollapsibleSection title="OTT Apps" icon={Sparkles} defaultOpen={false}>
               <div className="flex flex-wrap gap-2">
                 {ottApps.map((app) => (
-                  <button
+                  <ChipButton
                     key={app}
-                    type="button"
+                    label={app}
+                    selected={filters.ottApps?.includes(app)}
                     onClick={() => toggleChip("ottApps", app)}
-                    className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
-                      filters.ottApps?.includes(app)
-                        ? "bg-[#58c28d]/20 border border-[#58c28d]/40 text-[#58c28d]"
-                        : "bg-[#1f1f1f] border border-white/10 text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
-                    }`}
-                  >
-                    {app}
-                  </button>
+                  />
                 ))}
               </div>
             </CollapsibleSection>
