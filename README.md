@@ -99,7 +99,8 @@ Backend runs on `http://localhost:3000`, frontend on `http://localhost:5173`.
 
 ```
 GET  /api/plans                    - List plans with filters
-GET  /api/plans/rankings           - Active plans ranked by cost per GB
+GET  /api/plans/rankings/formats   - Available ranking formats (id, label, blurb)
+GET  /api/plans/rankings           - Ranked plans with format, filters, OTT apps, limit
 GET  /api/plans/compare            - Compare 2-3 plans side by side
 GET  /api/plans/:id                - Single plan (yearly figures included)
 GET  /api/plans/price-history/:id  - Price change history for a plan
@@ -145,8 +146,11 @@ GET    /api/admin/plan-sync/runs         - Plan sync history
 
 - **Plan comparison** — pick 2 or 3 plans on the plans dashboard and compare them side by side
   (minimum 2, maximum 3 enforced in the UI and on the API). Selection persists across refreshes.
-- **Rankings** — a cost-per-GB leaderboard of every active plan with a top-3 podium, filterable by
-  operator and category.
+- **Unified Rankings & Home** — a single page with format-based ranking engine. Format chips
+  (Best Value, Long Term, Entertainment, Budget, Heavy Data) re-rank the entire catalog.
+  Top 3 plans form an animated podium (crown/medal/award). Remaining plans grouped into
+  tiers: Strong picks / Also good / The rest. Format chips + FilterBar re-rank the entire
+  filtered set. Rankings fetched server-side across the entire filtered set before pagination.
 - **Yearly normalization** — yearly cost, yearly data and cost per GB on every card and detail page.
 - **Network coverage** — check 5G/4G/3G/2G coverage per carrier on an embedded map.
 - **Filters** — operator, price, validity, data allowance, category and OTT benefits.
@@ -397,7 +401,7 @@ admin dashboard, CSV import, price history, JWT auth.
 **V2 — Automation & community (in progress)**
 Daily automated Vi + Jio + BSNL + Airtel plan sync into the detected-changes queue ✅ (Jio from its public JSON
 API, BSNL via its self-minted session, Airtel via Bajaj Finserv server-rendered tables), audit logging ✅, community plan submissions with a moderation
-queue ✅, contributor tracking ✅. Still open: duplicate detection and trust scoring.
+queue ✅, contributor tracking ✅, **format-based ranking engine (Home + Rankings merged) ✅**. Still open: duplicate detection and trust scoring.
 
 **V3 — Platform (planned)**
 Advanced trust algorithms, contributor reputation and badges, spam detection, smart plan
