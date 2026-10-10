@@ -50,7 +50,7 @@ const DrawerSlot = ({ plan, index, onRemove }) => {
   );
 };
 
-const AdvancedDrawer = ({ open, onClose, formats, format, onFormatChange, filters, onApplyFilters, onClearFilters }) => {
+const AdvancedDrawer = ({ open, formats, format, onFormatChange, filters, onApplyFilters, onClearFilters }) => {
   const { slots, removeFromSlot } = useCompare();
 
   return (
@@ -91,7 +91,7 @@ const AdvancedDrawer = ({ open, onClose, formats, format, onFormatChange, filter
           </p>
           <FilterBar
             filters={filters}
-            onFiltersChange={onApplyFilters}
+            onApply={onApplyFilters}
             onClear={onClearFilters}
           />
         </div>

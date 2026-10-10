@@ -4,13 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 import FilterBar from "../components/FilterBar";
-import PlanCard from "../components/PlanCard";
 import RankingPodium from "../components/RankingPodium";
 import AdvancedDrawer from "../components/AdvancedDrawer";
 import DraggablePlanCard from "../components/DraggablePlanCard";
 import { getRankings, getRankingFormats } from "../api/plans.api";
 import { DEFAULT_FILTERS, toApiParams } from "../utils/filterConfig";
-import { useCompare } from "../context/CompareContext";
+import { useCompare, PODIUM_SIZE } from "../context/CompareContext";
 
 export default function Home() {
   const [formats, setFormats] = useState([]);
@@ -83,7 +82,6 @@ export default function Home() {
     setDrawerOpen(true);
   };
 
-  const podium = rankings.slice(0, 3);
   const remainder = rankings.slice(3);
 
   const third = Math.ceil(remainder.length / 3) || 0;
@@ -153,7 +151,7 @@ export default function Home() {
         {/* Podium */}
         {initialLoad ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: PODIUM_COUNT }).map((_, i) => (
+            {Array.from({ length: PODIUM_SIZE }).map((_, i) => (
               <div key={i} className="h-44 rounded-2xl bg-[#262626] animate-pulse" />
             ))}
           </div>
