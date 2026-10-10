@@ -3,7 +3,7 @@ import { PriceHistory } from "../models/priceHistory.js";
 import { PlanSubmission } from "../models/planSubmission.js";
 import { yearlyPlan } from "../utils/yearlyPlan.js";
 import { validatePlans } from "../utils/validations.js";
-import { rankPlans, RANKING_FORMATS, DEFAULT_FORMAT } from "../utils/ranking.js";
+import { rankPlans, findOtherPlans, RANKING_FORMATS, DEFAULT_FORMAT } from "../utils/ranking.js";
 import mongoose from "mongoose"
 
 // Shared by getPlans and getRankings so a filter means the same thing on both.
@@ -199,6 +199,8 @@ export const getRankings = async (req, res) => {
             ottApps: requestedOtt,
         });
 
+        const otherPlans = findOtherPlans(plansData, { ottApps: requestedOtt });
+
         const capped = limit ? rankings.slice(0, Math.max(1, Number(limit))) : rankings;
 
         res.status(200).json({
@@ -207,6 +209,7 @@ export const getRankings = async (req, res) => {
             format: format || DEFAULT_FORMAT,
             total: rankings.length,
             rankings: capped,
+            otherPlans,
         })
     } catch (err) {
         console.error("Error: ", err.message);
