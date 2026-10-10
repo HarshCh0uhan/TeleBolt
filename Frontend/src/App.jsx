@@ -34,7 +34,6 @@ function App() {
         <Route path="/plans" element={<Home />} />
         <Route path="/plans/:planid" element={<PlanDetails />} />
         <Route path="/compare" element={<Compare />} />
-        <Route path="/rankings" element={<Home />} />
         <Route path="/coverage" element={<NetworkCoverage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
