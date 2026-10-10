@@ -8,6 +8,19 @@ export const MAX_COMPARE = PODIUM_SIZE;
 
 const CompareContext = createContext(null);
 
+// Filled slots are always sorted by score (descending). Empty slots move to
+// the end. The score comes from the backend ranking response and is present on
+// every plan object the UI puts in a slot.
+const sortByScore = (arr) => {
+  const filled = arr.filter(Boolean).sort((a, b) => {
+    const sa = Number(a.score) || 0;
+    const sb = Number(b.score) || 0;
+    if (sb !== sa) return sb - sa;
+    return (Number(a.yearlyCost) || 0) - (Number(b.yearlyCost) || 0);
+  });
+  const emptyCount = arr.length - filled.length;
+  return [...filled, ...Array(emptyCount).fill(null)];
+}
 export const CompareProvider = ({ children }) => {
   const [slots, setSlots] = useState(() => Array(PODIUM_SIZE).fill(null));
   const [draggingPlan, setDraggingPlan] = useState(null);
@@ -32,7 +45,7 @@ export const CompareProvider = ({ children }) => {
         if (next[i] && next[i]._id === plan._id) next[i] = null;
       }
       next[index] = plan;
-      return next;
+      return sortByScore(next);
     });
     return true;
   }, []);
@@ -42,7 +55,7 @@ export const CompareProvider = ({ children }) => {
       if (index < 0 || index >= prev.length) return prev;
       const next = [...prev];
       next[index] = null;
-      return next;
+      return sortByScore(next);
     });
   }, []);
 
@@ -100,4 +113,4 @@ export const useCompare = () => {
   const ctx = useContext(CompareContext);
   if (!ctx) throw new Error("useCompare must be used inside a CompareProvider");
   return ctx;
-};
+}
