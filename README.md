@@ -101,7 +101,6 @@ Backend runs on `http://localhost:3000`, frontend on `http://localhost:5173`.
 GET  /api/plans                    - List plans with filters
 GET  /api/plans/rankings/formats   - Available ranking formats (id, label, blurb)
 GET  /api/plans/rankings           - Ranked plans with format, filters, OTT apps, limit
-GET  /api/plans/compare            - Compare 2-3 plans side by side
 GET  /api/plans/:id                - Single plan (yearly figures included)
 GET  /api/plans/price-history/:id  - Price change history for a plan
 ```
@@ -165,7 +164,7 @@ GET    /api/admin/plan-sync/runs         - Plan sync history
 Tailwind's breakpoints are `sm` 640px, `md` 768px, `lg` 1024px and `xl` 1280px, and everything is built
 mobile-first — a base class for phones, then `sm:`/`lg:` upgrades. Two decisions are deliberate:
 
-- **The navbar switches at `lg`, not `md`.** The full row (Rankings, Coverage, Compare, Suggest a Plan,
+- **The navbar switches at `lg`, not `md`.** The full row (Coverage, Suggest a Plan,
   Profile, Logout) needs roughly 1000px, so tablets in the 768–1023px range get the menu button instead
   of a squashed row. Tapping any menu link closes the menu.
 - **The admin console has one sidebar and one drawer.** The fixed sidebar appears at `lg`; below that a
@@ -173,11 +172,10 @@ mobile-first — a base class for phones, then `sm:`/`lg:` upgrades. Two decisio
   never a second scrollbar beside a nested one — the trap the plans dashboard fell into.
 
 Other conventions worth keeping: tables that cannot fit become stacked cards under `md` (see
-`components/admin/AdminTable.jsx`), the compare bar's selected-plan chips scroll sideways on phones
-rather than stacking into a tall block, and the bar respects `env(safe-area-inset-bottom)` for the iOS
-home indicator. Any new element that scrolls on its own should carry the `scrollbar-brand` class from
-`index.css` — the `scrollbar-*` utility names some files still use generate no CSS at all, because
-Tailwind v4 does not ship them and `tailwind-scrollbar` is not installed.
+`components/admin/AdminTable.jsx`). Any new element that scrolls on its own should carry the
+`scrollbar-brand` class from `index.css` — the `scrollbar-*` utility names some files still use
+generate no CSS at all, because Tailwind v4 does not ship them and `tailwind-scrollbar` is not
+installed.
 
 ### For Admins
 
@@ -368,10 +366,10 @@ TeleBolt/
 ├── Frontend/
 │   └── src/
 │       ├── api/
-│       ├── components/                  # PlanCard, CompareBar, admin/* …
-│       ├── context/                     # Auth, Compare, AdminStats
+│       ├── components/                  # PlanCard, admin/* …
+│       ├── context/                     # Auth, AdminStats
 │       ├── layouts/
-│       ├── pages/                       # Home, Compare, Rankings, Profile, admin/*
+│       ├── pages/                       # Home, Rankings, Profile, admin/*
 │       └── utils/
 │
 └── README.md
