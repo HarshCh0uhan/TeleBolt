@@ -16,6 +16,7 @@ export default function Home() {
   const [format, setFormat] = useState("best-value");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [rankings, setRankings] = useState([]);
+  const [otherPlans, setOtherPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -41,6 +42,7 @@ export default function Home() {
       .then(({ data }) => {
         if (id !== requestId.current) return;
         setRankings(data.rankings || []);
+        setOtherPlans(data.otherPlans || []);
       })
       .catch((err) => {
         if (id !== requestId.current) return;
@@ -50,6 +52,7 @@ export default function Home() {
             : "Could not load rankings."
         );
         setRankings([]);
+        setOtherPlans([]);
       })
       .finally(() => {
         if (id === requestId.current) setLoading(false);
@@ -150,6 +153,25 @@ export default function Home() {
           </section>
         ))}
 
+        {/* Other Plans: pass the voice gate, fit no category. Unranked, by price. */}
+        {otherPlans.length > 0 && (
+          <section className="mt-14 rounded-3xl border border-dashed border-white/10 bg-[#1a1a1a] p-5 sm:p-6">
+            <div className="mb-5">
+              <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
+                Other Plans
+              </h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                These are not tuned recommendations. They did not fit any ranking category, so
+                they are listed here by lowest price.
+              </p>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {otherPlans.map((plan) => (
+                <PlanCard key={plan._id} plan={plan} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <CompareBar />

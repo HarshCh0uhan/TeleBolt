@@ -1,39 +1,40 @@
 import { yearlyPlan } from "./yearlyPlan.js";
 
-// Format definitions. `gate` is a hard filter applied before scoring; `weights`
-// decide how much each signal counts. Weights are normalised, so they only need
-// to be relative to each other.
 export const RANKING_FORMATS = [
   {
     id: "best-value",
     label: "Best Value",
-    blurb: "Cheapest data per GB, yearly cost as tie-breaker.",
-    weights: { costPerGB: 0.7, yearlyCost: 0.2, totalData: 0.1 },
+    blurb: "Cheapest data per GB, yearly cost and yearly data as correctors.",
+    gate: null,
+    weights: { costPerGB: 0.6, yearlyCost: 0.25, yearlyData: 0.15 },
   },
   {
     id: "long-term",
     label: "Long Term",
     blurb: "Long validity packs so you recharge less often.",
-    weights: { validityDays: 0.6, yearlyCost: 0.25, costPerGB: 0.15 },
+    gate: null,
+    weights: { validityDays: 0.55, yearlyCost: 0.3, costPerGB: 0.15 },
   },
   {
     id: "entertainment",
     label: "Entertainment",
-    blurb: "Plans that bundle OTT subscriptions.",
+    blurb: "Plans that bundle the OTT subscriptions you care about.",
     gate: "ott",
-    weights: { ottMatch: 0.55, costPerGB: 0.25, validityDays: 0.2 },
+    weights: { ottMatch: 0.5, costPerGB: 0.25, yearlyCost: 0.15, validityDays: 0.1 },
   },
   {
     id: "budget",
     label: "Budget",
-    blurb: "Low upfront price, good for a backup SIM.",
-    weights: { price: 0.55, yearlyCost: 0.3, validityDays: 0.15 },
+    blurb: "Cheapest to run over a year, with meaningful data.",
+    gate: "data",
+    weights: { yearlyCost: 0.55, yearlyData: 0.45 },
   },
   {
     id: "heavy-data",
     label: "Heavy Data",
     blurb: "Big daily quotas for streaming and hotspot use.",
-    weights: { dailyData: 0.55, costPerGB: 0.3, totalData: 0.15 },
+    gate: "daily-data",
+    weights: { dailyData: 0.5, costPerGB: 0.3, yearlyData: 0.2 },
   },
 ];
 
@@ -42,18 +43,34 @@ export const DEFAULT_FORMAT = "best-value";
 export const findFormat = (id) =>
   RANKING_FORMATS.find((f) => f.id === id) || RANKING_FORMATS[0];
 
+export const passesGlobalGate = (plan) => plan?.isUnlimitedCalls === true;
+
+const hasPositive = (value) => Number(value) > 0;
+
+export const passesCategoryGate = (format, plan, selectedOtt = []) => {
+  switch (format.gate) {
+    case "ott": {
+      const apps = plan.ottApps || [];
+      if (selectedOtt.length > 0) return selectedOtt.every((app) => apps.includes(app));
+      return apps.length > 0;
+    }
+    case "data":
+      return hasPositive(plan.dailyData) || hasPositive(plan.totalData);
+    case "daily-data":
+      return hasPositive(plan.dailyData);
+    default:
+      return true;
+  }
+};
+
 const toPositive = (v) => {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
-/**
- * Normalises one signal across all plans to 0..1. Nulls score 0, so a plan
- * missing dailyData simply gains nothing from that weight rather than being
- * dropped. Price-like signals are log-scaled first: Rs.19 to Rs.3599 spans two
- * orders of magnitude and a linear scale would squash everything into a
- * narrow band, letting the data signals dominate.
- */
+// Min-max normalises one signal to 0..1 across the given plans. Missing values
+// score 0. Rupee-denominated signals are log-scaled first so a Rs.19 to
+// Rs.3599 spread does not get squashed against the data signals.
 const normalize = (plans, getter, { lowerIsBetter = false, log = false } = {}) => {
   const raw = plans.map((p) => toPositive(getter(p)));
   const transformed = raw.map((v) => (v === null ? null : log ? Math.log(v) : v));
@@ -69,27 +86,26 @@ const normalize = (plans, getter, { lowerIsBetter = false, log = false } = {}) =
   });
 };
 
+const ottMatchScore = (plan, selectedOtt) => {
+  const apps = plan.ottApps || [];
+  if (selectedOtt.length > 0) {
+    const matched = selectedOtt.filter((app) => apps.includes(app)).length;
+    return matched / selectedOtt.length;
+  }
+  return apps.length > 0 ? 1 : 0;
+};
+
 /**
- * Ranks a filtered set of plans for a chosen format.
- *
- * Scoring runs over the whole set before any pagination happens upstream in the
- * controller - sorting a page slice would silently turn "top 3" into "top 3 of
- * page 1".
+ * Ranks plans for one category: global gate, category gate, then scoring.
+ * Runs over the whole set before any pagination so "top 3" is never "top 3 of
+ * a page".
  */
 export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {}) => {
   const format = findFormat(formatId);
-  let candidates = plans;
 
-  // Entertainment gate. With specific apps requested, a plan must carry all of
-  // them (user asked for Netflix + Prime -> show both, not either). With no
-  // apps requested, any OTT at all qualifies.
-  if (format.gate === "ott") {
-    candidates = candidates.filter((plan) => {
-      const apps = plan.ottApps || [];
-      if (ottApps.length > 0) return ottApps.every((app) => apps.includes(app));
-      return apps.length > 0;
-    });
-  }
+  const candidates = plans.filter(
+    (plan) => passesGlobalGate(plan) && passesCategoryGate(format, plan, ottApps)
+  );
 
   if (candidates.length === 0) return [];
 
@@ -99,20 +115,12 @@ export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {
     costPerGB: normalize(yearly, (p) => p.costPerGB, { lowerIsBetter: true, log: true }),
     yearlyCost: normalize(yearly, (p) => p.yearlyCost, { lowerIsBetter: true, log: true }),
     price: normalize(yearly, (p) => p.price, { lowerIsBetter: true, log: true }),
+    yearlyData: normalize(yearly, (p) => p.yearlyData),
     validityDays: normalize(yearly, (p) => p.validityDays),
     dailyData: normalize(yearly, (p) => p.dailyData),
-    totalData: normalize(yearly, (p) => p.totalData),
   };
 
-  // How much of what the user asked for this plan actually carries.
-  const ottScore = yearly.map((plan) => {
-    const apps = plan.ottApps || [];
-    if (ottApps.length > 0) {
-      const matched = ottApps.filter((app) => apps.includes(app)).length;
-      return matched / ottApps.length;
-    }
-    return apps.length > 0 ? 1 : 0;
-  });
+  const ottScore = yearly.map((plan) => ottMatchScore(plan, ottApps));
 
   const weightSum = Object.values(format.weights).reduce((a, b) => a + b, 0) || 1;
 
@@ -125,6 +133,21 @@ export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {
     return { ...plan, score: Math.round((total / weightSum) * 10000) / 10000 };
   });
 
-  scored.sort((a, b) => b.score - a.score);
+  scored.sort((a, b) => b.score - a.score || a.yearlyCost - b.yearlyCost);
   return scored;
 };
+
+/**
+ * Plans that pass the global gate but fail every category gate. Unscored,
+ * sorted by lowest upfront price. `formats` is overridable only so the check
+ * script can exercise the path.
+ */
+export const findOtherPlans = (plans, { ottApps = [], formats = RANKING_FORMATS } = {}) =>
+  plans
+    .filter(
+      (plan) =>
+        passesGlobalGate(plan) &&
+        !formats.some((format) => passesCategoryGate(format, plan, ottApps))
+    )
+    .map((plan) => yearlyPlan(plan))
+    .sort((a, b) => a.price - b.price);
