@@ -1,4 +1,2 @@
 # Prompt folder - all markdown files
-prompt/
-prompt/**/*.md
-prompt/*.md
+prompts/
