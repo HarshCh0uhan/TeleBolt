@@ -1,5 +1,6 @@
 import { useCompare } from "../context/CompareContext";
 import FilterBar from "./FilterBar";
+import FormatSelect from "./FormatSelect";
 import { Crown, Medal, Award, Minus } from "lucide-react";
 
 const SLOT_ICONS = [Crown, Medal, Award];
@@ -50,7 +51,15 @@ const DrawerSlot = ({ plan, index, onRemove }) => {
   );
 };
 
-const AdvancedDrawer = ({ open, formats, format, onFormatChange, filters, onApplyFilters, onClearFilters }) => {
+const AdvancedDrawer = ({
+  open,
+  formats,
+  format,
+  onFormatChange,
+  filters,
+  onApplyFilters,
+  onClearFilters,
+}) => {
   const { slots, removeFromSlot } = useCompare();
 
   return (
@@ -61,40 +70,14 @@ const AdvancedDrawer = ({ open, formats, format, onFormatChange, filters, onAppl
       aria-hidden={!open}
     >
       <div className="mx-auto max-w-7xl overflow-y-auto px-4 py-4 scrollbar-brand" style={{ maxHeight: "55vh" }}>
-        {/* Format chips */}
-        <div className="mb-4">
-          <p className="mb-2 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
-            Category
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {formats.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onFormatChange(item.id)}
-                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-300 ${
-                  format === item.id
-                    ? "border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea]"
-                    : "border-white/10 bg-[#262626] text-zinc-400 hover:border-[#58c28d]/30 hover:text-white"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="mb-4">
-          <p className="mb-2 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
-            Filters
-          </p>
-          <FilterBar
-            filters={filters}
-            onApply={onApplyFilters}
-            onClear={onClearFilters}
-          />
-        </div>
+        <FilterBar
+          filters={filters}
+          onApply={onApplyFilters}
+          onClear={onClearFilters}
+          leadingSlot={
+            <FormatSelect formats={formats} value={format} onChange={onFormatChange} />
+          }
+        />
 
         {/* Comparison slots */}
         <div>

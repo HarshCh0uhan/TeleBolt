@@ -1,68 +1,56 @@
 import { useRef, useState } from "react";
 import PlanCard from "./PlanCard";
+import { useCompare } from "../context/CompareContext";
 
-// Wraps a PlanCard so it can be picked up and dragged onto a podium slot.
-// Drag only activates after a short hold. A quick click does nothing.
-const HOLD_MS = 250;
-
+// Drag activates on press-and-move. A quick click does nothing. While dragging,
+// the original card hides and a small scaled-down clone follows the cursor.
 const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
-  const [armed, setArmed] = useState(false);
-  const holdTimer = useRef(null);
-  const armedRef = useRef(false);
-
-  const clearHold = () => {
-    if (holdTimer.current) {
-      clearTimeout(holdTimer.current);
-      holdTimer.current = null;
-    }
-    armedRef.current = false;
-    setArmed(false);
-  };
-
-  const handlePointerDown = () => {
-    clearHold();
-    holdTimer.current = setTimeout(() => {
-      armedRef.current = true;
-      setArmed(true);
-    }, HOLD_MS);
-  };
+  const [dragging, setDragging] = useState(false);
+  const wrapperRef = useRef(null);
+  const { setDraggingPlan } = useCompare();
 
   const handleDragStart = (e) => {
-    if (!armedRef.current) {
-      e.preventDefault();
-      return;
+    const card = wrapperRef.current?.querySelector("article");
+    if (card) {
+      const clone = card.cloneNode(true);
+      const width = card.offsetWidth || 280;
+      clone.style.width = `${width}px`;
+      clone.style.transform = "scale(0.4)";
+      clone.style.transformOrigin = "top left";
+      clone.style.position = "absolute";
+      clone.style.top = "-10000px";
+      clone.style.left = "-10000px";
+      clone.style.pointerEvents = "none";
+      clone.style.opacity = "0.95";
+      document.body.appendChild(clone);
+      // Anchor the preview so the cursor sits near its top-left.
+      e.dataTransfer.setDragImage(clone, 30, 40);
+      setTimeout(() => clone.remove(), 0);
     }
 
-    // Small green pill as the drag preview, so the card visibly shrinks.
-    const ghost = document.createElement("div");
-    ghost.textContent = `${plan.operator} · ₹${plan.price}`;
-    ghost.style.cssText =
-      "position:absolute;top:-1000px;left:-1000px;padding:6px 12px;" +
-      "background:#58c28d;color:#181818;border-radius:9999px;font-size:12px;" +
-      "font-weight:600;font-family:system-ui,sans-serif;";
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, 0, 0);
-    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", plan._id);
-    setTimeout(() => ghost.remove(), 0);
 
+    setDragging(true);
+    setDraggingPlan(plan);
     onDragStart?.(plan);
   };
 
   const handleDragEnd = () => {
-    clearHold();
+    setDragging(false);
+    setDraggingPlan(null);
     onDragEnd?.(plan);
   };
 
   return (
     <div
+      ref={wrapperRef}
       draggable
-      onPointerDown={handlePointerDown}
-      onPointerUp={clearHold}
-      onPointerLeave={clearHold}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`transition-opacity duration-200 ${armed ? "cursor-grab opacity-70 active:cursor-grabbing" : "cursor-pointer"}`}
+      className={`transition-opacity duration-150 ${
+        dragging ? "cursor-grabbing opacity-0" : "cursor-grab"
+      }`}
     >
       <PlanCard plan={plan} />
     </div>

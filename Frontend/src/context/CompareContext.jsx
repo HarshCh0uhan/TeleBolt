@@ -10,6 +10,7 @@ const CompareContext = createContext(null);
 
 export const CompareProvider = ({ children }) => {
   const [slots, setSlots] = useState(() => Array(PODIUM_SIZE).fill(null));
+  const [draggingPlan, setDraggingPlan] = useState(null);
 
   const filledCount = useMemo(() => slots.filter(Boolean).length, [slots]);
   const isFull = filledCount >= PODIUM_SIZE;
@@ -85,6 +86,8 @@ export const CompareProvider = ({ children }) => {
     togglePlan,
     clearAll,
     resetTo,
+    draggingPlan,
+    setDraggingPlan,
     // Legacy aliases used by PlanCard and other consumers
     selectedCount: filledCount,
     canCompare: filledCount >= 2,
