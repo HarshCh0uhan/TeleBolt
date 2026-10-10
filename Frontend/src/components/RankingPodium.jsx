@@ -2,7 +2,6 @@ import React from "react";
 import { Crown, Medal, Award, Minus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCompare } from "../context/CompareContext";
-import { Database, CalendarDays, Phone, MessageSquare, TrendingUp } from "lucide-react";
 
 const SLOT_STYLES = {
   0: {
@@ -28,29 +27,18 @@ const SLOT_STYLES = {
   },
 };
 
-const SlotCard = ({ plan, index, onRemove, onDrop, isHover }) => {
+const SlotCard = ({ plan, index, onRemove }) => {
   const style = SLOT_STYLES[index] || SLOT_STYLES[2];
   const Icon = style.icon;
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.08, ease: "easeOut" }}
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        onDrop(index);
-      }}
-      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-[#1f1f1f] transition-all duration-200 ${style.ring} ${style.glow} ${
-        isHover ? "ring-2 ring-[#58c28d]/60" : ""
-      }`}
+      transition={{ duration: 0.3, delay: index * 0.06, ease: "easeOut" }}
+      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-[#1f1f1f] ${style.ring} ${style.glow}`}
     >
-      {/* Header row */}
       <div className="flex items-center gap-2 border-b border-white/10 p-3">
         <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border ${style.iconBg}`}>
           <Icon className={`h-3.5 w-3.5 ${style.iconColor}`} />
@@ -61,105 +49,37 @@ const SlotCard = ({ plan, index, onRemove, onDrop, isHover }) => {
         <button
           type="button"
           onClick={() => onRemove(index)}
-          aria-label={`Remove ${plan.operator} ₹${plan.price} from comparison`}
+          aria-label={`Remove ${plan.operator} ₹${plan.price}`}
           className="ml-auto grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-white/10 bg-[#262626] text-zinc-400 transition hover:border-red-400/40 hover:text-red-400"
         >
           <Minus className="h-3 w-3" />
         </button>
       </div>
 
-      {/* Hero */}
-      <div className="border-b border-white/10 p-4">
-        <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-          {plan.category}
-        </p>
-
-        <p className="mt-2 break-words text-3xl font-bold tracking-tight text-white">
+      <div className="p-4">
+        <p className="break-words text-3xl font-bold tracking-tight text-white">
           ₹{plan.price}
         </p>
-
         <p className="mt-0.5 text-xs text-zinc-400">
           {plan.validityDays} days validity
         </p>
-      </div>
 
-      {/* Yearly Cost Block */}
-      <div className="px-4 pt-4">
-        <div className="rounded-2xl bg-[#262626] p-3">
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-            Estimated Yearly Cost
-          </p>
-          <p className="mt-1 break-words text-lg font-bold text-white">
-            ₹{plan.yearlyCost || "—"}
-            <span className="text-xs font-normal text-zinc-500">/year</span>
-          </p>
-        </div>
-      </div>
-
-      {/* Benefits Breakdown – same data as old code, new row style */}
-      <div className="p-4">
-        <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-          Benefits
-        </h4>
-
-        <div className="space-y-2.5">
-          {/* Data (Daily or Total) */}
-          <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2.5">
-            <div className="flex items-center gap-2.5 text-zinc-400">
-              <Database className="h-4 w-4 shrink-0 text-[#58c28d]" />
-              <span className="text-xs">
-                {plan.dailyData ? "Daily Data" : "Total Data"}
-              </span>
-            </div>
-            <span className="ml-2 shrink-0 text-xs font-medium text-white">
-              {plan.dailyData ? `${plan.dailyData} GB/day` : `${plan.totalData} GB`}
-            </span>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-[#262626] px-3 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-zinc-500">
+              Total data
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-white">
+              {plan.totalData ? `${plan.totalData} GB` : "—"}
+            </p>
           </div>
-
-          {/* Yearly Data (was missing in new design) */}
-          <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2.5">
-            <div className="flex items-center gap-2.5 text-zinc-400">
-              <TrendingUp className="h-4 w-4 shrink-0 text-[#58c28d]" />
-              <span className="text-xs">Yearly Data</span>
-            </div>
-            <span className="ml-2 shrink-0 text-xs font-medium text-white">
-              {plan.yearlyData ? `${plan.yearlyData} GB` : "--"}
-            </span>
-          </div>
-
-          {/* Validity */}
-          <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2.5">
-            <div className="flex items-center gap-2.5 text-zinc-400">
-              <CalendarDays className="h-4 w-4 text-[#58c28d]" />
-              <span className="text-xs">Validity</span>
-            </div>
-            <span className="text-xs font-medium text-white">{plan.validityDays} Days</span>
-          </div>
-
-          {/* Calls */}
-          <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2.5">
-            <div className="flex items-center gap-2.5 text-zinc-400">
-              <Phone className="h-4 w-4 text-[#58c28d]" />
-              <span className="text-xs">Calls</span>
-            </div>
-            <span className="text-xs font-medium text-white">
-              {plan.isUnlimitedCalls ? "Unlimited" : "Limited"}
-            </span>
-          </div>
-
-          {/* SMS */}
-          <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2.5">
-            <div className="flex items-center gap-2.5 text-zinc-400">
-              <MessageSquare className="h-4 w-4 text-[#58c28d]" />
-              <span className="text-xs">SMS</span>
-            </div>
-            <span className="text-xs font-medium text-white">
-              {plan.isUnlimitedSMS
-                ? "Unlimited"
-                : plan.sms
-                ? `${plan.sms}/day`
-                : "N/A"}
-            </span>
+          <div className="rounded-xl bg-[#262626] px-3 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-zinc-500">
+              Yearly cost
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-[#58c28d]">
+              ₹{plan.yearlyCost ?? "—"}
+            </p>
           </div>
         </div>
       </div>
@@ -167,17 +87,9 @@ const SlotCard = ({ plan, index, onRemove, onDrop, isHover }) => {
   );
 };
 
-const EmptySlot = ({ index, onDrop, isHover }) => (
+const EmptySlot = ({ index, isHover }) => (
   <div
-    onDragOver={(e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-    }}
-    onDrop={(e) => {
-      e.preventDefault();
-      onDrop(index);
-    }}
-    className={`flex flex-col gap-4 rounded-2xl border border-dashed bg-[#1f1f1f]/60 p-4 text-center transition-all duration-200 ${
+    className={`flex h-full min-h-[180px] flex-col items-center justify-center rounded-2xl border border-dashed bg-[#1f1f1f]/60 p-4 text-center transition-all duration-200 ${
       isHover ? "border-[#58c28d]/60 ring-2 ring-[#58c28d]/40" : "border-white/15"
     }`}
   >
@@ -194,56 +106,64 @@ const RankingPodium = () => {
   const { slots, removeFromSlot, assignToSlot, draggingPlan, setDraggingPlan } = useCompare();
   const [hoverIndex, setHoverIndex] = React.useState(null);
 
-  const handleDrop = (index) => {
-    if (draggingPlan) {
-      assignToSlot(draggingPlan, index);
+  // Read the plan id from dataTransfer as a fallback so the drop works even if
+  // context has not propagated yet.
+  const readDraggedPlan = (e) => {
+    if (draggingPlan) return draggingPlan;
+    const id = e.dataTransfer?.getData("text/plain");
+    return id ? { _id: id } : null;
+  };
+
+  const handleDrop = (index) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const plan = readDraggedPlan(e);
+    if (plan?._id) {
+      // If we only got the id, restore the full plan from the current rankings.
+      const full = plan.operator ? plan : null;
+      if (full) assignToSlot(full, index);
     }
     setDraggingPlan(null);
     setHoverIndex(null);
   };
 
-  React.useEffect(() => {
-    if (!draggingPlan) setHoverIndex(null);
-  }, [draggingPlan]);
+  const handleDragOver = (index) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    if (hoverIndex !== index) setHoverIndex(index);
+  };
+
+  const handleDragLeave = (index) => (e) => {
+    e.preventDefault();
+    if (hoverIndex === index) setHoverIndex(null);
+  };
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        onDragOver={(e) => {
-          e.preventDefault();
-        }}
-        onDragEnter={(e) => e.preventDefault()}
-      >
-        {slots.map((plan, index) =>
-          plan ? (
-            <div
-              key={plan._id}
-              onDragOver={() => setHoverIndex(index)}
-              onDragLeave={() => setHoverIndex((cur) => (cur === index ? null : cur))}
-            >
-              <SlotCard
-                plan={plan}
-                index={index}
-                onRemove={removeFromSlot}
-                onDrop={handleDrop}
-                isHover={hoverIndex === index}
-              />
+    <div className="mx-auto max-w-4xl">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {slots.map((plan, index) => {
+          const dropProps = {
+            onDragOver: handleDragOver(index),
+            onDragEnter: handleDragOver(index),
+            onDragLeave: handleDragLeave(index),
+            onDrop: handleDrop(index),
+          };
+
+          if (plan) {
+            return (
+              <div key={`slot-${index}-${plan._id}`} {...dropProps}>
+                <SlotCard plan={plan} index={index} onRemove={removeFromSlot} />
+              </div>
+            );
+          }
+
+          return (
+            <div key={`empty-${index}`} {...dropProps}>
+              <EmptySlot index={index} isHover={hoverIndex === index} />
             </div>
-          ) : (
-            <div
-              key={`empty-${index}`}
-              onDragOver={() => setHoverIndex(index)}
-              onDragLeave={() => setHoverIndex((cur) => (cur === index ? null : cur))}
-            >
-              <EmptySlot
-                index={index}
-                onDrop={handleDrop}
-                isHover={hoverIndex === index}
-              />
-            </div>
-          )
-        )}
+          );
+        })}
       </div>
     </div>
   );

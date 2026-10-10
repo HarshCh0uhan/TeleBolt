@@ -36,7 +36,6 @@ export default function Home() {
       .catch(() => setFormats([]));
   }, []);
 
-  // Format or filters changed -> re-rank, then reset slots to the new top 3.
   useEffect(() => {
     const id = ++requestId.current;
     setLoading(true);
@@ -101,19 +100,18 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      {/* Arrow — centered, just below the sticky navbar */}
-      {showArrow && (
+      {/* Open-arrow — shown only while the drawer is closed */}
+      {showArrow && !drawerOpen && (
         <button
           type="button"
-          onClick={() => setDrawerOpen((v) => !v)}
-          aria-label={drawerOpen ? "Close panel" : "Open panel"}
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open panel"
           className="fixed left-1/2 top-[72px] z-50 grid h-9 w-9 -translate-x-1/2 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] text-zinc-300 shadow-lg transition-all duration-300 hover:border-[#58c28d]/30 hover:text-white"
         >
-          {drawerOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          <ChevronDown className="h-4 w-4" />
         </button>
       )}
 
-      {/* Advanced drawer */}
       <AdvancedDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -137,7 +135,7 @@ export default function Home() {
       <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
         {/* Podium */}
         {initialLoad ? (
-          <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: PODIUM_SIZE }).map((_, i) => (
               <div key={i} className="h-96 rounded-2xl bg-[#262626] animate-pulse" />
             ))}
