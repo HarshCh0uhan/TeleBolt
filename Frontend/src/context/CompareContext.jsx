@@ -1,139 +1,100 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
-// Comparison rules: at least 2 plans are required, at most 3 can be compared.
-export const MIN_COMPARE = 2;
-export const MAX_COMPARE = 3;
+// The comparison zone has exactly three positional slots.
+export const PODIUM_SIZE = 3;
 
-const STORAGE_KEY = "telebolt.compare.selection";
+// Kept as an alias so existing imports that expect MAX_COMPARE keep working.
+export const MAX_COMPARE = PODIUM_SIZE;
 
 const CompareContext = createContext(null);
 
-// Selection is persisted so it survives refreshes and navigation to /compare.
-const readStoredSelection = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .filter((plan) => plan && plan._id)
-      .slice(0, MAX_COMPARE);
-  } catch {
-    return [];
-  }
-};
-
 export const CompareProvider = ({ children }) => {
-  const [selectedPlans, setSelectedPlans] = useState(readStoredSelection);
-  const [notice, setNotice] = useState(null);
+  const [slots, setSlots] = useState(() => Array(PODIUM_SIZE).fill(null));
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedPlans));
-    } catch {
-      // Storage can be unavailable (private mode); selection still works in memory.
-    }
-  }, [selectedPlans]);
-
-  // Notices are transient feedback, e.g. "you can compare at most 3 plans".
-  useEffect(() => {
-    if (!notice) return undefined;
-
-    const timer = setTimeout(() => setNotice(null), 3200);
-    return () => clearTimeout(timer);
-  }, [notice]);
-
-  const selectedIds = useMemo(
-    () => selectedPlans.map((plan) => plan._id),
-    [selectedPlans]
-  );
+  const filledCount = useMemo(() => slots.filter(Boolean).length, [slots]);
+  const isFull = filledCount >= PODIUM_SIZE;
+  const firstEmptyIndex = useMemo(() => slots.findIndex((p) => !p), [slots]);
 
   const isSelected = useCallback(
-    (planId) => selectedIds.includes(planId),
-    [selectedIds]
+    (planId) => slots.some((p) => p && p._id === planId),
+    [slots]
   );
 
-  const isFull = selectedPlans.length >= MAX_COMPARE;
-  const canCompare = selectedPlans.length >= MIN_COMPARE;
-
-  // Returns true when the plan ends up selected, false when the list is already full.
-  const addPlan = useCallback(
-    (plan) => {
-      if (!plan?._id) return false;
-
-      if (selectedPlans.some((item) => item._id === plan._id)) return true;
-
-      if (selectedPlans.length >= MAX_COMPARE) {
-        setNotice(`You can compare up to ${MAX_COMPARE} plans. Remove one to add another.`);
-        return false;
+  // Place a plan in a specific slot. If the plan already occupies another slot,
+  // it is removed from there first so it never appears twice.
+  const assignToSlot = useCallback((plan, index) => {
+    if (!plan?._id) return false;
+    if (index < 0 || index >= PODIUM_SIZE) return false;
+    setSlots((prev) => {
+      const next = [...prev];
+      for (let i = 0; i < next.length; i++) {
+        if (next[i] && next[i]._id === plan._id) next[i] = null;
       }
-
-      // Decide from the current selection above, and keep the updater itself pure.
-      setSelectedPlans((prev) => (prev.length >= MAX_COMPARE ? prev : [...prev, plan]));
-      return true;
-    },
-    [selectedPlans]
-  );
-
-  const removePlan = useCallback((planId) => {
-    setSelectedPlans((prev) => prev.filter((plan) => plan._id !== planId));
+      next[index] = plan;
+      return next;
+    });
+    return true;
   }, []);
 
-  const clearSelection = useCallback(() => {
-    setSelectedPlans([]);
+  const removeFromSlot = useCallback((index) => {
+    setSlots((prev) => {
+      if (index < 0 || index >= prev.length) return prev;
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
   }, []);
 
-  const setSelection = useCallback((plans) => {
-    if (!Array.isArray(plans)) return;
-    const valid = plans.filter((p) => p && p._id).slice(0, MAX_COMPARE);
-    setSelectedPlans(valid);
+  const clearAll = useCallback(() => {
+    setSlots(Array(PODIUM_SIZE).fill(null));
   }, []);
 
-  // Single entry point used by the plan cards.
+  // Fill the slots from an ordered list (the auto top 3 from the ranking API).
+  const resetTo = useCallback((plans = []) => {
+    const next = Array(PODIUM_SIZE).fill(null);
+    for (let i = 0; i < Math.min(PODIUM_SIZE, plans.length); i++) {
+      next[i] = plans[i] || null;
+    }
+    setSlots(next);
+  }, []);
+
+  // Kept for the PlanCard Compare button. Adds to the first empty slot, or
+  // removes the plan if it is already in any slot.
   const togglePlan = useCallback(
     (plan) => {
       if (!plan?._id) return false;
-
-      if (selectedIds.includes(plan._id)) {
-        removePlan(plan._id);
+      const existingIndex = slots.findIndex((p) => p && p._id === plan._id);
+      if (existingIndex !== -1) {
+        removeFromSlot(existingIndex);
         return false;
       }
-
-      return addPlan(plan);
+      if (firstEmptyIndex === -1) return false;
+      assignToSlot(plan, firstEmptyIndex);
+      return true;
     },
-    [addPlan, removePlan, selectedIds]
+    [slots, firstEmptyIndex, assignToSlot, removeFromSlot]
   );
 
-  const remainingSlots = MAX_COMPARE - selectedPlans.length;
-
   const value = {
-    selectedPlans,
-    selectedIds,
-    selectedCount: selectedPlans.length,
-    remainingSlots,
-    isSelected,
+    slots,
+    filledCount,
     isFull,
-    canCompare,
-    addPlan,
-    removePlan,
+    isSelected,
+    assignToSlot,
+    removeFromSlot,
     togglePlan,
-    clearSelection,
-    setSelection,
-    notice,
-    setNotice,
+    clearAll,
+    resetTo,
+    // Legacy aliases used by PlanCard and other consumers
+    selectedCount: filledCount,
+    canCompare: filledCount >= 2,
   };
 
   return <CompareContext.Provider value={value}>{children}</CompareContext.Provider>;
 };
 
 export const useCompare = () => {
-  const context = useContext(CompareContext);
-
-  if (!context) {
-    throw new Error("useCompare must be used inside a CompareProvider");
-  }
-
-  return context;
+  const ctx = useContext(CompareContext);
+  if (!ctx) throw new Error("useCompare must be used inside a CompareProvider");
+  return ctx;
 };

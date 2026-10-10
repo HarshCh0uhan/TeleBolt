@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 import FilterBar from "../components/FilterBar";
 import PlanCard from "../components/PlanCard";
 import RankingPodium from "../components/RankingPodium";
-import CompareBar from "../components/CompareBar";
+import AdvancedDrawer from "../components/AdvancedDrawer";
+import DraggablePlanCard from "../components/DraggablePlanCard";
 import { getRankings, getRankingFormats } from "../api/plans.api";
 import { DEFAULT_FILTERS, toApiParams } from "../utils/filterConfig";
-
-const PODIUM_COUNT = 3;
+import { useCompare } from "../context/CompareContext";
 
 export default function Home() {
   const [formats, setFormats] = useState([]);
@@ -19,10 +20,14 @@ export default function Home() {
   const [otherPlans, setOtherPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showArrow, setShowArrow] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const requestId = useRef(0);
 
-  // Format list comes from the backend so the weights and the UI never drift.
+  const { resetTo } = useCompare();
+
+  // Load the format list once.
   useEffect(() => {
     getRankingFormats()
       .then(({ data }) => {
@@ -32,7 +37,7 @@ export default function Home() {
       .catch(() => setFormats([]));
   }, []);
 
-  // Format or filters changed -> re-rank the whole matching set.
+  // Format or filters changed -> re-rank, then reset slots to the new top 3.
   useEffect(() => {
     const id = ++requestId.current;
     setLoading(true);
@@ -41,8 +46,10 @@ export default function Home() {
     getRankings({ ...toApiParams(filters), format })
       .then(({ data }) => {
         if (id !== requestId.current) return;
-        setRankings(data.rankings || []);
+        const list = data.rankings || [];
+        setRankings(list);
         setOtherPlans(data.otherPlans || []);
+        resetTo(list.slice(0, 3));
       })
       .catch((err) => {
         if (id !== requestId.current) return;
@@ -53,23 +60,32 @@ export default function Home() {
         );
         setRankings([]);
         setOtherPlans([]);
+        resetTo([]);
       })
       .finally(() => {
         if (id === requestId.current) setLoading(false);
       });
-  }, [format, filters]);
+  }, [format, filters, resetTo]);
 
+  // Show the navbar arrow once the user starts scrolling.
   useEffect(() => {
-    const handler = () => setShowScrollTop(window.scrollY > 400);
+    const handler = () => {
+      const scrolled = window.scrollY > 200;
+      setShowArrow(scrolled);
+      setShowScrollTop(window.scrollY > 400);
+    };
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  const podium = rankings.slice(0, PODIUM_COUNT);
-  const remainder = rankings.slice(PODIUM_COUNT);
+  // Begin dragging a plan -> auto-open the drawer so the user has a drop target.
+  const handleDragStart = () => {
+    setDrawerOpen(true);
+  };
 
-  // Three tiers by position. Rank numbers stay hidden; the tiers are what
-  // gives the list visible structure without the humiliation of "rank #47".
+  const podium = rankings.slice(0, 3);
+  const remainder = rankings.slice(3);
+
   const third = Math.ceil(remainder.length / 3) || 0;
   const tiers = [
     { key: "strong", name: "Strong picks", plans: remainder.slice(0, third) },
@@ -81,6 +97,30 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
+      {/* Navbar arrow — appears on scroll, sits center of the navbar area */}
+      {showArrow && (
+        <button
+          type="button"
+          onClick={() => setDrawerOpen((v) => !v)}
+          aria-label={drawerOpen ? "Close panel" : "Open panel"}
+          className="fixed left-1/2 top-3 z-50 grid h-10 w-10 -translate-x-1/2 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] text-zinc-300 shadow-lg transition-all duration-300 hover:border-[#58c28d]/30 hover:text-white"
+        >
+          {drawerOpen ? <ChevronUp className="h-4.5 w-4.5" /> : <ChevronDown className="h-4.5 w-4.5" />}
+        </button>
+      )}
+
+      {/* Advanced drawer */}
+      <AdvancedDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        formats={formats}
+        format={format}
+        onFormatChange={setFormat}
+        filters={filters}
+        onApplyFilters={(next) => setFilters(next)}
+        onClearFilters={() => setFilters(DEFAULT_FILTERS)}
+      />
+
       {/* Format chips */}
       <div className="border-b border-white/10 bg-[#181818]">
         <div className="mx-auto max-w-7xl px-4 py-3">
@@ -109,16 +149,16 @@ export default function Home() {
         onClear={() => setFilters(DEFAULT_FILTERS)}
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-56 sm:pb-48 lg:pb-40">
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
         {/* Podium */}
         {initialLoad ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: PODIUM_COUNT }).map((_, i) => (
-              <div key={i} className="h-72 rounded-3xl bg-[#262626] animate-pulse" />
+              <div key={i} className="h-44 rounded-2xl bg-[#262626] animate-pulse" />
             ))}
           </div>
         ) : (
-          <RankingPodium plans={podium} />
+          <RankingPodium />
         )}
 
         {error && (
@@ -129,9 +169,9 @@ export default function Home() {
 
         {!loading && !error && rankings.length === 0 && (
           <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f] p-12 text-center">
-            <p className="font-medium text-zinc-400">No plans match these filters</p>
+            <p className="font-medium text-zinc-400">No plans match this category</p>
             <p className="mt-2 text-sm text-zinc-500">
-              Try widening the budget or validity range.
+              Try a different category or widen the budget and validity ranges.
             </p>
           </div>
         )}
@@ -147,39 +187,43 @@ export default function Home() {
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {tier.plans.map((plan) => (
-                <PlanCard key={plan._id} plan={plan} />
+                <DraggablePlanCard
+                  key={plan._id}
+                  plan={plan}
+                  onDragStart={handleDragStart}
+                />
               ))}
             </div>
           </section>
         ))}
 
-        {/* Other Plans: pass the voice gate, fit no category. Unranked, by price. */}
         {otherPlans.length > 0 && (
-          <section className="mt-14 rounded-3xl border border-dashed border-white/10 bg-[#1a1a1a] p-5 sm:p-6">
-            <div className="mb-5">
+          <section className="mt-10 border-t border-white/10 pt-8">
+            <div className="mb-4">
               <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
                 Other Plans
               </h2>
-              <p className="mt-2 text-sm text-zinc-500">
-                These are not tuned recommendations. They did not fit any ranking category, so
-                they are listed here by lowest price.
+              <p className="mt-1 text-xs text-zinc-600">
+                Plans that don't fit any recommendation category — shown by lowest price.
               </p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {otherPlans.map((plan) => (
-                <PlanCard key={plan._id} plan={plan} />
+                <DraggablePlanCard
+                  key={plan._id}
+                  plan={plan}
+                  onDragStart={handleDragStart}
+                />
               ))}
             </div>
           </section>
         )}
       </main>
 
-      <CompareBar />
-
       {showScrollTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-24 right-4 z-50 grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] shadow-xl transition-all duration-200 hover:border-[#58c28d]/30 hover:bg-[#262626]"
+          className="fixed bottom-6 right-4 z-40 grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] shadow-xl transition-all duration-200 hover:border-[#58c28d]/30 hover:bg-[#262626]"
           aria-label="Scroll to top"
         >
           <svg className="h-6 w-6 text-[#58c28d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

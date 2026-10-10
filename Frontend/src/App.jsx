@@ -4,7 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import PlanDetails from './components/PlanDetails';
-import Compare from './pages/Compare';
+
 import NetworkCoverage from './pages/NetworkCoverage';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -33,7 +33,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/plans" element={<Home />} />
         <Route path="/plans/:planid" element={<PlanDetails />} />
-        <Route path="/compare" element={<Compare />} />
+        
         <Route path="/coverage" element={<NetworkCoverage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
