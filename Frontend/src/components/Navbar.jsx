@@ -56,10 +56,6 @@ const Navbar = () => {
               Plans
             </NavLink> */}
 
-            <NavLink to="/rankings" className={navLinkClass}>
-              Rankings
-            </NavLink>
-
             <NavLink to="/coverage" className={navLinkClass}>
               Coverage
             </NavLink>
@@ -148,10 +144,6 @@ const Navbar = () => {
             <div className="flex flex-col gap-4">
               <NavLink to="/plans" className={navLinkClass} onClick={closeMenu}>
                 Plans
-              </NavLink>
-
-              <NavLink to="/rankings" className={navLinkClass} onClick={closeMenu}>
-                Rankings
               </NavLink>
 
               <NavLink to="/coverage" className={navLinkClass} onClick={closeMenu}>

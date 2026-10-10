@@ -34,7 +34,7 @@ const RankingPodium = ({ plans = [] }) => {
   if (plans.length === 0) return null;
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {plans.map((plan, index) => {
         const style = RANK_STYLES[index + 1] || RANK_STYLES[3];
         const Icon = style.icon;
@@ -49,45 +49,48 @@ const RankingPodium = ({ plans = [] }) => {
             transition={{ duration: 0.4, delay: index * 0.12, ease: "easeOut" }}
             className={`relative flex flex-col overflow-hidden rounded-3xl border bg-[#1f1f1f] transition-all duration-300 hover:-translate-y-1 ${style.ring} ${style.glow}`}
           >
-            <div className="absolute left-5 top-5 z-10">
-              <div className={`grid h-10 w-10 place-items-center rounded-2xl border backdrop-blur-sm ${style.iconBg}`}>
-                <Icon className={`h-5 w-5 ${style.iconColor}`} />
+            {/* Header — icon inline with operator so no top padding is wasted */}
+            <div className="border-b border-white/10 p-4 sm:p-5">
+              <div className="flex items-center gap-2">
+                <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl border ${style.iconBg}`}>
+                  <Icon className={`h-4 w-4 ${style.iconColor}`} />
+                </div>
+                <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-0.5 text-xs font-medium text-[#58c28d]">
+                  {plan.operator}
+                </span>
+                <span className="ml-auto text-[10px] uppercase tracking-wider text-zinc-500">
+                  {plan.category}
+                </span>
               </div>
+
+              <p className="mt-3 break-words text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                ₹{plan.price}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-400">
+                {plan.validityDays} days validity
+              </p>
             </div>
 
-            <div className="border-b border-white/10 p-5 pt-16">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="inline-flex rounded-full bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#58c28d]">
-                    {plan.operator}
-                  </span>
-                  <p className="mt-3 break-words text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                    ₹{plan.price}
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-400">
-                    {plan.validityDays} days • {plan.category}
-                  </p>
-                </div>
-                <div className="shrink-0 rounded-2xl border border-[#58c28d]/20 bg-[#58c28d]/10 px-3 py-2 text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-400">Value</p>
-                  <p className="mt-1 text-sm font-semibold text-[#58c28d]">
+            {/* Value + yearly cost on one compact row */}
+            <div className="px-4 py-3 sm:px-5">
+              <div className="flex items-center justify-between rounded-2xl bg-[#262626] px-4 py-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500">Value</p>
+                  <p className="mt-0.5 text-sm font-semibold text-[#58c28d]">
                     ₹{plan.costPerGB || "—"}/GB
                   </p>
                 </div>
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500">Yearly</p>
+                  <p className="mt-0.5 text-sm font-semibold text-white">
+                    ₹{plan.yearlyCost || "—"}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="p-5">
-              <div className="rounded-2xl bg-[#262626] p-4">
-                <p className="text-[10px] uppercase tracking-wider text-zinc-500">Yearly cost</p>
-                <p className="mt-1 text-lg font-bold text-white">
-                  ₹{plan.yearlyCost || "—"}
-                  <span className="text-sm font-normal text-zinc-500">/yr</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-auto border-t border-white/10 p-5">
+            {/* Footer */}
+            <div className="mt-auto border-t border-white/10 p-4 sm:p-5">
               <div className="flex gap-2">
                 <Link
                   to={`/plans/${plan._id}`}
@@ -100,7 +103,7 @@ const RankingPodium = ({ plans = [] }) => {
                   onClick={() => togglePlan(plan)}
                   disabled={selectionFull}
                   title={selectionFull ? `You can compare up to ${MAX_COMPARE} plans` : undefined}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold transition ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-4 py-2.5 text-xs font-semibold transition ${
                     selected
                       ? "border border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea]"
                       : selectionFull
@@ -108,15 +111,8 @@ const RankingPodium = ({ plans = [] }) => {
                       : "bg-[#58c28d] text-[#181818] hover:bg-[#6dd9a0]"
                   }`}
                 >
-                  {selected ? (
-                    <>
-                      <Check className="h-3.5 w-3.5" /> Added
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-3.5 w-3.5" /> Compare
-                    </>
-                  )}
+                  {selected ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                  {selected ? "Added" : "Compare"}
                 </button>
               </div>
             </div>
