@@ -9,3 +9,4 @@ export const comparePlans = (planIds) => api.get("/plans/compare", {
 export const getPriceHistory = (id) => api.get(`/plans/price-history/${id}`)
 export const submitPlan = (data) => api.post("/plans/submit", data)
 export const getRankings = (params) => api.get("/plans/rankings", { params })
+export const getRankingFormats = () => api.get("/plans/rankings/formats")
