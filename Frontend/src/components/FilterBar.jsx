@@ -136,7 +136,7 @@ const RangeSlider = ({ label, min, max, step, value, onChange, format }) => {
 
 /* ---------- the filter bar ---------- */
 
-export default function FilterBar({ filters, onApply, onClear }) {
+export default function FilterBar({ filters, onApply, onClear, leadingSlot = null }) {
   const [draft, setDraft] = useState(filters);
   const [prevFilters, setPrevFilters] = useState(filters);
   const [openName, setOpenName] = useState(null);
@@ -200,6 +200,8 @@ export default function FilterBar({ filters, onApply, onClear }) {
   return (
     <div ref={rootRef} className="relative z-30 border-b border-white/10 bg-[#181818]">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
+        {leadingSlot}
+
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-400">
           <SlidersHorizontal className="h-4 w-4 text-[#58c28d]" />
           <span className="hidden sm:inline">Filters</span>

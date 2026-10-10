@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 import FilterBar from "../components/FilterBar";
 import RankingPodium from "../components/RankingPodium";
 import AdvancedDrawer from "../components/AdvancedDrawer";
 import DraggablePlanCard from "../components/DraggablePlanCard";
+import FormatSelect from "../components/FormatSelect";
 import { getRankings, getRankingFormats } from "../api/plans.api";
 import { DEFAULT_FILTERS, toApiParams } from "../utils/filterConfig";
 import { useCompare, PODIUM_SIZE } from "../context/CompareContext";
@@ -24,9 +25,8 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const requestId = useRef(0);
 
-  const { resetTo } = useCompare();
+  const { resetTo, slots } = useCompare();
 
-  // Load the format list once.
   useEffect(() => {
     getRankingFormats()
       .then(({ data }) => {
@@ -66,23 +66,29 @@ export default function Home() {
       });
   }, [format, filters, resetTo]);
 
-  // Show the navbar arrow once the user starts scrolling.
   useEffect(() => {
     const handler = () => {
-      const scrolled = window.scrollY > 200;
-      setShowArrow(scrolled);
+      setShowArrow(window.scrollY > 120);
       setShowScrollTop(window.scrollY > 400);
     };
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  // Begin dragging a plan -> auto-open the drawer so the user has a drop target.
   const handleDragStart = () => {
     setDrawerOpen(true);
   };
 
-  const remainder = rankings.slice(3);
+  // A plan sitting in a podium slot must not also appear in the tier list below.
+  const podiumIds = useMemo(
+    () => new Set(slots.filter(Boolean).map((p) => p._id)),
+    [slots]
+  );
+
+  const remainder = useMemo(
+    () => rankings.filter((p) => !podiumIds.has(p._id)),
+    [rankings, podiumIds]
+  );
 
   const third = Math.ceil(remainder.length / 3) || 0;
   const tiers = [
@@ -95,15 +101,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      {/* Navbar arrow — appears on scroll, sits center of the navbar area */}
+      {/* Arrow — centered, just below the sticky navbar */}
       {showArrow && (
         <button
           type="button"
           onClick={() => setDrawerOpen((v) => !v)}
           aria-label={drawerOpen ? "Close panel" : "Open panel"}
-          className="fixed left-1/2 top-3 z-50 grid h-10 w-10 -translate-x-1/2 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] text-zinc-300 shadow-lg transition-all duration-300 hover:border-[#58c28d]/30 hover:text-white"
+          className="fixed left-1/2 top-[72px] z-50 grid h-9 w-9 -translate-x-1/2 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] text-zinc-300 shadow-lg transition-all duration-300 hover:border-[#58c28d]/30 hover:text-white"
         >
-          {drawerOpen ? <ChevronUp className="h-4.5 w-4.5" /> : <ChevronDown className="h-4.5 w-4.5" />}
+          {drawerOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
       )}
 
@@ -119,40 +125,21 @@ export default function Home() {
         onClearFilters={() => setFilters(DEFAULT_FILTERS)}
       />
 
-      {/* Format chips */}
-      <div className="border-b border-white/10 bg-[#181818]">
-        <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-brand pb-1">
-            {formats.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setFormat(item.id)}
-                className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-300 ${
-                  format === item.id
-                    ? "border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea]"
-                    : "border-white/10 bg-[#262626] text-zinc-400 hover:border-[#58c28d]/30 hover:text-white"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       <FilterBar
         filters={filters}
         onApply={(next) => setFilters(next)}
         onClear={() => setFilters(DEFAULT_FILTERS)}
+        leadingSlot={
+          <FormatSelect formats={formats} value={format} onChange={setFormat} />
+        }
       />
 
       <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
         {/* Podium */}
         {initialLoad ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: PODIUM_SIZE }).map((_, i) => (
-              <div key={i} className="h-44 rounded-2xl bg-[#262626] animate-pulse" />
+              <div key={i} className="h-96 rounded-2xl bg-[#262626] animate-pulse" />
             ))}
           </div>
         ) : (
