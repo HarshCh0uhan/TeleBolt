@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { Database, TrendingUp, ArrowRight, Check, Plus, Heart } from 'lucide-react';
-import { useCompare, MAX_COMPARE } from "../context/CompareContext";
+import { Database, TrendingUp, ArrowRight, Check, Plus, Heart } from "lucide-react";
+import { useCompare } from "../context/CompareContext";
 import { useAuth } from "../context/AuthContext";
 
 const PlanCard = ({ plan }) => {
@@ -8,20 +8,22 @@ const PlanCard = ({ plan }) => {
   const { user, isFavoritePlan, toggleFavorite } = useAuth();
 
   const selected = isSelected(plan._id);
-  const selectionFull = isFull && !selected;
   const favorite = isFavoritePlan(plan._id);
+
+  // When the podium is full and this plan is not in it, the compare button
+  // would only ever show "list full". Hide it entirely — dragging is the way
+  // in once the podium is full.
+  const showCompareButton = selected || !isFull;
 
   return (
     <article
       className={`group flex flex-col overflow-hidden rounded-3xl border bg-[#1f1f1f] transition-all duration-300 hover:-translate-y-1 ${
         selected
-          ? 'border-[#58c28d]/50 ring-1 ring-[#58c28d]/30'
-          : 'border-white/10 hover:border-[#58c28d]/30'
+          ? "border-[#58c28d]/50 ring-1 ring-[#58c28d]/30"
+          : "border-white/10 hover:border-[#58c28d]/30"
       }`}
     >
-      <Link
-        to={`/plans/${plan._id}`}
-      >
+      <Link to={`/plans/${plan._id}`}>
         {/* Hero Section */}
         <div className="border-b border-white/10 p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
@@ -37,7 +39,6 @@ const PlanCard = ({ plan }) => {
               </p>
             </div>
 
-            {/* Value Metric */}
             <div className="shrink-0 rounded-2xl border border-[#58c28d]/20 bg-[#58c28d]/10 px-3 py-2 text-center">
               <p className="text-[10px] uppercase tracking-wider text-zinc-400">Value</p>
               <p className="mt-1 break-words text-sm font-semibold text-[#58c28d]">
@@ -54,19 +55,19 @@ const PlanCard = ({ plan }) => {
               Estimated Yearly Cost
             </p>
             <p className="mt-2 break-words text-xl font-bold text-white">
-              ₹{plan.yearlyCost || "--"}<span className="text-sm font-normal text-zinc-500">/year</span>
+              ₹{plan.yearlyCost || "--"}
+              <span className="text-sm font-normal text-zinc-500">/year</span>
             </p>
           </div>
         </div>
 
-        {/* Benefits Breakdown – same data as old code, new row style */}
+        {/* Benefits */}
         <div className="p-4 sm:p-5">
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
             Benefits
           </h4>
 
           <div className="space-y-2.5">
-            {/* Data (Daily or Total) */}
             <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2.5">
               <div className="flex min-w-0 items-center gap-2.5 text-zinc-400">
                 <Database className="h-4 w-4 shrink-0 text-[#58c28d]" />
@@ -79,7 +80,6 @@ const PlanCard = ({ plan }) => {
               </span>
             </div>
 
-            {/* Yearly Data (was missing in new design) */}
             <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2.5">
               <div className="flex min-w-0 items-center gap-2.5 text-zinc-400">
                 <TrendingUp className="h-4 w-4 shrink-0 text-[#58c28d]" />
@@ -93,7 +93,7 @@ const PlanCard = ({ plan }) => {
         </div>
       </Link>
 
-      {/* Footer – compare selection */}
+      {/* Footer */}
       <div className="mt-auto space-y-3 border-t border-white/10 p-4 sm:p-5">
         {user ? (
           <button
@@ -101,12 +101,12 @@ const PlanCard = ({ plan }) => {
             onClick={() => toggleFavorite(plan._id)}
             className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition-all duration-300 ${
               favorite
-                ? 'border-red-400/30 bg-red-500/10 text-red-300 hover:bg-red-500/15'
-                : 'border-white/10 bg-[#262626] text-zinc-300 hover:border-[#58c28d]/30 hover:text-white'
+                ? "border-red-400/30 bg-red-500/10 text-red-300 hover:bg-red-500/15"
+                : "border-white/10 bg-[#262626] text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
             }`}
           >
-            <Heart className={`h-4 w-4 ${favorite ? 'fill-current' : ''}`} />
-            {favorite ? 'Saved Plan' : 'Save Plan'}
+            <Heart className={`h-4 w-4 ${favorite ? "fill-current" : ""}`} />
+            {favorite ? "Saved Plan" : "Save Plan"}
           </button>
         ) : (
           <Link
@@ -117,35 +117,32 @@ const PlanCard = ({ plan }) => {
             Login to Save
           </Link>
         )}
-        <button
-          type="button"
-          onClick={() => togglePlan(plan)}
-          disabled={selectionFull}
-          aria-pressed={selected}
-          title={selectionFull ? `You can compare up to ${MAX_COMPARE} plans` : undefined}
-          className={`group/btn flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
-            selected
-              ? 'border border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea] hover:bg-[#58c28d]/25'
-              : selectionFull
-                ? 'cursor-not-allowed border border-white/10 bg-[#262626] text-zinc-500'
-                : 'bg-[#58c28d] text-[#181818] hover:bg-[#6dd9a0]'
-          }`}
-        >
-          {selected ? (
-            <>
-              <Check className="h-4 w-4" />
-              Selected for Compare
-            </>
-          ) : (
-            <>
-              <Plus className="h-4 w-4" />
-              {selectionFull ? `Compare list full (${MAX_COMPARE})` : 'Add to Compare'}
-              {!selectionFull && (
+
+        {showCompareButton && (
+          <button
+            type="button"
+            onClick={() => togglePlan(plan)}
+            aria-pressed={selected}
+            className={`group/btn flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
+              selected
+                ? "border border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea] hover:bg-[#58c28d]/25"
+                : "bg-[#58c28d] text-[#181818] hover:bg-[#6dd9a0]"
+            }`}
+          >
+            {selected ? (
+              <>
+                <Check className="h-4 w-4" />
+                Selected for Compare
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" />
+                Add to Compare
                 <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
-              )}
-            </>
-          )}
-        </button>
+              </>
+            )}
+          </button>
+        )}
       </div>
     </article>
   );

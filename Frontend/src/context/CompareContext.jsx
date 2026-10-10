@@ -8,9 +8,12 @@ export const MAX_COMPARE = PODIUM_SIZE;
 
 const CompareContext = createContext(null);
 
-// Filled slots are always sorted by score (descending). Empty slots move to
-// the end. The score comes from the backend ranking response and is present on
-// every plan object the UI puts in a slot.
+/**
+ * Sort filled slots by score (descending), then by yearly cost as a tie-break.
+ * Empty slots move to the end. Every plan object that arrives from the ranking
+ * API carries a `score`, so the crown always lands on the best plan regardless
+ * of which slot the user dropped it into.
+ */
 const sortByScore = (arr) => {
   const filled = arr.filter(Boolean).sort((a, b) => {
     const sa = Number(a.score) || 0;
@@ -20,7 +23,8 @@ const sortByScore = (arr) => {
   });
   const emptyCount = arr.length - filled.length;
   return [...filled, ...Array(emptyCount).fill(null)];
-}
+};
+
 export const CompareProvider = ({ children }) => {
   const [slots, setSlots] = useState(() => Array(PODIUM_SIZE).fill(null));
   const [draggingPlan, setDraggingPlan] = useState(null);
@@ -34,8 +38,7 @@ export const CompareProvider = ({ children }) => {
     [slots]
   );
 
-  // Place a plan in a specific slot. If the plan already occupies another slot,
-  // it is removed from there first so it never appears twice.
+  // Place a plan in a specific slot, then re-sort so the best plan wins slot 1.
   const assignToSlot = useCallback((plan, index) => {
     if (!plan?._id) return false;
     if (index < 0 || index >= PODIUM_SIZE) return false;
@@ -63,7 +66,7 @@ export const CompareProvider = ({ children }) => {
     setSlots(Array(PODIUM_SIZE).fill(null));
   }, []);
 
-  // Fill the slots from an ordered list (the auto top 3 from the ranking API).
+  // Seed the slots from the API's top 3, already ordered by the server.
   const resetTo = useCallback((plans = []) => {
     const next = Array(PODIUM_SIZE).fill(null);
     for (let i = 0; i < Math.min(PODIUM_SIZE, plans.length); i++) {
@@ -72,8 +75,6 @@ export const CompareProvider = ({ children }) => {
     setSlots(next);
   }, []);
 
-  // Kept for the PlanCard Compare button. Adds to the first empty slot, or
-  // removes the plan if it is already in any slot.
   const togglePlan = useCallback(
     (plan) => {
       if (!plan?._id) return false;
@@ -101,7 +102,6 @@ export const CompareProvider = ({ children }) => {
     resetTo,
     draggingPlan,
     setDraggingPlan,
-    // Legacy aliases used by PlanCard and other consumers
     selectedCount: filledCount,
     canCompare: filledCount >= 2,
   };
@@ -113,4 +113,4 @@ export const useCompare = () => {
   const ctx = useContext(CompareContext);
   if (!ctx) throw new Error("useCompare must be used inside a CompareProvider");
   return ctx;
-}
+};

@@ -96,7 +96,7 @@ const AdvancedDrawer = ({
   return (
     <div
       className={`fixed left-0 right-0 top-16 z-40 border-b border-white/10 bg-[#181818]/98 backdrop-blur-md transition-transform duration-300 ${
-        open ? "translate-y-0" : "-translate-y-full"
+        open ? "translate-y-0" : "-translate-y-[110%]"
       }`}
       aria-hidden={!open}
     >
@@ -113,7 +113,8 @@ const AdvancedDrawer = ({
           }
         />
 
-        <div className="mt-3 grid max-w-3xl gap-3 sm:grid-cols-3">
+        {/* Slots grid — centered inside the drawer */}
+        <div className="mx-auto mt-3 grid max-w-3xl gap-3 sm:grid-cols-3">
           {slots.map((plan, index) => {
             const dropProps = {
               onDragOver: handleDragOver(index),
@@ -135,7 +136,6 @@ const AdvancedDrawer = ({
         </div>
       </div>
 
-      {/* Close handle — sits below the drawer as its own affordance */}
       <button
         type="button"
         onClick={onClose}

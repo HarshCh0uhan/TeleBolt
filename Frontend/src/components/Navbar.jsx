@@ -1,78 +1,42 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
-import {useAuth} from "../context/AuthContext"
-import { useCompare } from "../context/CompareContext";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const {user, logoutUser, loading} = useAuth()
-  const { selectedCount } = useCompare()
+  const { user, logoutUser, loading } = useAuth();
 
-  // Tapping any mobile link dismisses the menu, so it never hangs over the page
-  // you just navigated to.
   const closeMenu = () => setIsMenuOpen(false);
 
   const navLinkClass = ({ isActive }) =>
     `transition-colors duration-200 ${
-      isActive
-        ? "text-white"
-        : "text-zinc-400 hover:text-[#58c28d]"
+      isActive ? "text-white" : "text-zinc-400 hover:text-[#58c28d]"
     }`;
 
   const logoutButtonClass =
     "rounded-xl bg-[#58c28d] px-4 py-2 text-sm font-medium text-black transition hover:brightness-110";
-
-  const countBadgeClass =
-    "min-w-5 rounded-full bg-[#58c28d] px-1.5 py-0.5 text-center text-[11px] font-semibold text-[#181818]";
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#1f1f1f]/95 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-16 items-center justify-between gap-3">
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex min-w-0 items-center gap-3"
-          >
-            <img
-              src={logo}
-              alt="TeleBolt"
-              className="h-8 w-auto object-contain"
-            />
-
+          <Link to="/" className="flex min-w-0 items-center gap-3">
+            <img src={logo} alt="TeleBolt" className="h-8 w-auto object-contain" />
             <span className="hidden sm:block text-lg font-semibold text-white">
               TeleBolt
             </span>
           </Link>
 
-          {/*
-            Desktop Navigation
-            Held back to lg: the full row needs ~1000px, so on a 768-1023px
-            tablet it used to squash. Those widths now get the menu button.
-          */}
+          {/* Desktop Navigation */}
           <nav className="hidden shrink-0 items-center gap-6 lg:flex xl:gap-8">
-            {/* <NavLink to="/plans" className={navLinkClass}>
-              Plans
-            </NavLink> */}
-
             <NavLink to="/coverage" className={navLinkClass}>
               Coverage
             </NavLink>
 
-            <NavLink to="/compare" className={navLinkClass}>
-              <span className="flex items-center gap-2">
-                Compare
-                {selectedCount > 0 && (
-                  <span className={countBadgeClass}>
-                    {selectedCount}
-                  </span>
-                )}
-              </span>
-            </NavLink>
-
             {loading ? (
-                <div className="h-8 w-32 rounded-lg bg-white/10 animate-pulse" />
+              <div className="h-8 w-32 rounded-lg bg-white/10 animate-pulse" />
             ) : user ? (
               <>
                 <NavLink to="/suggest-plan" className={navLinkClass}>
@@ -90,18 +54,14 @@ const Navbar = () => {
                 <NavLink to="/login" className={navLinkClass}>
                   Login
                 </NavLink>
-
-                <Link
-                  to="/register"
-                  className={logoutButtonClass}
-                >
+                <Link to="/register" className={logoutButtonClass}>
                   Register
                 </Link>
               </>
             )}
           </nav>
 
-          {/* Mobile & tablet menu button */}
+          {/* Mobile menu button */}
           <button
             type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -135,30 +95,15 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Mobile & tablet Navigation */}
+        {/* Mobile Navigation */}
         {isMenuOpen && (
           <nav
             id="mobile-nav"
             className="max-h-[70vh] overflow-y-auto scrollbar-brand border-t border-white/10 py-4 lg:hidden"
           >
             <div className="flex flex-col gap-4">
-              <NavLink to="/plans" className={navLinkClass} onClick={closeMenu}>
-                Plans
-              </NavLink>
-
               <NavLink to="/coverage" className={navLinkClass} onClick={closeMenu}>
                 Coverage
-              </NavLink>
-
-              <NavLink to="/compare" className={navLinkClass} onClick={closeMenu}>
-                <span className="flex items-center justify-between">
-                  <span>Compare</span>
-                  {selectedCount > 0 && (
-                    <span className={countBadgeClass}>
-                      {selectedCount}
-                    </span>
-                  )}
-                </span>
               </NavLink>
 
               {user ? (
@@ -169,7 +114,10 @@ const Navbar = () => {
                   <NavLink to="/profile" className={navLinkClass} onClick={closeMenu}>
                     Profile
                   </NavLink>
-                  <button onClick={logoutUser} className="w-full rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110">
+                  <button
+                    onClick={logoutUser}
+                    className="w-full rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110"
+                  >
                     Logout
                   </button>
                 </>
@@ -178,7 +126,6 @@ const Navbar = () => {
                   <NavLink to="/login" className={navLinkClass} onClick={closeMenu}>
                     Login
                   </NavLink>
-
                   <NavLink
                     to="/register"
                     onClick={closeMenu}
@@ -194,6 +141,6 @@ const Navbar = () => {
       </div>
     </header>
   );
-}
+};
 
-export default Navbar
+export default Navbar;

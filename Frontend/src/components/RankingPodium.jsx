@@ -64,21 +64,30 @@ const SlotCard = ({ plan, index, onRemove }) => {
           {plan.validityDays} days validity
         </p>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-[#262626] px-3 py-2">
+        {/* Three compact stats: total data, cost per GB, yearly cost */}
+        <div className="mt-3 grid grid-cols-3 gap-1.5">
+          <div className="rounded-lg bg-[#262626] px-2 py-2">
             <p className="text-[9px] uppercase tracking-wider text-zinc-500">
-              Total data
+              Data
             </p>
-            <p className="mt-0.5 text-sm font-semibold text-white">
+            <p className="mt-0.5 text-xs font-semibold text-white">
               {plan.totalData ? `${plan.totalData} GB` : "—"}
             </p>
           </div>
-          <div className="rounded-xl bg-[#262626] px-3 py-2">
+          <div className="rounded-lg bg-[#262626] px-2 py-2">
             <p className="text-[9px] uppercase tracking-wider text-zinc-500">
-              Yearly cost
+              ₹/GB
             </p>
-            <p className="mt-0.5 text-sm font-semibold text-[#58c28d]">
-              ₹{plan.yearlyCost ?? "—"}
+            <p className="mt-0.5 text-xs font-semibold text-[#58c28d]">
+              {plan.costPerGB ? `₹${plan.costPerGB}` : "—"}
+            </p>
+          </div>
+          <div className="rounded-lg bg-[#262626] px-2 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-zinc-500">
+              Yearly
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-white">
+              {plan.yearlyCost ? `₹${plan.yearlyCost}` : "—"}
             </p>
           </div>
         </div>
@@ -106,23 +115,10 @@ const RankingPodium = () => {
   const { slots, removeFromSlot, assignToSlot, draggingPlan, setDraggingPlan } = useCompare();
   const [hoverIndex, setHoverIndex] = React.useState(null);
 
-  // Read the plan id from dataTransfer as a fallback so the drop works even if
-  // context has not propagated yet.
-  const readDraggedPlan = (e) => {
-    if (draggingPlan) return draggingPlan;
-    const id = e.dataTransfer?.getData("text/plain");
-    return id ? { _id: id } : null;
-  };
-
   const handleDrop = (index) => (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const plan = readDraggedPlan(e);
-    if (plan?._id) {
-      // If we only got the id, restore the full plan from the current rankings.
-      const full = plan.operator ? plan : null;
-      if (full) assignToSlot(full, index);
-    }
+    if (draggingPlan) assignToSlot(draggingPlan, index);
     setDraggingPlan(null);
     setHoverIndex(null);
   };
