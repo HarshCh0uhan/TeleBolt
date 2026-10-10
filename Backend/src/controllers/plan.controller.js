@@ -3,35 +3,42 @@ import { PriceHistory } from "../models/priceHistory.js";
 import { PlanSubmission } from "../models/planSubmission.js";
 import { yearlyPlan } from "../utils/yearlyPlan.js";
 import { validatePlans } from "../utils/validations.js";
+import { rankPlans, RANKING_FORMATS, DEFAULT_FORMAT } from "../utils/ranking.js";
 import mongoose from "mongoose"
+
+// Shared by getPlans and getRankings so a filter means the same thing on both.
+const buildPlanFilter = (query) => {
+    const {operator, category, minPrice, maxPrice, minValidity, maxValidity, ottApps,
+        dailyData, minData, maxData} = query;
+
+    const filter = { isActive: true };
+
+    if(operator) filter.operator = { $in: operator.split(',') }
+    if(category) filter.category = category
+    if(ottApps) filter.ottApps = { $in: ottApps.split(',') }
+    if(minPrice || maxPrice){
+        filter.price = {}
+        if(minPrice) filter.price.$gte = Number(minPrice)
+        if(maxPrice) filter.price.$lte = Number(maxPrice)
+    }
+    if(minValidity || maxValidity){
+        filter.validityDays = {}
+        if(minValidity) filter.validityDays.$gte = Number(minValidity)
+        if(maxValidity) filter.validityDays.$lte = Number(maxValidity)
+    }
+    if(dailyData) filter.dailyData = Number(dailyData)
+    if(minData || maxData) {
+        filter.totalData = {}
+        if(minData) filter.totalData.$gte = Number(minData)
+        if(maxData) filter.totalData.$lte = Number(maxData)
+    }
+    return filter;
+}
 
 export const getPlans = async (req, res) => {
     try {
-        const {operator, category, minPrice, maxPrice, minValidity, maxValidity, ottApps,
-        dailyData, minData, maxData, isActive, isUnlimitedCalls, isUnlimitedSMS,
-        page = 1, limit = 12} = req.query;
-
-        const filter ={isActive: true}
-
-        if(operator) filter.operator = { $in: operator.split(',') }
-        if(category) filter.category = category
-        if(ottApps) filter.ottApps = {$in: ottApps.split(',')}
-        if(minPrice || maxPrice){
-            filter.price = {}
-            if(minPrice) filter.price.$gte = Number(minPrice)
-            if(maxPrice) filter.price.$lte = Number(maxPrice)
-        } 
-        if(minValidity || maxValidity){
-            filter.validityDays = {}
-            if(minValidity) filter.validityDays.$gte = Number(minValidity)
-            if(maxValidity) filter.validityDays.$lte = Number(maxValidity)
-        }
-        if(dailyData) filter.dailyData = Number(dailyData)
-        if(minData || maxData) {
-            filter.totalData = {}
-            if(minData) filter.totalData.$gte = Number(minData)
-            if(maxData) filter.totalData.$lte = Number(maxData)
-        }
+        const { page = 1, limit = 12 } = req.query;
+        const filter = buildPlanFilter(req.query);
 
         const pageNum = Math.max(1, Number(page));
         const limitNum = Math.min(50, Math.max(1, Number(limit)));
@@ -168,27 +175,38 @@ export const submitPlan = async (req, res) => {
     }
 }
 
+export const getRankingFormats = (req, res) => {
+    res.status(200).json({
+        success: true,
+        formats: RANKING_FORMATS.map(({ id, label, blurb }) => ({ id, label, blurb })),
+        defaultFormat: DEFAULT_FORMAT,
+    })
+}
+
 export const getRankings = async (req, res) => {
     try {
-        const { operator, category } = req.query;
+        const { format, ottApps: ottQuery, limit } = req.query;
+        const filter = buildPlanFilter(req.query);
 
-        const filter = { isActive: true };
-        if (operator) filter.operator = operator;
-        if (category) filter.category = category;
+        const plansData = await Plans.find(filter).lean();
 
-        const plansData = await Plans.find(filter);
+        const requestedOtt = ottQuery
+            ? ottQuery.split(',').map((s) => s.trim()).filter(Boolean)
+            : [];
 
-        // Rank only plans whose cost per GB can be computed, cheapest first.
-        const rankings = plansData
-            .map((plan) => yearlyPlan(plan))
-            .filter((plan) => Number(plan.costPerGB) > 0)
-            .sort((a, b) => a.costPerGB - b.costPerGB)
-            .map((plan, index) => ({ ...plan, rank: index + 1 }));
+        const rankings = rankPlans(plansData, {
+            formatId: format || DEFAULT_FORMAT,
+            ottApps: requestedOtt,
+        });
+
+        const capped = limit ? rankings.slice(0, Math.max(1, Number(limit))) : rankings;
 
         res.status(200).json({
             success: true,
             message: "Rankings fetched successfully",
-            rankings
+            format: format || DEFAULT_FORMAT,
+            total: rankings.length,
+            rankings: capped,
         })
     } catch (err) {
         console.error("Error: ", err.message);
