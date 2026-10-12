@@ -26,7 +26,13 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 )
 
-// Response interceptor for global error handling
+// Response interceptor for global error handling.
+//
+// This interceptor normalises errors into readable messages. It must NOT
+// navigate. Any HTTP 401 from a public page (e.g. the initial /auth/me check
+// that every visitor triggers on load) would otherwise force-redirect guests
+// away from register, login-adjacent, or any other public route. Navigation
+// on unauthenticated access is handled by ProtectedRoute.
 api.interceptors.response.use(
     (response) => {
         const duration = Date.now() - (response.config.metadata?.startTime || Date.now())
@@ -60,10 +66,6 @@ api.interceptors.response.use(
                 break
             case 401:
                 message = "Session expired. Please log in again."
-                // Redirect to login if not already there
-                if (window.location.pathname !== "/login") {
-                    window.location.href = "/login"
-                }
                 break
             case 403:
                 message = "You don't have permission to perform this action."
