@@ -36,7 +36,7 @@ export class ErrorBoundary extends React.Component {
             <p className="text-zinc-400 mb-6">
               We caught an unexpected error. The development team has been notified.
             </p>
-            {process.env.NODE_ENV === "development" && error && (
+            {import.meta.env.DEV && error && (
               <details className="text-left bg-[#1f1f1f] rounded-xl p-4 mb-6 text-xs text-zinc-500 max-h-64 overflow-auto">
                 <summary className="cursor-pointer font-medium text-zinc-300 mb-2">Error Details</summary>
                 <pre>{error.toString()}</pre>

@@ -87,41 +87,6 @@ export const getSinglePlan = async (req, res) => {
     }
 }
 
-export const comparePlans = async (req, res) => {
-    try {
-        if(!req.query.planIds) throw new Error("No Plan IDs provided")
-
-        const planIds = req.query.planIds.split(',').map((id) => id.trim()).filter(Boolean);
-        const uniquePlanIds = [...new Set(planIds)];
-
-        if(uniquePlanIds.length < 2) throw new Error("Select at least 2 distinct plans to compare")
-        if(uniquePlanIds.length > 3) throw new Error("You can compare at most 3 plans")
-        
-        for(const planId of uniquePlanIds){
-            if(!mongoose.Types.ObjectId.isValid(planId))
-                throw new Error("Invalid Plan ID")
-        }
-
-        const plansData = await Plans.find({ _id: {$in: uniquePlanIds}, isActive: true })
-        if(plansData.length < 2) throw new Error("At least 2 active plans are required to compare");
-
-        // Mongo does not preserve $in order – keep the order the client selected.
-        const requestedOrder = new Map(uniquePlanIds.map((id, index) => [id, index]));
-        const plansWithYearly = plansData
-            .sort((a, b) => requestedOrder.get(a._id.toString()) - requestedOrder.get(b._id.toString()))
-            .map((plan) => yearlyPlan(plan));
-        
-        res.status(200).json({
-            success: true,
-            message: "Successfully fetched all compare plans",
-            comparePlans: plansWithYearly
-        })
-    } catch (err) {
-        console.error("Error: ", err.message);
-        res.status(400).json(err.message)
-    }
-}
-
 export const getPriceHistory = async (req, res) => {
     try {
         const planId = req.params.id;

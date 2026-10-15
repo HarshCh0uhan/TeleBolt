@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   UploadCloud,
   Table2,
@@ -6,6 +6,7 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   RotateCw,
   ArrowRight,
   File,
@@ -14,38 +15,48 @@ import {
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminStatCard from '../../components/admin/AdminStatCard';
 import CSVDragDrop from '../../components/admin/CSVDragDrop';
-import AdminEmptyState from '../../components/admin/AdminEmptyState';
 import { uploadCSV } from '../../api/admin.api';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { analyzeCsv, PREVIEW_COLUMNS } from '../../utils/csvPreview';
+import { getErrorMessage } from '../../utils/errors';
+
+const PREVIEW_ROWS = 8;
+const VISIBLE_ISSUES = 8;
 
 const UploadCSV = () => {
-  const [file, setFile] = useState(null);         
+  const [file, setFile] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState(null); 
+  const [uploadResult, setUploadResult] = useState(null);
   const [error, setError] = useState(null);
-  const fileInputRef = useRef(null);
   const [resetKey, setResetKey] = useState(0);
-  console.log(resetKey);
-  
 
-  const handleFileSelected = (selectedFile) => {
-    
-    setFile(selectedFile);
+  const handleFileSelected = async (selectedFile) => {
+    setFile(selectedFile || null);
     setUploadResult(null);
     setError(null);
+    setAnalysis(null);
+    if (!selectedFile) return;
+
+    try {
+      const text = await selectedFile.text();
+      setAnalysis(analyzeCsv(text));
+    } catch {
+      setError('Could not read this file in the browser.');
+    }
   };
 
   const handleClearFile = () => {
     setFile(null);
+    setAnalysis(null);
     setUploadResult(null);
     setError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    setResetKey(prev => prev + 1);
+    setResetKey((prev) => prev + 1);
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || analysis?.blocking) return;
 
     const formData = new FormData();
     formData.append('file', file);
@@ -58,17 +69,16 @@ const UploadCSV = () => {
       const { data } = await uploadCSV(formData);
       setUploadResult({ success: true, message: data.message || 'Upload successful' });
       setFile(null);
+      setAnalysis(null);
+      setResetKey((prev) => prev + 1);
     } catch (err) {
-        console.error(err);
-        const msg =
-          typeof err.response?.data === 'object'
-            ? err.response.data.message || 'Upload failed'
-            : err.response?.data || 'Upload failed. Please try again.';
-        setError(msg);
-      } finally {
+      setError(getErrorMessage(err, 'Upload failed. Please try again.'));
+    } finally {
       setUploading(false);
     }
   };
+
+  const blocking = Boolean(analysis?.blocking);
 
   return (
     <>
@@ -80,11 +90,10 @@ const UploadCSV = () => {
         <AdminPageHeader
           eyebrow="Admin Dashboard"
           title="Upload CSV"
-          description="Import multiple plans at once. The file will be parsed on the server and added to the catalog."
+          description="Import multiple plans at once. The file is checked here first, then validated again on the server before anything is added."
         />
       </motion.div>
 
-      {/* Stat cards – dynamic once you build client‑side parsing */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -93,34 +102,32 @@ const UploadCSV = () => {
       >
         <AdminStatCard
           label="Ready rows"
-          value={file ? '—' : '—'}
-          hint="Connect client‑side CSV parsing to show this"
+          value={analysis ? analysis.readyCount : '—'}
+          hint={analysis ? `${analysis.totalRows} rows in this file` : 'Select a file to see its rows'}
           icon={Table2}
         />
         <AdminStatCard
           label="Validated"
-          value={file ? '—' : '—'}
-          hint="Validation rules will appear here"
+          value={analysis ? `${analysis.readyCount}/${analysis.totalRows}` : '—'}
+          hint={analysis ? (analysis.errorCount ? `${analysis.errorCount} row(s) need fixing` : 'Every row passed') : 'Validation results appear here'}
           icon={ShieldCheck}
-          tone="success"
+          tone={analysis && analysis.errorCount > 0 ? 'danger' : 'success'}
         />
         <AdminStatCard
           label="Warnings"
-          value={file ? '—' : '—'}
-          hint="Duplicates / missing fields"
+          value={analysis ? analysis.warningCount : '—'}
+          hint="Duplicates and odd-looking rows"
           icon={FileText}
           tone="warning"
         />
       </motion.section>
 
-      {/* Main upload area + side panel */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.3 }}
         className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.9fr]"
       >
-        {/* Upload zone */}
         <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
             <UploadCloud className="h-4 w-4 text-[#58c28d]" />
@@ -129,34 +136,25 @@ const UploadCSV = () => {
 
           <div className="mt-5">
             <CSVDragDrop key={resetKey} onFile={handleFileSelected} />
-            {/* Hidden native input used by CSVDragDrop; we also keep a ref for clearing */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={(e) => handleFileSelected(e.target.files?.[0])}
-            />
           </div>
 
-          {/* Upload tips – collapsed by default, expandable */}
           <details className="mt-4 group">
             <summary className="cursor-pointer text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
               Upload guidelines
             </summary>
             <ul className="mt-3 space-y-2 break-words pl-4 text-sm leading-6 text-zinc-400">
-              <li>• Accepted columns: operator, category, price, validityDays, dailyData, totalData, sms, isUnlimitedCalls, isUnlimitedSMS, ottApps, isActive</li>
+              <li>• Columns: operator, category, price, validityDays, dailyData, totalData, sms, isUnlimitedCalls, isUnlimitedSMS, ottApps, isActive</li>
+              <li>• Required: operator, category, price, validityDays, and at least one of dailyData / totalData</li>
               <li>• Valid operators: Jio, Airtel, VI, BSNL</li>
               <li>• Category: Daily or Non‑Daily</li>
-              <li>• Use the <code className="text-[#58c28d]">true</code>/<code className="text-[#58c28d]">false</code> values for boolean fields.</li>
+              <li>• Use <code className="text-[#58c28d]">true</code>/<code className="text-[#58c28d]">false</code> for boolean columns. Blank means the default: unlimited calls on, unlimited SMS off, active on.</li>
               <li>• OTT apps: comma‑separated list (e.g. JioHotstar,Prime)</li>
+              <li>• If any row has an error, nothing is imported.</li>
             </ul>
           </details>
         </div>
 
-        {/* Side panel – file info & upload */}
         <div className="grid gap-4">
-          {/* File card */}
           <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
             <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               Selected file
@@ -173,6 +171,7 @@ const UploadCSV = () => {
                   </div>
                   <button
                     onClick={handleClearFile}
+                    aria-label="Remove file"
                     className="grid h-8 w-8 place-items-center rounded-xl border border-white/10 bg-[#262626] text-zinc-400 hover:border-red-400/30 hover:text-red-400 transition"
                   >
                     <X className="h-4 w-4" />
@@ -181,8 +180,8 @@ const UploadCSV = () => {
 
                 <button
                   onClick={handleUpload}
-                  disabled={uploading}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#58c28d] px-4 py-3 text-sm font-semibold text-[#181818] transition hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={uploading || !analysis || blocking}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#58c28d] px-4 py-3 text-sm font-semibold text-[#181818] transition hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {uploading ? (
                     <>
@@ -192,7 +191,7 @@ const UploadCSV = () => {
                   ) : (
                     <>
                       <UploadCloud className="h-4 w-4" />
-                      Upload to server
+                      {blocking ? 'Fix errors to upload' : 'Upload to server'}
                     </>
                   )}
                 </button>
@@ -205,7 +204,6 @@ const UploadCSV = () => {
             )}
           </div>
 
-          {/* Success message */}
           <AnimatePresence>
             {uploadResult?.success && (
               <motion.div
@@ -232,7 +230,6 @@ const UploadCSV = () => {
             )}
           </AnimatePresence>
 
-          {/* Error message */}
           {error && (
             <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 sm:p-6">
               <div className="flex items-center gap-3">
@@ -242,26 +239,102 @@ const UploadCSV = () => {
                   <p className="mt-1 break-words text-xs text-red-300/80">{error}</p>
                 </div>
               </div>
-              <button
-                onClick={handleUpload}
-                className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-xs text-red-400 hover:bg-red-500/20 transition"
-              >
-                Try again
-              </button>
+              {file && !blocking && (
+                <button
+                  onClick={handleUpload}
+                  className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-xs text-red-400 hover:bg-red-500/20 transition"
+                >
+                  Try again
+                </button>
+              )}
             </div>
           )}
 
-          {/* Preview panel placeholder – TODO for you */}
-          <div className="rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f]/70 p-5 sm:p-6">
+          <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
             <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">
-              Preview panel
+              Preview
             </div>
-            <p className="mt-3 text-sm text-zinc-400">
-              Client‑side CSV parsing goes here.
-            </p>
-            <p className="mt-2 text-xs text-zinc-500">
-              TODO: Parse rows, show validation errors, and display a table preview before uploading.
-            </p>
+
+            {!analysis ? (
+              <p className="mt-3 text-sm text-zinc-400">
+                Choose a file and its first {PREVIEW_ROWS} rows appear here, along with any problems found.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-4">
+                {analysis.missingColumns.length > 0 && (
+                  <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+                    Missing required column(s): {analysis.missingColumns.join(', ')}
+                  </p>
+                )}
+                {analysis.totalRows === 0 && analysis.missingColumns.length === 0 && (
+                  <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+                    This file has a header but no data rows.
+                  </p>
+                )}
+                {analysis.tooMany && (
+                  <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+                    Too many rows. The maximum is 2000 per file.
+                  </p>
+                )}
+
+                {analysis.issues.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {analysis.issues.slice(0, VISIBLE_ISSUES).map((issue, i) => (
+                      <li
+                        key={`${issue.rowNumber}-${i}`}
+                        className={`flex items-start gap-2 break-words text-xs ${
+                          issue.type === 'error' ? 'text-red-400' : 'text-yellow-300'
+                        }`}
+                      >
+                        {issue.type === 'error' ? (
+                          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        ) : (
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        )}
+                        <span>
+                          Row {issue.rowNumber}: {issue.text}
+                        </span>
+                      </li>
+                    ))}
+                    {analysis.issues.length > VISIBLE_ISSUES && (
+                      <li className="text-xs text-zinc-500">
+                        +{analysis.issues.length - VISIBLE_ISSUES} more issue(s) not shown
+                      </li>
+                    )}
+                  </ul>
+                )}
+
+                {analysis.rows.length > 0 && analysis.missingColumns.length === 0 && (
+                  <div className="overflow-x-auto rounded-2xl border border-white/10">
+                    <table className="min-w-full text-left text-xs">
+                      <thead>
+                        <tr className="text-zinc-500">
+                          <th className="px-3 py-2 font-medium">#</th>
+                          {PREVIEW_COLUMNS.map((col) => (
+                            <th key={col} className="px-3 py-2 font-medium">{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analysis.rows.slice(0, PREVIEW_ROWS).map((row) => (
+                          <tr
+                            key={row.rowNumber}
+                            className={`border-t border-white/5 ${row.errors.length ? 'bg-red-500/10' : ''}`}
+                          >
+                            <td className="px-3 py-2 text-zinc-500">{row.rowNumber}</td>
+                            {PREVIEW_COLUMNS.map((col) => (
+                              <td key={col} className="whitespace-nowrap px-3 py-2 text-zinc-200">
+                                {row.record[col] || '—'}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </motion.div>

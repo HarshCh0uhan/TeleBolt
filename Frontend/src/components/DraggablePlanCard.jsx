@@ -1,16 +1,23 @@
 import { useRef, useState } from "react";
 import PlanCard from "./PlanCard";
 import { useCompare } from "../context/CompareContext";
+import { useCanDrag } from "../hooks/useCanDrag";
 
-// Drag activates on press-and-move. The card visually disappears from the grid
-// and a scaled-down clone of it follows the cursor. The cursor is anchored to
-// the centre of the scaled clone.
+// Drag is desktop-only. On touch devices the browser fires dragstart on a long
+// press, which would pop the drawer open unexpectedly. Those devices use the
+// plan's own "Add to Compare" button instead.
 const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
   const [dragging, setDragging] = useState(false);
   const wrapperRef = useRef(null);
   const { setDraggingPlan } = useCompare();
+  const canDrag = useCanDrag();
 
   const handleDragStart = (e) => {
+    if (!canDrag) {
+      e.preventDefault();
+      return;
+    }
+
     const card = wrapperRef.current?.querySelector("article");
 
     if (card) {
@@ -53,11 +60,11 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
   return (
     <div
       ref={wrapperRef}
-      draggable
+      draggable={canDrag}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       className={`transition-opacity duration-150 ${
-        dragging ? "cursor-grabbing opacity-0" : "cursor-grab"
+        dragging ? "cursor-grabbing opacity-0" : canDrag ? "cursor-grab" : ""
       }`}
     >
       <PlanCard plan={plan} />

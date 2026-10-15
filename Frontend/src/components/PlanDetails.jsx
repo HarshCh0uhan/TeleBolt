@@ -103,7 +103,7 @@ const PlanDetails = () => {
                 </p>
 
                 <p className="mt-2 break-words text-xl font-semibold text-[#58c28d]">
-                  {plan.totalData}
+                  {plan.totalData ? `${plan.totalData} GB` : "N/A"}
                 </p>
               </div>
 
@@ -123,7 +123,7 @@ const PlanDetails = () => {
                 </p>
 
                 <p className="mt-2 break-words text-xl font-semibold text-white">
-                  ₹{plan.costPerGB}/GB
+                  {plan.costPerGB ? `₹${plan.costPerGB}/GB` : "N/A"}
                 </p>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import { useCompare } from "../context/CompareContext";
+import { useCanDrag } from "../hooks/useCanDrag";
 import FilterBar from "./FilterBar";
 import FormatSelect from "./FormatSelect";
 import { Crown, Medal, Award, Minus, ChevronUp } from "lucide-react";
@@ -14,6 +15,7 @@ const SLOT_COLORS = [
 const DrawerSlot = ({ plan, index, onRemove, isHover }) => {
   const Icon = SLOT_ICONS[index] || SLOT_ICONS[2];
   const colorClass = SLOT_COLORS[index] || SLOT_COLORS[2];
+  const canDrag = useCanDrag();
 
   if (!plan) {
     return (
@@ -26,7 +28,7 @@ const DrawerSlot = ({ plan, index, onRemove, isHover }) => {
           Slot {index + 1}
         </p>
         <p className="mt-1 text-[11px] leading-4 text-zinc-500">
-          Drag a plan here
+          {canDrag ? "Drag a plan here" : "Tap Add to Compare on a plan"}
         </p>
       </div>
     );

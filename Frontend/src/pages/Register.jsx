@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 import { useAuth } from "../context/AuthContext";
+import { getErrorMessage } from "../utils/errors";
 
 const Register = ({ isAdminRegister = false }) => {
   const [username, setUsername] = useState("");
@@ -35,7 +36,7 @@ const Register = ({ isAdminRegister = false }) => {
       }
       navigate(isAdminRegister ? '/admin' : '/')
     } catch (err) {
-       setError(err.response?.data?.error || 'Registration failed. Please try again.')
+       setError(getErrorMessage(err, 'Registration failed. Please try again.'))
     } finally {
         setLoading(false)
     }
