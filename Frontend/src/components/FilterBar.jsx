@@ -4,8 +4,10 @@ import {
   Layers3,
   RadioTower,
   RotateCcw,
+  Search,
   SlidersHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import {
   CATEGORIES,
@@ -20,9 +22,6 @@ import {
   sameFilters,
 } from "../utils/filterConfig";
 
-/* ---------- small building blocks (module level, so they never remount) ---------- */
-
-// Selected = green tint + green border. No tick icon.
 const Chip = ({ active, disabled, onClick, children }) => (
   <button
     type="button"
@@ -84,11 +83,9 @@ const Dropdown = ({ label, icon: Icon, count, open, onToggle, panelClass = "", c
   </div>
 );
 
-// Two native range inputs layered on one track: touch + keyboard work for free.
 const RangeSlider = ({ label, min, max, step, value, onChange, format }) => {
   const [lo, hi] = value;
   const pct = (v) => ((v - min) / (max - min)) * 100;
-  // When both thumbs sit at the far end, keep the low one on top so it stays draggable.
   const lowOnTop = lo > (min + max) / 2;
 
   return (
@@ -101,7 +98,6 @@ const RangeSlider = ({ label, min, max, step, value, onChange, format }) => {
       </div>
 
       <div className="relative h-5">
-        {/* Visual rail, inset by half a thumb so it lines up with native thumb travel */}
         <div className="absolute left-2.5 right-2.5 top-1/2 h-1 -translate-y-1/2 rounded-full bg-white/10">
           <div
             className="absolute h-full rounded-full bg-[#58c28d]"
@@ -134,21 +130,17 @@ const RangeSlider = ({ label, min, max, step, value, onChange, format }) => {
   );
 };
 
-/* ---------- the filter bar ---------- */
-
 export default function FilterBar({ filters, onApply, onClear, leadingSlot = null }) {
   const [draft, setDraft] = useState(filters);
   const [prevFilters, setPrevFilters] = useState(filters);
   const [openName, setOpenName] = useState(null);
   const rootRef = useRef(null);
 
-  // If the applied filters change from outside, reset the draft to match.
   if (prevFilters !== filters) {
     setPrevFilters(filters);
     setDraft(filters);
   }
 
-  // Close on outside click / Esc.
   useEffect(() => {
     if (!openName) return undefined;
     const onPointerDown = (e) => {
@@ -176,7 +168,6 @@ export default function FilterBar({ filters, onApply, onClear, leadingSlot = nul
   const setCategory = (cat) =>
     update({
       category: draft.category === cat ? "" : cat,
-      // Daily-data only makes sense for Daily plans.
       ...(cat === "Non-Daily" ? { dailyData: 0 } : {}),
     });
 
@@ -197,17 +188,43 @@ export default function FilterBar({ filters, onApply, onClear, leadingSlot = nul
     onClear();
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    onApply(draft);
+    setOpenName(null);
+  };
+
   return (
     <div ref={rootRef} className="relative z-30 border-b border-white/10 bg-[#181818]">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
         {leadingSlot}
+
+        <form onSubmit={handleSearchSubmit} className="relative min-w-0 flex-1 sm:max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <input
+            type="text"
+            value={draft.search}
+            onChange={(e) => update({ search: e.target.value })}
+            placeholder="Search Jio, 299, 2 GB…"
+            className="w-full rounded-xl border border-white/10 bg-[#1f1f1f] py-2 pl-9 pr-9 text-sm text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-[#58c28d]/40"
+          />
+          {draft.search ? (
+            <button
+              type="button"
+              onClick={() => update({ search: "" })}
+              className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-zinc-400 transition hover:text-white"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </form>
 
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-400">
           <SlidersHorizontal className="h-4 w-4 text-[#58c28d]" />
           <span className="hidden sm:inline">Filters</span>
         </div>
 
-        {/* Operator – multi select */}
         <Dropdown
           label="Operator"
           icon={RadioTower}
@@ -227,7 +244,6 @@ export default function FilterBar({ filters, onApply, onClear, leadingSlot = nul
           </Section>
         </Dropdown>
 
-        {/* Category – single select */}
         <Dropdown
           label="Category"
           icon={Layers3}
@@ -247,7 +263,6 @@ export default function FilterBar({ filters, onApply, onClear, leadingSlot = nul
           </Section>
         </Dropdown>
 
-        {/* OTT – multi select */}
         <Dropdown
           label="OTT Apps"
           icon={Sparkles}
@@ -267,7 +282,6 @@ export default function FilterBar({ filters, onApply, onClear, leadingSlot = nul
           </Section>
         </Dropdown>
 
-        {/* Others – data/day, budget, validity */}
         <Dropdown
           label="Others"
           icon={SlidersHorizontal}
@@ -321,7 +335,6 @@ export default function FilterBar({ filters, onApply, onClear, leadingSlot = nul
           </div>
         </Dropdown>
 
-        {/* Actions */}
         <div className="ml-auto flex items-center gap-2">
           {hasAnything && (
             <button

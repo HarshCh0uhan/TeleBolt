@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { Database, TrendingUp, ArrowRight, ArrowLeftRight, Check, Plus, Heart } from "lucide-react";
 import { useCompare } from "../context/CompareContext";
 import { useAuth } from "../context/AuthContext";
+import StarRating from "./StarRating";
+import ShareButton from "./ShareButton";
 
 const PlanCard = ({ plan }) => {
   const { isSelected, isFull, togglePlan, openSlotPicker } = useCompare();
@@ -31,6 +33,11 @@ const PlanCard = ({ plan }) => {
               <span className="inline-flex max-w-full rounded-full bg-[#58c28d]/10 px-3 py-1 text-xs font-medium text-[#58c28d]">
                 {plan.operator}
               </span>
+              {plan.ratingCount > 0 && (
+                <div className="mt-2">
+                  <StarRating value={plan.ratingAvg} showCount count={plan.ratingCount} />
+                </div>
+              )}
               <h3 className="mt-4 break-words text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
                 ₹{plan.price}
               </h3>
@@ -39,11 +46,14 @@ const PlanCard = ({ plan }) => {
               </p>
             </div>
 
-            <div className="shrink-0 rounded-2xl border border-[#58c28d]/20 bg-[#58c28d]/10 px-3 py-2 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-400">Value</p>
-              <p className="mt-1 break-words text-sm font-semibold text-[#58c28d]">
-                ₹{plan.costPerGB || "--"}/GB
-              </p>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <div className="rounded-2xl border border-[#58c28d]/20 bg-[#58c28d]/10 px-3 py-2 text-center">
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400">Value</p>
+                <p className="mt-1 break-words text-sm font-semibold text-[#58c28d]">
+                  ₹{plan.costPerGB || "--"}/GB
+                </p>
+              </div>
+              <ShareButton planId={plan._id} operator={plan.operator} price={plan.price} />
             </div>
           </div>
         </div>

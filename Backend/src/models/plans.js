@@ -44,6 +44,17 @@ const planSchema = new mongoose.Schema({
         type: String,
         enum: ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5", "Other"]
     }],
+    ratingAvg: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5
+    },
+    ratingCount: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
     isActive: {
         type: Boolean,
         default: true   

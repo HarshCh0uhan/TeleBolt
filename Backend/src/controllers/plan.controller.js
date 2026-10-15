@@ -9,7 +9,7 @@ import mongoose from "mongoose"
 // Shared by getPlans and getRankings so a filter means the same thing on both.
 const buildPlanFilter = (query) => {
     const {operator, category, minPrice, maxPrice, minValidity, maxValidity, ottApps,
-        dailyData, minData, maxData} = query;
+        dailyData, minData, maxData, search} = query;
 
     const filter = { isActive: true };
 
@@ -32,6 +32,26 @@ const buildPlanFilter = (query) => {
         if(minData) filter.totalData.$gte = Number(minData)
         if(maxData) filter.totalData.$lte = Number(maxData)
     }
+
+    // Free-text search: match operator name, or a numeric value that could be
+    // price / total data / daily data / validity. Uses $or with $regex.
+    if (search && String(search).trim()) {
+        const term = String(search).trim();
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(escaped, "i");
+        const asNumber = Number(term);
+        const or = [{ operator: regex }];
+        if (Number.isFinite(asNumber)) {
+            or.push(
+                { price: asNumber },
+                { totalData: asNumber },
+                { dailyData: asNumber },
+                { validityDays: asNumber }
+            );
+        }
+        filter.$or = or;
+    }
+
     return filter;
 }
 

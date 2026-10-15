@@ -26,7 +26,6 @@ export const register = async(req, res) => {
         })
 
         const token = generateToken(userData)
-        console.log("Token Generated")
 
         res.cookie("token", token, {
             httpOnly: true,
@@ -65,7 +64,6 @@ export const registerAdmin = async (req, res) => {
         })
 
         const token = generateToken(admin)
-        console.log("Token Generated")
 
         res.cookie("token", token, {
             httpOnly: true,

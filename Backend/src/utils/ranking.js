@@ -117,6 +117,7 @@ export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {
     price: normalize(yearly, (p) => p.price, { lowerIsBetter: true, log: true }),
     yearlyData: normalize(yearly, (p) => p.yearlyData),
     validityDays: normalize(yearly, (p) => p.validityDays),
+    validityDaysInverted: normalize(yearly, (p) => p.validityDays, { lowerIsBetter: true }),
     dailyData: normalize(yearly, (p) => p.dailyData),
   };
 
@@ -130,10 +131,23 @@ export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {
       const value = key === "ottMatch" ? ottScore[i] : signals[key]?.[i] ?? 0;
       total += value * weight;
     }
+    // Heavy-data gets an extra validityDaysInverted boost (lower validity = better)
+    if (format.id === "heavy-data") {
+      total += signals.validityDaysInverted[i] * 0.1;
+    }
     return { ...plan, score: Math.round((total / weightSum) * 10000) / 10000 };
   });
 
-  scored.sort((a, b) => b.score - a.score || a.yearlyCost - b.yearlyCost);
+  scored.sort((a, b) => {
+    const scoreDiff = b.score - a.score;
+    if (Math.abs(scoreDiff) > 1e-9) return scoreDiff;
+    // Tie-breaker: for heavy-data, prefer lower validityDays (more frequent recharges)
+    if (format.id === "heavy-data") {
+      return (a.validityDays ?? Infinity) - (b.validityDays ?? Infinity);
+    }
+    // Default tie-breaker: lower yearlyCost
+    return (a.yearlyCost ?? 0) - (b.yearlyCost ?? 0);
+  });
   return scored;
 };
 
@@ -141,13 +155,17 @@ export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {
  * Plans that pass the global gate but fail every category gate. Unscored,
  * sorted by lowest upfront price. `formats` is overridable only so the check
  * script can exercise the path.
+ * Only formats with a non-null gate count as "category gates". Formats with
+ * no gate (gate: null) accept all plans that pass the global gate.
  */
-export const findOtherPlans = (plans, { ottApps = [], formats = RANKING_FORMATS } = {}) =>
-  plans
+export const findOtherPlans = (plans, { ottApps = [], formats = RANKING_FORMATS } = {}) => {
+  const gatedFormats = formats.filter((f) => f.gate !== null);
+  return plans
     .filter(
       (plan) =>
         passesGlobalGate(plan) &&
-        !formats.some((format) => passesCategoryGate(format, plan, ottApps))
+        !gatedFormats.some((format) => passesCategoryGate(format, plan, ottApps))
     )
     .map((plan) => yearlyPlan(plan))
     .sort((a, b) => a.price - b.price);
+};

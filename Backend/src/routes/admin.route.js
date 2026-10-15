@@ -1,6 +1,7 @@
 import express from "express"
 import { isAdmin, userAuth } from "../middlewares/verifyAuth.middleware.js";
 import { approveChange, createPlans, deletePlans, detectedChanges, getAllPlans, rejectChange, updatePlans, getStats, getAuditLogs, getSubmissions, approveSubmission, rejectSubmission, getPlanSyncSources, triggerPlanSync, getPlanSyncRuns, approveAllNewPlans, rejectPendingChanges, deletePlansBulk } from "../controllers/admin.controller.js";
+import { adminDeleteReview } from "../controllers/review.controller.js";
 import upload from "../middlewares/upload.middleware.js";
 import uploadCSV from "../controllers/uploadCSV.controller.js";
 
@@ -26,3 +27,4 @@ adminRouter.post('/plan-sync/run', userAuth, isAdmin, triggerPlanSync);
 adminRouter.get('/plan-sync/runs', userAuth, isAdmin, getPlanSyncRuns);
 adminRouter.post('/approve-new-plans', userAuth, isAdmin, approveAllNewPlans);
 adminRouter.post('/reject-pending', userAuth, isAdmin, rejectPendingChanges);
+adminRouter.delete('/reviews/:id', userAuth, isAdmin, adminDeleteReview);

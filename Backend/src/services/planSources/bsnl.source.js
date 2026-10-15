@@ -40,14 +40,20 @@ const PLAN_TABS = new Set([
     "Combo",
 ]);
 
-const DEFAULT_CIRCLES = ["Madhya Pradesh"];
+// BSNL plans are circle-specific and the API only answers for the circle you
+// ask for. Defaulting to a single circle would show users in other circles the
+// wrong catalogue, so BSNL is opt-in via the BSNL_CIRCLES env var.
+const DEFAULT_CIRCLES = [];
 const RETRY_DELAY_MS = 1200;
 
-const circlesToTry = () =>
-    (process.env.BSNL_CIRCLES || DEFAULT_CIRCLES.join(","))
+const circlesToTry = () => {
+    const configured = process.env.BSNL_CIRCLES;
+    if (!configured || !configured.trim()) return DEFAULT_CIRCLES;
+    return configured
         .split(",")
         .map((circle) => circle.trim())
         .filter(Boolean);
+};
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -200,6 +206,14 @@ export const normalizeBsnlPlan = (raw, { circle } = {}) => {
  */
 export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}) => {
     const wantedCircles = circles || circlesToTry();
+
+    if (wantedCircles.length === 0) {
+        throw new SourceNotConfiguredError(
+            "BSNL source is disabled: no circles configured. Set the BSNL_CIRCLES " +
+                "env var to a comma-separated list of Indian telecom circles " +
+                '(for example "Madhya Pradesh,Maharashtra") to enable BSNL plans.'
+        );
+    }
     const configuredCookie = process.env.BSNL_PROXY_COOKIE;
 
     const meta = {
