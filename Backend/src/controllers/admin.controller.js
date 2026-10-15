@@ -6,6 +6,7 @@ import { PriceHistory } from "../models/priceHistory.js";
 import { PlanSubmission } from "../models/planSubmission.js";
 import { AuditLog } from "../models/auditLog.js";
 import { User } from "../models/user.js";
+import { Review } from "../models/review.js";
 import { logAudit } from "../services/audit.service.js";
 import { PlanSyncRun } from "../models/planSyncRun.js";
 import { runPlanSync } from "../services/planSync.service.js";
@@ -601,13 +602,14 @@ export const deletePlansBulk = async (req, res) => {
 
         const { deletedCount } = await Plans.deleteMany({ _id: { $in: targetIds } })
 
-        const [history, proposals, favourites] = await Promise.all([
+        const [history, proposals, favourites, reviews] = await Promise.all([
             PriceHistory.deleteMany({ planId: { $in: targetIds } }),
             DetectedChange.deleteMany({ planId: { $in: targetIds }, status: "Pending" }),
             User.updateMany(
                 { favoritePlans: { $in: targetIds } },
                 { $pull: { favoritePlans: { $in: targetIds } } }
             ),
+            Review.deleteMany({ plan: { $in: targetIds } }),
         ])
 
         await logAudit({
@@ -617,7 +619,7 @@ export const deletePlansBulk = async (req, res) => {
             details:
                 `${deleteAll ? "deleted ALL plans" : `bulk deleted ${deletedCount} plan(s)`}` +
                 `; ${history.deletedCount} price history row(s), ${proposals.deletedCount} pending proposal(s), ` +
-                `${favourites.modifiedCount} saved-plan list(s) updated`,
+                `${favourites.modifiedCount} saved-plan list(s) updated, ${reviews.deletedCount} review(s) removed`,
         })
 
         res.status(200).json({

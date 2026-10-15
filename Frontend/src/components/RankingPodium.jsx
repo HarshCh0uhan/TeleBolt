@@ -1,8 +1,9 @@
 import React from "react";
-import { Crown, Medal, Award, Minus } from "lucide-react";
-import { motion } from "framer-motion";
+import { Crown, Medal, Award, Minus, ChevronDown, Phone, MessageSquare } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useCompare } from "../context/CompareContext";
 import { useCanDrag } from "../hooks/useCanDrag";
+import ShareButton from "./ShareButton";
 
 const SLOT_STYLES = {
   0: {
@@ -31,6 +32,9 @@ const SLOT_STYLES = {
 const SlotCard = ({ plan, index, onRemove }) => {
   const style = SLOT_STYLES[index] || SLOT_STYLES[2];
   const Icon = style.icon;
+  const [expanded, setExpanded] = React.useState(false);
+
+  const rechargesPerYear = plan.validityDays ? Math.ceil(365 / plan.validityDays) : null;
 
   return (
     <motion.div
@@ -47,14 +51,22 @@ const SlotCard = ({ plan, index, onRemove }) => {
         <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-0.5 text-xs font-medium text-[#58c28d]">
           {plan.operator}
         </span>
-        <button
-          type="button"
-          onClick={() => onRemove(index)}
-          aria-label={`Remove ${plan.operator} ₹${plan.price}`}
-          className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-[#262626] text-zinc-400 transition hover:border-red-400/40 hover:text-red-400 sm:h-6 sm:w-6"
-        >
-          <Minus className="h-3 w-3" />
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <ShareButton
+            planId={plan._id}
+            operator={plan.operator}
+            price={plan.price}
+            compact
+          />
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            aria-label={`Remove ${plan.operator} ₹${plan.price}`}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-[#262626] text-zinc-400 transition hover:border-red-400/40 hover:text-red-400 sm:h-6 sm:w-6"
+          >
+            <Minus className="h-3 w-3" />
+          </button>
+        </div>
       </div>
 
       <div className="p-4">
@@ -67,31 +79,92 @@ const SlotCard = ({ plan, index, onRemove }) => {
 
         <div className="mt-3 grid grid-cols-3 gap-1.5">
           <div className="rounded-lg bg-[#262626] px-2 py-2">
-            <p className="text-[9px] uppercase tracking-wider text-zinc-500">
-              Data
-            </p>
+            <p className="text-[9px] uppercase tracking-wider text-zinc-500">Data</p>
             <p className="mt-0.5 text-xs font-semibold text-white">
               {plan.totalData ? `${plan.totalData} GB` : "—"}
             </p>
           </div>
           <div className="rounded-lg bg-[#262626] px-2 py-2">
-            <p className="text-[9px] uppercase tracking-wider text-zinc-500">
-              ₹/GB
-            </p>
+            <p className="text-[9px] uppercase tracking-wider text-zinc-500">₹/GB</p>
             <p className="mt-0.5 text-xs font-semibold text-[#58c28d]">
               {plan.costPerGB ? `₹${plan.costPerGB}` : "—"}
             </p>
           </div>
           <div className="rounded-lg bg-[#262626] px-2 py-2">
-            <p className="text-[9px] uppercase tracking-wider text-zinc-500">
-              Yearly
-            </p>
+            <p className="text-[9px] uppercase tracking-wider text-zinc-500">Yearly</p>
             <p className="mt-0.5 text-xs font-semibold text-white">
               {plan.yearlyCost ? `₹${plan.yearlyCost}` : "—"}
             </p>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#262626] py-2 text-[11px] font-medium text-zinc-400 transition hover:border-[#58c28d]/30 hover:text-white"
+        >
+          {expanded ? "Show less" : "Show more"}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
       </div>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden border-t border-white/10"
+          >
+            <div className="space-y-2 p-4">
+              <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2">
+                <span className="flex items-center gap-2 text-xs text-zinc-400">
+                  <Phone className="h-3.5 w-3.5 text-[#58c28d]" /> Calls
+                </span>
+                <span className="text-xs font-medium text-white">
+                  {plan.isUnlimitedCalls ? "Unlimited" : "Limited"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2">
+                <span className="flex items-center gap-2 text-xs text-zinc-400">
+                  <MessageSquare className="h-3.5 w-3.5 text-[#58c28d]" /> SMS
+                </span>
+                <span className="text-xs font-medium text-white">
+                  {plan.isUnlimitedSMS ? "Unlimited" : plan.sms ? `${plan.sms}/day` : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2">
+                <span className="text-xs text-zinc-400">Daily data</span>
+                <span className="text-xs font-medium text-white">
+                  {plan.dailyData ? `${plan.dailyData} GB/day` : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2">
+                <span className="text-xs text-zinc-400">Yearly data</span>
+                <span className="text-xs font-medium text-white">
+                  {plan.yearlyData ? `${plan.yearlyData} GB` : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2">
+                <span className="text-xs text-zinc-400">Recharges needed</span>
+                <span className="text-xs font-medium text-white">
+                  {rechargesPerYear ?? "—"}
+                </span>
+              </div>
+              {plan.ottApps?.length > 0 && (
+                <div className="rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2">
+                  <span className="text-xs text-zinc-400">OTT</span>
+                  <p className="mt-1 break-words text-xs font-medium text-white">
+                    {plan.ottApps.join(", ")}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
@@ -141,7 +214,7 @@ const RankingPodium = () => {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 scrollbar-brand sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+      <div className="-mx-4 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto px-4 pb-3 scrollbar-brand sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
         {slots.map((plan, index) => {
           const dropProps = {
             onDragOver: handleDragOver(index),

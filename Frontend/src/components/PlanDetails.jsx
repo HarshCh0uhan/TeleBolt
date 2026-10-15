@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import PriceHistoryChart from "./PriceHistoryChart";
 import { Heart } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import ReviewSection from "./ReviewSection";
+import ShareButton from "./ShareButton";
 
 const PlanDetails = () => {
   const [plan, setPlan] = useState(null)
@@ -88,15 +90,15 @@ const PlanDetails = () => {
 
             {/* Value Metrics */}
             <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:shrink-0 lg:grid-cols-1 xl:grid-cols-2">
-              {/* <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
+              <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
                   Yearly Cost
                 </p>
 
-                <p className="mt-2 text-xl font-semibold text-[#58c28d]">
+                <p className="mt-2 break-words text-xl font-semibold text-[#58c28d]">
                   ₹{plan.yearlyCost}
                 </p>
-              </div> */}
+              </div>
               <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
                   Total Data
@@ -107,15 +109,15 @@ const PlanDetails = () => {
                 </p>
               </div>
 
-              {/* <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
+              <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
                   Yearly Data
                 </p>
 
-                <p className="mt-2 text-xl font-semibold text-white">
+                <p className="mt-2 break-words text-xl font-semibold text-white">
                   {plan.yearlyData} GB
                 </p>
-              </div> */}
+              </div>
 
               <div className="rounded-2xl border border-white/10 bg-[#262626] p-4">
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
@@ -241,6 +243,19 @@ const PlanDetails = () => {
             <PriceHistoryChart planId={plan?._id} />
           </div>
         </section>
+
+        {/* Reviews */}
+        <ReviewSection planId={plan._id} />
+
+        {/* Share button next to Save Plan */}
+        <div className="mt-5 flex items-center justify-end">
+          <ShareButton
+            planId={plan._id}
+            operator={plan.operator}
+            price={plan.price}
+            className="ml-3"
+          />
+        </div>
 
         {/* Detected Changes */}
         {/* <section className="mt-8 rounded-3xl border border-white/10 bg-[#1f1f1f] p-6">
