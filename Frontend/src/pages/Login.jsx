@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 import { useAuth } from "../context/AuthContext";
+import { getErrorMessage } from "../utils/errors";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ const Login = () => {
       const loggedInUser = await loginUser(email, password)
       navigate(loggedInUser.role === 'admin' ? '/admin' : '/')
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.')
+      setError(getErrorMessage(err, 'Login failed. Please try again.'))
     } finally {
         setLoading(false) 
     }

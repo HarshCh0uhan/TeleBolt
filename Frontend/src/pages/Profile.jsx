@@ -59,8 +59,8 @@ const Profile = () => {
   const [passwordMsg, setPasswordMsg] = useState(null);
 
   useEffect(() => {
-    getPlans()
-      .then(({ data }) => setTotalPlans(data?.plans?.length ?? 0))
+    getPlans({ limit: 1 })
+      .then(({ data }) => setTotalPlans(data?.pagination?.total ?? data?.plans?.length ?? 0))
       .catch(() => setTotalPlans(0));
     getFavoritePlans()
       .then(({ data }) => setFavoritePlans(data?.favorites || []))

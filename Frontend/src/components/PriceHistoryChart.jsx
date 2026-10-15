@@ -3,24 +3,6 @@ import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
 import { getPriceHistory } from '../api/plans.api';
 
-/*
-  TODO: You will fetch price history for a specific plan.
-  Expected API response shape:
-  [
-    { _id: "...", oldPrice: 249, newPrice: 299, createdAt: "2025-01-15T10:30:00Z" },
-    { _id: "...", oldPrice: 229, newPrice: 249, createdAt: "2025-03-10T08:00:00Z" },
-    ...
-  ]
-*/
-
-const mockPriceHistory = [
-  { _id: '1', oldPrice: 179, newPrice: 199, createdAt: '2025-01-15T10:30:00Z' },
-  { _id: '2', oldPrice: 199, newPrice: 229, createdAt: '2025-03-10T08:00:00Z' },
-  { _id: '3', oldPrice: 229, newPrice: 249, createdAt: '2025-04-20T14:15:00Z' },
-  { _id: '4', oldPrice: 249, newPrice: 279, createdAt: '2025-06-01T09:45:00Z' },
-  { _id: '5', oldPrice: 279, newPrice: 299, createdAt: '2025-06-15T16:00:00Z' },
-];
-
 const PriceHistoryChart = ({ planId }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +15,6 @@ const PriceHistoryChart = ({ planId }) => {
       setError(null);
       try {
         const { data } = await getPriceHistory(planId);
-        console.log(data);        
         setHistory(data.history);
         setLoading(false);
       } catch (err) {

@@ -126,6 +126,9 @@ const Plans = () => {
     if (location.state?.created) {
       flashToast('Plan created successfully');
       navigate(location.pathname, { replace: true, state: {} });
+    } else if (location.state?.updated) {
+      flashToast('Plan updated successfully');
+      navigate(location.pathname, { replace: true, state: {} });
     }
   }, []);
 

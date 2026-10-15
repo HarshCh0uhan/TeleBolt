@@ -3,9 +3,6 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 // The comparison zone has exactly three positional slots.
 export const PODIUM_SIZE = 3;
 
-// Kept as an alias so existing imports that expect MAX_COMPARE keep working.
-export const MAX_COMPARE = PODIUM_SIZE;
-
 const CompareContext = createContext(null);
 
 /**
@@ -28,6 +25,7 @@ const sortByScore = (arr) => {
 export const CompareProvider = ({ children }) => {
   const [slots, setSlots] = useState(() => Array(PODIUM_SIZE).fill(null));
   const [draggingPlan, setDraggingPlan] = useState(null);
+  const [slotPicker, setSlotPicker] = useState(null);
 
   const filledCount = useMemo(() => slots.filter(Boolean).length, [slots]);
   const isFull = filledCount >= PODIUM_SIZE;
@@ -90,6 +88,9 @@ export const CompareProvider = ({ children }) => {
     [slots, firstEmptyIndex, assignToSlot, removeFromSlot]
   );
 
+  const openSlotPicker = useCallback((plan) => setSlotPicker(plan || null), []);
+  const closeSlotPicker = useCallback(() => setSlotPicker(null), []);
+
   const value = {
     slots,
     filledCount,
@@ -102,8 +103,9 @@ export const CompareProvider = ({ children }) => {
     resetTo,
     draggingPlan,
     setDraggingPlan,
-    selectedCount: filledCount,
-    canCompare: filledCount >= 2,
+    slotPicker,
+    openSlotPicker,
+    closeSlotPicker,
   };
 
   return <CompareContext.Provider value={value}>{children}</CompareContext.Provider>;

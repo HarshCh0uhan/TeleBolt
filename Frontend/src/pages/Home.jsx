@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import FilterBar from "../components/FilterBar";
 import RankingPodium from "../components/RankingPodium";
 import AdvancedDrawer from "../components/AdvancedDrawer";
 import DraggablePlanCard from "../components/DraggablePlanCard";
 import FormatSelect from "../components/FormatSelect";
+import MobilePodiumBar from "../components/MobilePodiumBar";
+import SlotPickerSheet from "../components/SlotPickerSheet";
 import { getRankings, getRankingFormats } from "../api/plans.api";
 import { DEFAULT_FILTERS, toApiParams } from "../utils/filterConfig";
 import { useCompare, PODIUM_SIZE } from "../context/CompareContext";
@@ -23,7 +25,9 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showArrow, setShowArrow] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [podiumVisible, setPodiumVisible] = useState(true);
   const requestId = useRef(0);
+  const podiumRef = useRef(null);
 
   const { resetTo, slots } = useCompare();
 
@@ -74,8 +78,24 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  useEffect(() => {
+    const el = podiumRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setPodiumVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const handleDragStart = () => {
     setDrawerOpen(true);
+  };
+
+  const scrollToPodium = () => {
+    podiumRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   // A plan sitting in a podium slot must not also appear in the tier list below.
@@ -97,6 +117,7 @@ export default function Home() {
   ].filter((tier) => tier.plans.length > 0);
 
   const initialLoad = loading && rankings.length === 0;
+  const barVisible = !podiumVisible && slots.some(Boolean);
 
   return (
     <div className="min-h-screen bg-[#181818]">
@@ -132,17 +153,19 @@ export default function Home() {
         }
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-24">
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-28">
         {/* Podium */}
-        {initialLoad ? (
-          <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: PODIUM_SIZE }).map((_, i) => (
-              <div key={i} className="h-96 rounded-2xl bg-[#262626] animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <RankingPodium />
-        )}
+        <div ref={podiumRef} className="scroll-mt-20">
+          {initialLoad ? (
+            <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: PODIUM_SIZE }).map((_, i) => (
+                <div key={i} className="h-56 rounded-2xl bg-[#262626] animate-pulse sm:h-96" />
+              ))}
+            </div>
+          ) : (
+            <RankingPodium />
+          )}
+        </div>
 
         {error && (
           <div className="mt-8 rounded-3xl border border-red-400/20 bg-red-500/10 p-6 text-center text-sm text-red-400">
@@ -203,10 +226,15 @@ export default function Home() {
         )}
       </main>
 
+      <MobilePodiumBar visible={barVisible} onView={scrollToPodium} />
+      <SlotPickerSheet />
+
       {showScrollTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-6 right-4 z-40 grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] shadow-xl transition-all duration-200 hover:border-[#58c28d]/30 hover:bg-[#262626]"
+          className={`fixed right-4 z-40 grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] shadow-xl transition-all duration-200 hover:border-[#58c28d]/30 hover:bg-[#262626] ${
+            barVisible ? "bottom-24 lg:bottom-6" : "bottom-6"
+          }`}
           aria-label="Scroll to top"
         >
           <svg className="h-6 w-6 text-[#58c28d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

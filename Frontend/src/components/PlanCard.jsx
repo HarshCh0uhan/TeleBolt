@@ -1,19 +1,19 @@
 import { Link } from "react-router-dom";
-import { Database, TrendingUp, ArrowRight, Check, Plus, Heart } from "lucide-react";
+import { Database, TrendingUp, ArrowRight, ArrowLeftRight, Check, Plus, Heart } from "lucide-react";
 import { useCompare } from "../context/CompareContext";
 import { useAuth } from "../context/AuthContext";
 
 const PlanCard = ({ plan }) => {
-  const { isSelected, isFull, togglePlan } = useCompare();
+  const { isSelected, isFull, togglePlan, openSlotPicker } = useCompare();
   const { user, isFavoritePlan, toggleFavorite } = useAuth();
 
   const selected = isSelected(plan._id);
   const favorite = isFavoritePlan(plan._id);
 
-  // When the podium is full and this plan is not in it, the compare button
-  // would only ever show "list full". Hide it entirely — dragging is the way
-  // in once the podium is full.
-  const showCompareButton = selected || !isFull;
+  const handleCompareClick = () => {
+    if (selected || !isFull) togglePlan(plan);
+    else openSlotPicker(plan);
+  };
 
   return (
     <article
@@ -118,31 +118,36 @@ const PlanCard = ({ plan }) => {
           </Link>
         )}
 
-        {showCompareButton && (
-          <button
-            type="button"
-            onClick={() => togglePlan(plan)}
-            aria-pressed={selected}
-            className={`group/btn flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
-              selected
-                ? "border border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea] hover:bg-[#58c28d]/25"
+        <button
+          type="button"
+          onClick={handleCompareClick}
+          aria-pressed={selected}
+          className={`group/btn flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
+            selected
+              ? "border border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea] hover:bg-[#58c28d]/25"
+              : isFull
+                ? "border border-[#58c28d]/30 bg-[#58c28d]/10 text-[#dff6ea] hover:bg-[#58c28d]/20"
                 : "bg-[#58c28d] text-[#181818] hover:bg-[#6dd9a0]"
-            }`}
-          >
-            {selected ? (
-              <>
-                <Check className="h-4 w-4" />
-                Selected for Compare
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                Add to Compare
-                <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
-              </>
-            )}
-          </button>
-        )}
+          }`}
+        >
+          {selected ? (
+            <>
+              <Check className="h-4 w-4" />
+              Selected for Compare
+            </>
+          ) : isFull ? (
+            <>
+              <ArrowLeftRight className="h-4 w-4" />
+              Swap into Podium
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4" />
+              Add to Compare
+              <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
+            </>
+          )}
+        </button>
       </div>
     </article>
   );

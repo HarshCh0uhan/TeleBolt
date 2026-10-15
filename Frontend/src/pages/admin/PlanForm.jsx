@@ -1,37 +1,106 @@
-import { useMemo, useState } from 'react';
-import { Check, ChevronRight, CircleDot, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronRight, CircleDot, Loader2, Sparkles } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
-import { Link, useNavigate } from "react-router-dom";
-import {createPlan} from '../../api/admin.api'
+import { createPlan, updatePlan } from '../../api/admin.api';
+import { getSinglePlan } from '../../api/plans.api';
+import { getErrorMessage } from '../../utils/errors';
 
-const ottOptions = ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5", "Other"];
+const OTT_OPTIONS = ["JioHotstar", "Prime", "Netflix", "SonyLiv", "Zee5", "Other"];
+const OPERATORS = ["Jio", "Airtel", "VI", "BSNL"];
+const CATEGORIES = ["Daily", "Non-Daily"];
 
-const Input = ({ label, children, hint }) => (
+const EMPTY_FORM = {
+  operator: 'Jio',
+  category: 'Daily',
+  price: '',
+  validityDays: '',
+  dailyData: '',
+  totalData: '',
+  sms: '',
+};
+
+const fieldClass =
+  "w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40";
+
+const Field = ({ label, hint, children }) => (
   <label className="block">
     <div className="mb-2 text-sm font-medium text-zinc-300">{label}</div>
     {children}
+    {hint ? <p className="mt-1.5 text-xs text-zinc-500">{hint}</p> : null}
   </label>
 );
 
+const toNumber = (value) => (value === '' || value === null || value === undefined ? null : Number(value));
+
+const Toggle = ({ label, on, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-all duration-300 ${
+      on ? 'border-[#58c28d]/40 bg-[#58c28d]/10 text-white' : 'border-white/10 bg-[#181818] text-zinc-300'
+    }`}
+  >
+    <span>{label}</span>
+    <span className="rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-1 text-[10px] uppercase tracking-[0.28em] text-[#dff6ea]">
+      {on ? 'ON' : 'OFF'}
+    </span>
+  </button>
+);
+
 const PlanForm = () => {
+  const { id } = useParams();
+  const isEdit = Boolean(id);
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState(EMPTY_FORM);
   const [selectedOtt, setSelectedOtt] = useState([]);
   const [active, setActive] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  
-  const navigate = useNavigate();
-  
-  const [price, setPrice] = useState(null);
-  const [validityDays, setValidityDays] = useState(null);
-  const [dailyData, setDailydata] = useState(null);
-  const [totalData, setTotaldata] = useState(null);
-  const [sms, setSms] = useState(null); 
-  const [operator, setOperator] = useState('Jio');
-  const [category, setCategory] = useState('Daily');
   const [isUnlimitedCalls, setIsUnlimitedCalls] = useState(true);
   const [isUnlimitedSMS, setIsUnlimitedSMS] = useState(false);
 
-  const chipList = useMemo(() => ottOptions, []);
+  const [loadingPlan, setLoadingPlan] = useState(isEdit);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!id) return undefined;
+
+    let cancelled = false;
+    getSinglePlan(id)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const plan = data.plan;
+        setForm({
+          operator: plan.operator,
+          category: plan.category,
+          price: plan.price != null ? String(plan.price) : '',
+          validityDays: plan.validityDays != null ? String(plan.validityDays) : '',
+          dailyData: plan.dailyData != null ? String(plan.dailyData) : '',
+          totalData: plan.totalData != null ? String(plan.totalData) : '',
+          sms: plan.sms != null ? String(plan.sms) : '',
+        });
+        setSelectedOtt(plan.ottApps || []);
+        setActive(plan.isActive !== false);
+        setIsUnlimitedCalls(plan.isUnlimitedCalls !== false);
+        setIsUnlimitedSMS(plan.isUnlimitedSMS === true);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadFailed(true);
+        setError(getErrorMessage(err, 'Could not load this plan.'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingPlan(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const setField = (key) => (e) => setForm((current) => ({ ...current, [key]: e.target.value }));
 
   const toggleOtt = (item) => {
     setSelectedOtt((current) =>
@@ -41,146 +110,209 @@ const PlanForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
-    
+
+    const price = toNumber(form.price);
+    const validityDays = toNumber(form.validityDays);
+    const dailyData = toNumber(form.dailyData);
+    const totalData = toNumber(form.totalData);
+    const sms = toNumber(form.sms);
+
+    if (!(price >= 1)) return setError('Price must be at least 1.');
+    if (!Number.isInteger(validityDays) || validityDays < 1 || validityDays > 365)
+      return setError('Validity must be a whole number from 1 to 365 days.');
+    if (!(dailyData > 0) && !(totalData > 0)) return setError('Enter daily data or total data.');
+    if (form.category === 'Daily' && !(dailyData > 0))
+      return setError('A Daily plan needs a daily data value.');
+
+    const payload = {
+      operator: form.operator,
+      category: form.category,
+      price,
+      validityDays,
+      isUnlimitedCalls,
+      isUnlimitedSMS,
+      ottApps: selectedOtt,
+      isActive: active,
+    };
+
+    if (isEdit) {
+      payload.dailyData = dailyData > 0 ? dailyData : null;
+      payload.totalData = totalData > 0 ? totalData : null;
+      payload.sms = sms > 0 ? sms : null;
+    } else {
+      if (dailyData > 0) payload.dailyData = dailyData;
+      if (totalData > 0) payload.totalData = totalData;
+      if (sms > 0) payload.sms = sms;
+    }
+
+    setSaving(true);
     try {
-      await createPlan({
-        operator, 
-        category, 
-        price, 
-        validityDays, 
-        dailyData, 
-        totalData, 
-        sms, 
-        isUnlimitedCalls, 
-        isUnlimitedSMS, 
-        ottApps: selectedOtt, 
-        isActive: active
-      });
-      navigate('/admin/plans', { state: { created: true } });
+      if (isEdit) {
+        await updatePlan(id, payload);
+        navigate('/admin/plans', { state: { updated: true } });
+      } else {
+        await createPlan(payload);
+        navigate('/admin/plans', { state: { created: true } });
+      }
     } catch (err) {
-      console.error(err);
-      setError(
-        typeof err.response?.data === 'string'
-          ? err.response.data
-          : 'Failed to create plan. Please try again.'
-      );
+      setError(getErrorMessage(err, isEdit ? 'Failed to update plan. Please try again.' : 'Failed to create plan. Please try again.'));
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loadingPlan) {
+    return (
+      <>
+        <AdminPageHeader eyebrow="Admin Dashboard" title="Edit plan" description="Loading plan details…" />
+        <div className="h-64 animate-pulse rounded-3xl bg-[#262626]" />
+      </>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <>
+        <AdminPageHeader eyebrow="Admin Dashboard" title="Edit plan" description="This plan could not be loaded." />
+        <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-6 text-sm text-red-400">
+          <p className="break-words">{error}</p>
+          <Link
+            to="/admin/plans"
+            className="mt-4 inline-flex rounded-xl border border-white/10 bg-[#262626] px-4 py-2 text-xs text-zinc-300 transition hover:text-white"
+          >
+            Back to plans
+          </Link>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <AdminPageHeader
         eyebrow="Admin Dashboard"
-        title="Plan form"
-        description="Keep the form clean and premium. Put the logic wherever you want later; the UI is already structured for it."
+        title={isEdit ? 'Edit plan' : 'Add plan'}
+        description={
+          isEdit
+            ? 'Update this plan. Changes go live on the public catalogue immediately.'
+            : 'Add a new plan to the catalogue by hand.'
+        }
       />
 
-      <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
+      <form onSubmit={handleSubmit} className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6">
         <div className="grid gap-5">
-
-          {/* Basic Information */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               <Sparkles className="h-4 w-4 text-[#58c28d]" />
               Basic information
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Input label="Operator*">
-                <select onChange={(e) => setOperator(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
-                  <option>Jio</option>
-                  <option>Airtel</option>
-                  <option>VI</option>
-                  <option>BSNL</option>
+              <Field label="Operator*">
+                <select value={form.operator} onChange={setField('operator')} className={fieldClass}>
+                  {OPERATORS.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
                 </select>
-              </Input>
-              <Input label="Category*">
-                <select onChange={(e) => setCategory(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 focus:border-[#58c28d]/40">
-                  <option>Daily</option>
-                  <option>Non-Daily</option>
+              </Field>
+              <Field label="Category*">
+                <select value={form.category} onChange={setField('category')} className={fieldClass}>
+                  {CATEGORIES.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
                 </select>
-              </Input>
-              <Input label="Price*">
-                <input onChange={(e) => setPrice(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="299" />
-              </Input>
-              <Input label="Validity (days)*">
-                <input onChange={(e) => setValidityDays(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="28" />
-              </Input>
+              </Field>
+              <Field label="Price (₹)*">
+                <input
+                  type="number"
+                  min="1"
+                  step="any"
+                  inputMode="decimal"
+                  value={form.price}
+                  onChange={setField('price')}
+                  className={fieldClass}
+                  placeholder="299"
+                />
+              </Field>
+              <Field label="Validity (days)*">
+                <input
+                  type="number"
+                  min="1"
+                  max="365"
+                  step="1"
+                  inputMode="numeric"
+                  value={form.validityDays}
+                  onChange={setField('validityDays')}
+                  className={fieldClass}
+                  placeholder="28"
+                />
+              </Field>
             </div>
           </section>
 
-          {/* Data Benefits */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
               <CircleDot className="h-4 w-4 text-[#58c28d]" />
               Data benefits
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <Input label="Daily data">
-                <input onChange={(e) => setDailydata(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="2 GB" />
-              </Input>
-              <Input label="Total data">
-                <input onChange={(e) => setTotaldata(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="56 GB" />
-              </Input>
-              <Input label="SMS">
-                <input onChange={(e) => setSms(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 focus:border-[#58c28d]/40" placeholder="100/day" />
-              </Input>
+              <Field label="Daily data (GB)">
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  inputMode="decimal"
+                  value={form.dailyData}
+                  onChange={setField('dailyData')}
+                  className={fieldClass}
+                  placeholder="2"
+                />
+              </Field>
+              <Field label="Total data (GB)" hint="Calculated automatically when daily data is set.">
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  inputMode="decimal"
+                  value={form.totalData}
+                  onChange={setField('totalData')}
+                  className={fieldClass}
+                  placeholder="56"
+                />
+              </Field>
+              <Field label="SMS (per day)">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  value={form.sms}
+                  onChange={setField('sms')}
+                  className={fieldClass}
+                  placeholder="100"
+                />
+              </Field>
             </div>
           </section>
 
-          {/* Calling & SMS Toggles */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setIsUnlimitedCalls(prev => !prev)}
-                className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-all duration-300 ${
-                  isUnlimitedCalls 
-                    ? 'border-[#58c28d]/40 bg-[#58c28d]/10 text-white' 
-                    : 'border-white/10 bg-[#181818] text-zinc-300'
-                }`}
-              >
-                <span>Unlimited Calls</span>
-                <span className="rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-1 text-[10px] uppercase tracking-[0.28em] text-[#dff6ea]">
-                  {isUnlimitedCalls ? 'ON' : 'OFF'}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsUnlimitedSMS(prev => !prev)}
-                className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-all duration-300 ${
-                  isUnlimitedSMS 
-                    ? 'border-[#58c28d]/40 bg-[#58c28d]/10 text-white' 
-                    : 'border-white/10 bg-[#181818] text-zinc-300'
-                }`}
-              >
-                <span>Unlimited SMS</span>
-                <span className="rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-1 text-[10px] uppercase tracking-[0.28em] text-[#dff6ea]">
-                  {isUnlimitedSMS ? 'ON' : 'OFF'}
-                </span>
-              </button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Toggle label="Unlimited Calls" on={isUnlimitedCalls} onClick={() => setIsUnlimitedCalls((v) => !v)} />
+              <Toggle label="Unlimited SMS" on={isUnlimitedSMS} onClick={() => setIsUnlimitedSMS((v) => !v)} />
             </div>
           </section>
 
-          {/* OTT Benefits */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
-                  <ChevronRight className="h-4 w-4 text-[#58c28d]" />
-                  OTT benefits
-                </div>
-                <p className="mt-2 text-sm text-zinc-400">Chips switch on and off with the same active-green feel used everywhere else.</p>
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+                <ChevronRight className="h-4 w-4 text-[#58c28d]" />
+                OTT benefits
               </div>
               <div className="shrink-0 text-xs text-zinc-500">{selectedOtt.length} selected</div>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              {chipList.map((item) => {
+              {OTT_OPTIONS.map((item) => {
                 const activeChip = selectedOtt.includes(item);
                 return (
                   <button
@@ -200,17 +332,18 @@ const PlanForm = () => {
             </div>
           </section>
 
-          {/* Active or Not */}
           <section className="rounded-3xl border border-white/10 bg-[#262626] p-5">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Status</div>
-                <p className="mt-2 text-sm text-zinc-400">Keep this toggle visually obvious without feeling loud.</p>
+                <p className="mt-2 text-sm text-zinc-400">Inactive plans are hidden from the public catalogue.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setActive((v) => !v)}
-                className={`relative h-8 w-14 rounded-full border transition-all duration-300 ${
+                aria-pressed={active}
+                aria-label="Toggle plan active status"
+                className={`relative h-8 w-14 shrink-0 rounded-full border transition-all duration-300 ${
                   active ? 'border-[#58c28d]/30 bg-[#58c28d]/15' : 'border-white/10 bg-[#181818]'
                 }`}
               >
@@ -223,14 +356,12 @@ const PlanForm = () => {
             </div>
           </section>
 
-          {/* Error Display */}
           {error && (
             <div className="break-words rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
               {error}
             </div>
           )}
 
-          {/* Submit or Cancel */}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Link
               to="/admin/plans"
@@ -239,22 +370,24 @@ const PlanForm = () => {
               Cancel
             </Link>
             <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="group flex w-full justify-center rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+              type="submit"
+              disabled={saving}
+              className="flex w-full items-center justify-center gap-3 rounded-2xl border border-[#58c28d]/25 bg-[#58c28d] px-5 py-3 text-sm font-medium text-[#181818] transition-all duration-300 hover:bg-[#6dd9a0] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
             >
-              {loading ? (
-                <div className="flex items-center gap-3">
-                  <div className="h-4 w-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
-                  <span>Saving...</span>
-                </div>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : isEdit ? (
+                'Save changes'
               ) : (
-                "Save plan"
+                'Save plan'
               )}
             </button>
           </div>
         </div>
-      </div>
+      </form>
     </>
   );
 };

@@ -64,17 +64,36 @@ export const createPlans = async (req, res) => {
     }
 }
 
+const EDITABLE_PLAN_FIELDS = [
+    "operator", "category", "price", "validityDays", "dailyData", "totalData", "sms",
+    "isUnlimitedCalls", "isUnlimitedSMS", "ottApps", "isActive"
+];
+
 export const updatePlans = async (req, res) => {
     try {
         const planId = req.params.id;
-        const updateData = req.body;
         if(!mongoose.Types.ObjectId.isValid(planId)) throw new Error("Invalid Plan ID")
-        
-        if(updateData.dailyData && updateData.validityDays){
-            updateData.totalData = updateData.dailyData * updateData.validityDays
+
+        const updateData = {};
+        for (const key of EDITABLE_PLAN_FIELDS) {
+            if (req.body[key] !== undefined) updateData[key] = req.body[key];
+        }
+        if (Object.keys(updateData).length === 0) throw new Error("Nothing to update")
+
+        const existing = await Plans.findById(planId)
+        if(!existing) throw new Error("Plan does not exist")
+
+        const merged = { ...existing.toObject(), ...updateData }
+
+        if (Number(merged.dailyData) > 0 && (updateData.dailyData !== undefined || updateData.validityDays !== undefined)) {
+            updateData.totalData = Number(merged.dailyData) * Number(merged.validityDays)
+            merged.totalData = updateData.totalData
         }
 
-        const update = await Plans.findByIdAndUpdate(planId, updateData, {returnDocument: 'after'})
+        if (!(Number(merged.dailyData) > 0) && !(Number(merged.totalData) > 0))
+            throw new Error("Either daily data or total data must be provided")
+
+        const update = await Plans.findByIdAndUpdate(planId, updateData, {returnDocument: 'after', runValidators: true})
         if(!update) throw new Error("Plan does not exist")
 
         await logAudit({actor: req.user, action: "update_plan", entity: "Plan", entityId: planId, details: `${update.operator} ₹${update.price}`})
@@ -115,12 +134,11 @@ export const deletePlans = async (req, res) => {
 
 export const detectedChanges = async (req, res) => {
     try {
-        const changes = await DetectedChange.find()
-        if(changes.length === 0) throw new Error("No changes detected")
+        const changes = await DetectedChange.find().sort({ createdAt: -1 })
 
         res.status(200).json({
             success: true,
-            message: "Changes Detected Successfully",
+            message: changes.length === 0 ? "No changes detected" : "Changes fetched successfully",
             detectedChanges: changes
         })
 

@@ -2,6 +2,7 @@ import React from "react";
 import { Crown, Medal, Award, Minus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCompare } from "../context/CompareContext";
+import { useCanDrag } from "../hooks/useCanDrag";
 
 const SLOT_STYLES = {
   0: {
@@ -50,7 +51,7 @@ const SlotCard = ({ plan, index, onRemove }) => {
           type="button"
           onClick={() => onRemove(index)}
           aria-label={`Remove ${plan.operator} ₹${plan.price}`}
-          className="ml-auto grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-white/10 bg-[#262626] text-zinc-400 transition hover:border-red-400/40 hover:text-red-400"
+          className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-[#262626] text-zinc-400 transition hover:border-red-400/40 hover:text-red-400 sm:h-6 sm:w-6"
         >
           <Minus className="h-3 w-3" />
         </button>
@@ -64,7 +65,6 @@ const SlotCard = ({ plan, index, onRemove }) => {
           {plan.validityDays} days validity
         </p>
 
-        {/* Three compact stats: total data, cost per GB, yearly cost */}
         <div className="mt-3 grid grid-cols-3 gap-1.5">
           <div className="rounded-lg bg-[#262626] px-2 py-2">
             <p className="text-[9px] uppercase tracking-wider text-zinc-500">
@@ -96,20 +96,24 @@ const SlotCard = ({ plan, index, onRemove }) => {
   );
 };
 
-const EmptySlot = ({ index, isHover }) => (
-  <div
-    className={`flex h-full min-h-[180px] flex-col items-center justify-center rounded-2xl border border-dashed bg-[#1f1f1f]/60 p-4 text-center transition-all duration-200 ${
-      isHover ? "border-[#58c28d]/60 ring-2 ring-[#58c28d]/40" : "border-white/15"
-    }`}
-  >
-    <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">
-      Slot {index + 1}
-    </p>
-    <p className="mt-2 text-xs leading-5 text-zinc-500">
-      Drag a plan here
-    </p>
-  </div>
-);
+const EmptySlot = ({ index, isHover }) => {
+  const canDrag = useCanDrag();
+
+  return (
+    <div
+      className={`flex h-full min-h-[180px] flex-col items-center justify-center rounded-2xl border border-dashed bg-[#1f1f1f]/60 p-4 text-center transition-all duration-200 ${
+        isHover ? "border-[#58c28d]/60 ring-2 ring-[#58c28d]/40" : "border-white/15"
+      }`}
+    >
+      <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">
+        Slot {index + 1}
+      </p>
+      <p className="mt-2 text-xs leading-5 text-zinc-500">
+        {canDrag ? "Drag a plan here" : "Tap Add to Compare on any plan"}
+      </p>
+    </div>
+  );
+};
 
 const RankingPodium = () => {
   const { slots, removeFromSlot, assignToSlot, draggingPlan, setDraggingPlan } = useCompare();
@@ -137,7 +141,7 @@ const RankingPodium = () => {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 scrollbar-brand sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
         {slots.map((plan, index) => {
           const dropProps = {
             onDragOver: handleDragOver(index),
@@ -148,19 +152,28 @@ const RankingPodium = () => {
 
           if (plan) {
             return (
-              <div key={`slot-${index}-${plan._id}`} {...dropProps}>
+              <div
+                key={`slot-${index}-${plan._id}`}
+                className="w-[82%] shrink-0 snap-center sm:w-auto sm:shrink"
+                {...dropProps}
+              >
                 <SlotCard plan={plan} index={index} onRemove={removeFromSlot} />
               </div>
             );
           }
 
           return (
-            <div key={`empty-${index}`} {...dropProps}>
+            <div
+              key={`empty-${index}`}
+              className="w-[82%] shrink-0 snap-center sm:w-auto sm:shrink"
+              {...dropProps}
+            >
               <EmptySlot index={index} isHover={hoverIndex === index} />
             </div>
           );
         })}
       </div>
+      <p className="mt-1 text-center text-[11px] text-zinc-600 sm:hidden">Swipe to see all slots</p>
     </div>
   );
 };
