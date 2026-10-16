@@ -9,9 +9,6 @@ const SITE = "https://bsnl.co.in";
 const RECHARGE_PAGE = `${SITE}/en/mobile/recharge`;
 const PLANS_URL = `${SITE}/api/bsnl-proxy/api/recharge-plansnew`;
 
-// Found in BSNL's own JS bundle, which uses CryptoJS with this passphrase for
-// request bodies and responses. It is not a secret - it ships to every browser -
-// but it can change whenever they redeploy, hence the env override.
 const BUNDLE_PASSPHRASE =
     process.env.BSNL_PASSPHRASE || "9a7b8e1f2c3d4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b";
 
@@ -28,8 +25,6 @@ const BROWSER_HEADERS = {
     "sec-fetch-site": "same-origin",
 };
 
-// Groups that hold actual mobile plans. TOPUP / VAS / FRC are vouchers or
-// add-ons, and International Roaming is not a domestic plan.
 const PLAN_TABS = new Set([
     "UNLIMITED",
     "UNLIMTED",
@@ -40,9 +35,6 @@ const PLAN_TABS = new Set([
     "Combo",
 ]);
 
-// BSNL plans are circle-specific and the API only answers for the circle you
-// ask for. Defaulting to a single circle would show users in other circles the
-// wrong catalogue, so BSNL is opt-in via the BSNL_CIRCLES env var.
 const DEFAULT_CIRCLES = [];
 const RETRY_DELAY_MS = 1200;
 
@@ -110,11 +102,6 @@ const pick = (row, keys) => {
     return undefined;
 };
 
-/**
- * A Node `fetch` failure is just "fetch failed"; the reason lives on `cause`
- * (and on `cause.errors` for the aggregate from a dual-stack connect attempt).
- * Without this the run report is unactionable.
- */
 const describeFetchError = (err) => {
     const cause = err?.cause;
     const details = [];
@@ -133,7 +120,6 @@ const isNetworkFailure = (err) =>
     err?.name === "AbortError" ||
     (err?.name === "TypeError" && /fetch failed|terminated|other side closed/i.test(String(err.message)));
 
-/** Used only once a request has already failed, to say whether the host reaches BSNL at all. */
 const probeSite = async () => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10000);
@@ -150,19 +136,16 @@ const probeSite = async () => {
     }
 };
 
-/** Reads `bsnl_session` from Set-Cookie, with or without getSetCookie() support. */
 export const extractSession = (headers) => {
     const list = typeof headers.getSetCookie === "function" ? headers.getSetCookie() : [];
     const fromList = list.map((entry) => entry.split(";")[0]).find((entry) => entry.startsWith("bsnl_session="));
     if (fromList) return fromList;
 
-    // Some runtimes only expose the combined header, where cookies are comma separated.
     const combined = headers.get("set-cookie") || "";
     const match = combined.match(/bsnl_session=[^;,\s]+/);
     return match ? match[0] : null;
 };
 
-/** Maps one BSNL recharge row onto the TeleBolt plan shape. */
 export const normalizeBsnlPlan = (raw, { circle } = {}) => {
     const sourceRef = pick(raw, ["productId", "productCode", "PLAN_ID", "id"]);
     if (!sourceRef) return null;
@@ -181,6 +164,7 @@ export const normalizeBsnlPlan = (raw, { circle } = {}) => {
         operator: "BSNL",
         source: BSNL_SOURCE,
         sourceRef: String(sourceRef),
+        sourceUrl: RECHARGE_PAGE,
         price: pick(raw, ["price", "denomination", "amount", "MRP"]),
         validityDays: pick(raw, ["validityDesc", "validity", "VALIDITY"]),
         dailyData: data.dailyGb,
@@ -192,18 +176,6 @@ export const normalizeBsnlPlan = (raw, { circle } = {}) => {
     });
 };
 
-/**
- * Fetches BSNL prepaid plans for the configured circles.
- *
- * BSNL hands out an anonymous `bsnl_session` cookie just for loading the
- * recharge page, and that is all the API needs - no login, no mobile number and
- * no captcha. Request bodies must be AES encrypted and responses come back
- * encrypted as well. Verified live: 59-61 plans per working circle.
- *
- * A session is minted on every run in preference to a configured cookie, so a
- * stale BSNL_PROXY_COOKIE cannot wedge the source, and a rejected session is
- * retried once with a fresh one.
- */
 export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}) => {
     const wantedCircles = circles || circlesToTry();
 
@@ -242,7 +214,6 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
     let sessionMinted = false;
 
     const ensureSession = async () => {
-         // The relay mints its own session; Render cannot reach BSNL directly.
         if (process.env.BSNL_RELAY_URL) return;
         if (sessionCookie) return;
 
@@ -251,7 +222,6 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
             sessionMinted = true;
             meta.session = "minted";
         } catch (err) {
-            // Fall back to a configured cookie only if we have one to fall back to.
             if (configuredCookie && err instanceof SourceNotConfiguredError) {
                 sessionCookie = configuredCookie;
                 meta.session = "supplied-after-mint-failure";
@@ -267,9 +237,6 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
             BUNDLE_PASSPHRASE
         );
 
-        // When a relay is configured, send the encrypted payload through it. The
-        // relay runs in India, mints BSNL's session and forwards the response
-        // verbatim; Render's own IP cannot reach BSNL at all.
         const relayUrl = process.env.BSNL_RELAY_URL;
         if (relayUrl) {
             const response = await fetch(`${relayUrl.replace(/\/$/, "")}/api/bsnl-proxy`, {
@@ -302,7 +269,6 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
 
             let response = await postForCircle(circle);
 
-            // A supplied cookie that is stale or expired is worth one fresh attempt.
             if ((response.status === 401 || response.status === 403) && !sessionMinted) {
                 sessionCookie = await mintSession();
                 sessionMinted = true;
@@ -356,7 +322,6 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
     }
     if (!isNetworkFailure(lastError)) throw lastError;
 
-    // Datacenter links reset often enough to be worth a second try.
     await sleep(RETRY_DELAY_MS);
     try {
         return await attempt();

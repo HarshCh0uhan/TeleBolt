@@ -10,11 +10,6 @@ const BROWSER_HEADERS = {
     "accept-language": "en-IN,en;q=0.9",
 };
 
-/**
- * Vi renders its full prepaid catalogue into the Next.js flight payload, so the
- * plan list is already inside the page HTML as JSON. `self.__next_f.push([1,"..."])`
- * chunks hold it; joining and unescaping them yields that JSON.
- */
 export const extractViPayload = (html) =>
     [...html.matchAll(/self\.__next_f\.push\(\[1,\s*"((?:[^"\\]|\\.)*)"\]\)/g)]
         .map((match) => match[1])
@@ -24,8 +19,7 @@ export const extractViPayload = (html) =>
         .replace(/\\u0026/g, "&")
         .replace(/\\\\/g, "\\");
 
-/** Maps one Vi catalogue record onto the TeleBolt plan shape. */
-export const normalizeViPlan = (raw) => {
+export const normalizeViPlan = (raw, { sourceUrl } = {}) => {
     if (raw?.STATUS && String(raw.STATUS).toUpperCase() !== "SUCCESS") return null;
 
     const sourceRef = raw.ITEM_ID || raw.RECHARGEID_ATTR || raw.RECHARGENAME_ATTR;
@@ -39,6 +33,7 @@ export const normalizeViPlan = (raw) => {
         operator: "VI",
         source: VI_SOURCE,
         sourceRef,
+        sourceUrl,
         price: raw.UNIT_COST || raw.CGRP_START_RANGE,
         validityDays: raw.VALIDITY_ATTR || raw["WEB-VALIDITY"],
         dailyData: data.dailyGb,
@@ -50,8 +45,7 @@ export const normalizeViPlan = (raw) => {
     });
 };
 
-/** Parses every plan record out of a Vi flight payload. */
-export const parseViPlans = (payload) => {
+export const parseViPlans = (payload, { sourceUrl } = {}) => {
     const plans = [];
     const seen = new Set();
     let malformed = 0;
@@ -60,7 +54,7 @@ export const parseViPlans = (payload) => {
     let match;
     while ((match = recordPattern.exec(payload)) !== null) {
         try {
-            const plan = normalizeViPlan(JSON.parse(match[0]));
+            const plan = normalizeViPlan(JSON.parse(match[0]), { sourceUrl });
             if (plan && !seen.has(plan.sourceRef)) {
                 seen.add(plan.sourceRef);
                 plans.push(plan);
@@ -87,7 +81,7 @@ export const fetchViPlans = async ({ url, timeoutMs = 25000 } = {}) => {
         if (!response.ok) throw new Error(`Vi returned HTTP ${response.status}`);
 
         const html = await response.text();
-        const { plans, malformed } = parseViPlans(extractViPayload(html));
+        const { plans, malformed } = parseViPlans(extractViPayload(html), { sourceUrl: target });
         if (plans.length === 0) {
             throw new Error("Vi page contained no plan records – the page structure may have changed");
         }

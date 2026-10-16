@@ -4,13 +4,13 @@ import { SourcePayloadError } from "./errors.js";
 export const JIO_SOURCE = "jio-sync";
 
 const PLANS_URL = "https://www.jio.com/api/jio-mdmdata-service/mdmdata/recharge/plans";
+// What we send the user to when they click "View on Jio". The API itself is not
+// a page a human can browse, so the link points at the public prepaid listing.
+const PUBLIC_PLANS_URL = "https://www.jio.com/selfcare/plans/mobility/prepaid-plans-list/";
 
-// Jio's own service identifiers: MOBILITY + billingType 1 (prepaid), 2 (postpaid).
 const PRODUCT_TYPE = "MOBILITY";
 const BILLING_TYPE = "1";
 
-// Categories that are not comparable monthly plans: vouchers, ISD/roaming and
-// operator apps. Everything else (Popular, 5G, Annual, Data Packs, Value...) is kept.
 export const EXCLUDED_CATEGORIES = [
     "International Roaming",
     "ISD",
@@ -32,10 +32,6 @@ const excludedCategories = () => {
         .filter(Boolean);
 };
 
-// The stored `ottApps` field is an enum, and Jio's subscription titles are not -
-// they include in-house apps like JioTV and JioAICloud. Only recognised
-// entertainment brands are mapped, so the OTT filter stays meaningful, and
-// "Other" is never used just because a plan bundles a Jio app.
 const OTT_BRANDS = [
     [/jiohotstar|hotstar|disney/i, "JioHotstar"],
     [/amazon\s*prime|\bprime\s*video\b/i, "Prime"],
@@ -57,12 +53,6 @@ const collectOttApps = (raw) => {
     return [...new Set(OTT_BRANDS.filter(([pattern]) => pattern.test(haystack)).map(([, label]) => label))];
 };
 
-/**
- * Jio states validity as "Validity - 28 Days" or "Validity: 1Day", and some
- * descriptions mention the word "validity" in prose first ("with active base
- * plan validity, ..."). Only a "validity" followed by a separator counts, or the
- * prose wins and the plan is thrown away.
- */
 const validitySource = (raw) => {
     const labelled = String(raw?.description || "").match(/validity\s*[-:]\s*([^.|]{1,24})/i);
     if (labelled) return labelled[1];
@@ -74,8 +64,7 @@ const validitySource = (raw) => {
     return Number.isFinite(expiry) && expiry > 0 ? expiry : undefined;
 };
 
-/** Maps one Jio plan onto the TeleBolt plan shape. */
-export const normalizeJioPlan = (raw) => {
+export const normalizeJioPlan = (raw, { sourceUrl } = {}) => {
     if (!raw?.id) return null;
 
     const description = String(raw.description || "");
@@ -86,11 +75,10 @@ export const normalizeJioPlan = (raw) => {
         operator: "Jio",
         source: JIO_SOURCE,
         sourceRef: String(raw.id),
+        sourceUrl,
         price: raw.amount ?? raw.name,
         validityDays: validitySource(raw),
         dailyData: data.dailyGb,
-        // When a daily quota exists, the operator's own total is that quota times
-        // validity, so let buildPlan derive it rather than trusting the text.
         totalData: data.dailyGb ? null : data.totalGb,
         sms: sms.sms,
         isUnlimitedCalls: isUnlimitedVoice(description),
@@ -111,13 +99,6 @@ const flatten = (payload) => {
     return rows;
 };
 
-/**
- * Fetches Jio's prepaid catalogue.
- *
- * Jio publishes the whole list as plain JSON with no authentication, so this is
- * a single GET - no session, headers or encryption involved. Verified live: 17
- * categories, ~129 unique plans before category filtering.
- */
 export const fetchJioPlans = async ({ timeoutMs = 30000 } = {}) => {
     const url = `${PLANS_URL}?productType=${PRODUCT_TYPE}&billingType=${BILLING_TYPE}`;
 
@@ -131,7 +112,7 @@ export const fetchJioPlans = async ({ timeoutMs = 30000 } = {}) => {
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
                 accept: "application/json, text/plain, */*",
                 "accept-language": "en-IN,en;q=0.9",
-                referer: "https://www.jio.com/selfcare/plans/mobility/prepaid-plans-list/",
+                referer: PUBLIC_PLANS_URL,
             },
             signal: controller.signal,
         });
@@ -148,7 +129,7 @@ export const fetchJioPlans = async ({ timeoutMs = 30000 } = {}) => {
     const plans = [];
     const seen = new Set();
     for (const row of rows) {
-        const plan = normalizeJioPlan(row);
+        const plan = normalizeJioPlan(row, { sourceUrl: PUBLIC_PLANS_URL });
         if (plan && !seen.has(plan.sourceRef)) {
             seen.add(plan.sourceRef);
             plans.push(plan);

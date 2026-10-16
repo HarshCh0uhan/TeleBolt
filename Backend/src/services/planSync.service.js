@@ -4,15 +4,10 @@ import { PlanSyncRun } from "../models/planSyncRun.js";
 import { DEFAULT_SOURCES, getPlanSource } from "./planSources/index.js";
 import { SourceNotConfiguredError, SourceUnavailableError } from "./planSources/errors.js";
 import { diffPlanFields } from "./planSources/matching.js";
+import { sendSyncSummaryEmail } from "./email.service.js";
 
-// Safety valve so a first run cannot flood the review queue.
 const MAX_NEW_PER_RUN = Number(process.env.SYNC_MAX_NEW_PER_RUN || 200);
 
-/**
- * Query for a catalogue plan with an identical bundle (operator, daily data,
- * total data and validity). Mirrors `isSameBundle` in planSources/matching.js,
- * but excludes plans already bound to a different upstream id.
- */
 const bundleQuery = (plan, sourceName) => ({
     operator: plan.operator,
     validityDays: plan.validityDays,
@@ -33,15 +28,6 @@ const bundleQuery = (plan, sourceName) => ({
     ],
 });
 
-/**
- * Finds the catalogue plan a source record refers to.
- *
- * Vi bakes the price into its plan ids (MH_0014_2399_MH_0014_2399), so a price
- * change arrives as an unseen id while a validity or data change keeps the id.
- * Matching is therefore: exact source id first, then an identical bundle, and
- * anything else is a new plan. A looser shape match was tried and produced
- * nonsense proposals - it linked a 365-day 10 GB pack to a 28-day one.
- */
 const findMatch = async (plan, sourceName) => {
     const exact = await Plans.findOne({ source: sourceName, sourceRef: plan.sourceRef });
     if (exact) return { plan: exact, matchedBy: "sourceRef" };
@@ -52,7 +38,6 @@ const findMatch = async (plan, sourceName) => {
     return { plan: null, matchedBy: null };
 };
 
-// Avoids raising an identical proposal twice while one is still pending.
 const proposalExists = (filter) => DetectedChange.exists({ ...filter, status: "Pending" });
 
 const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false } = {}) => {
@@ -77,8 +62,6 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
     try {
         fetched = await source.fetch();
     } catch (err) {
-        // A source we cannot reach from this host is skipped with an explanation
-        // rather than reported as a failure of the sync itself.
         if (err instanceof SourceNotConfiguredError || err instanceof SourceUnavailableError) {
             result.status = "Skipped";
             result.message = err.message;
@@ -97,7 +80,6 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
     }
 
     let newThisRun = 0;
-    // One pending proposal per plan and field, per run and across runs.
     const proposedThisRun = new Set();
 
     for (const plan of plans) {
@@ -129,10 +111,10 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
             continue;
         }
 
-        // Link an existing catalogue plan to this source the first time we see it.
         if (!existing.sourceRef && !dryRun) {
             existing.source = sourceName;
             existing.sourceRef = plan.sourceRef;
+            if (!existing.sourceUrl && plan.sourceUrl) existing.sourceUrl = plan.sourceUrl;
             await existing.save();
             result.adopted += 1;
         } else if (!existing.sourceRef && dryRun) {
@@ -141,9 +123,6 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
 
         let changed = 0;
         for (const { field, oldValue, newValue } of diffPlanFields(existing, plan)) {
-            // Several upstream packs can share one bundle (Vi sells identical
-            // benefits at ₹348 and ₹349), so without this guard a single
-            // catalogue plan collects a pile of conflicting price proposals.
             const alreadyProposed =
                 proposedThisRun.has(`${existing._id}:${field}`) ||
                 (await proposalExists({ planId: existing._id, field, source: sourceName }));
@@ -173,7 +152,6 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
         }
     }
 
-    // Plans we previously imported from this source that are no longer offered.
     const fetchedRefs = plans.map((plan) => plan.sourceRef);
     result.missingFromSource = await Plans.countDocuments({
         source: sourceName,
@@ -181,8 +159,6 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
         sourceRef: { $nin: fetchedRefs },
     });
 
-    // The cap is a safety valve, not a failure: note it on a successful run so
-    // the dashboard does not report a problem where there is none.
     if (result.skipped > 0 && result.newPlans >= maxNew) {
         result.message = [
             result.message,
@@ -191,17 +167,12 @@ const syncSource = async (sourceName, { maxNew = MAX_NEW_PER_RUN, dryRun = false
             .filter(Boolean)
             .join(" ");
     } else if (result.skipped > 0 && result.message) {
-        // Records that could not be parsed are a genuine partial result.
         result.status = "Partial";
     }
 
     return result;
 };
 
-/**
- * Runs every requested source, records the run, and returns a summary.
- * Never throws: a failing source is reported on its own result row.
- */
 export const runPlanSync = async ({
     sources = DEFAULT_SOURCES,
     trigger = "cron",
@@ -262,10 +233,16 @@ export const runPlanSync = async ({
         triggeredBy,
     };
 
-    // A dry run reports what would change without recording a run.
     if (dryRun) return { run: { ...runData, dryRun: true }, results, totals, status };
 
     const run = await PlanSyncRun.create(runData);
+
+    // Notify the admin only when something actually needs review.
+    try {
+        await sendSyncSummaryEmail({ status, totals, sources: results });
+    } catch (err) {
+        console.error("Sync summary email failed: ", err.message);
+    }
 
     return { run, results, totals, status };
 };

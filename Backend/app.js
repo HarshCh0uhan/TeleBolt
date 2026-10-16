@@ -7,15 +7,14 @@ import {authRouter} from "./src/routes/auth.route.js"
 import cookieParser from "cookie-parser"
 import { planRouter } from "./src/routes/plan.route.js";
 import { adminRouter } from "./src/routes/admin.route.js";
+import { alertRouter } from "./src/routes/alert.route.js";
+import { notificationRouter } from "./src/routes/notification.route.js";
 import './src/services/scheduler.service.js'
 import cors from "cors"
 
 dotenv.config();
 const app = express();
 
-// Render (and Vercel's rewrite in front of it) sit between the client and this
-// process, so the real client IP arrives in X-Forwarded-For. Without this every
-// visitor shares one IP and rate limiting would block everybody together.
 app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
 app.use(helmet());
@@ -55,6 +54,8 @@ app.use("/api", apiLimiter);
 app.use("/api/auth", authRouter);
 app.use("/api/plans", planRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/alerts", alertRouter);
+app.use("/api/notifications", notificationRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);

@@ -6,7 +6,6 @@ export const toNumber = (value) => {
   return Number.isFinite(num) && num > 0 ? num : null;
 };
 
-// "180 Days" -> 180, "1 Month" -> 30, "1 Year" -> 365, "28" -> 28
 export const parseValidityDays = (value) => {
   if (value === null || value === undefined) return null;
   if (typeof value === "number") return value > 0 ? Math.round(value) : null;
@@ -29,7 +28,6 @@ export const parseValidityDays = (value) => {
   return null;
 };
 
-// "1.5GB/Day" -> { dailyGb: 1.5 }, "10GB" -> { totalGb: 10 }
 export const parseDataText = (value) => {
   const result = { dailyGb: null, totalGb: null };
   if (!value) return result;
@@ -49,33 +47,24 @@ export const parseDataText = (value) => {
 export const parseSms = (value) => {
   if (!value) return { sms: null, unlimitedSms: false };
   const text = String(value);
-  // Only "unlimited SMS" means unlimited SMS. Matching a bare "unlimited" threw
-  // away the count on any plan that also advertised unlimited data or calls,
-  // which is most of them.
   if (/unlimited\s+(?:sms|messages?)/i.test(text)) return { sms: null, unlimitedSms: true };
   const match = text.match(/(\d+)\s*sms/i);
   return { sms: match ? Number(match[1]) : null, unlimitedSms: false };
 };
 
-// "Unlimited" anywhere, plus BSNL's "UL voice" / "UL calls" shorthand.
 export const isUnlimitedVoice = (value) =>
     /unlimited/i.test(String(value || "")) || /\bUL\b\s*(?:voice|calls?)/i.test(String(value || ""));
 
-// Converts megabytes (some operator APIs return MB) into GB.
 export const mbToGb = (mb) => {
   const value = Number(mb);
   return Number.isFinite(value) && value > 0 ? Math.round((value / 1024) * 100) / 100 : null;
 };
 
-/**
- * Builds the plan object we store or propose, or null when the row is unusable.
- * Guarantees the schema invariants: price >= 1, 1 <= validityDays <= 365 and at
- * least one of dailyData / totalData present.
- */
 export const buildPlan = ({
   operator,
   source,
   sourceRef,
+  sourceUrl,
   price,
   validityDays,
   dailyData,
@@ -108,5 +97,6 @@ export const buildPlan = ({
     isActive: true,
     source,
     sourceRef: String(sourceRef || ""),
+    sourceUrl: String(sourceUrl || ""),
   };
 };

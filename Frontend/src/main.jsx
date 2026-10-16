@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { AdminStatsProvider } from './context/AdminStatsContext.jsx';
 import { CompareProvider } from './context/CompareContext.jsx';
+import { NotificationsProvider } from './context/NotificationsContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <AdminStatsProvider>
           <CompareProvider>
-            <App />
+            <NotificationsProvider>
+              <App />
+            </NotificationsProvider>
           </CompareProvider>
         </AdminStatsProvider>
       </AuthProvider>
