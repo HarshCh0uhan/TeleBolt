@@ -57,15 +57,20 @@ const planSchema = new mongoose.Schema({
     },
     isActive: {
         type: Boolean,
-        default: true   
+        default: true
     },
-    // Provenance for plans imported by the sync service. "manual" means an
-    // admin typed it in or uploaded it by CSV; sourceRef is the operator's id.
     source: {
         type: String,
         default: "manual"
     },
     sourceRef: {
+        type: String,
+        default: ""
+    },
+    // The operator page this plan was scraped from. Used by the "View on
+    // operator site" link on PlanCard and PlanDetails. Manual plans leave it
+    // empty; the frontend falls back to the operator's main prepaid page.
+    sourceUrl: {
         type: String,
         default: ""
     }

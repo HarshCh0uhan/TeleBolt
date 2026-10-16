@@ -1,21 +1,66 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Database, TrendingUp, ArrowRight, ArrowLeftRight, Check, Plus, Heart } from "lucide-react";
+import { Database, TrendingUp, ArrowRight, ArrowLeftRight, Check, Plus, Heart, Bell, BellRing, ExternalLink } from "lucide-react";
 import { useCompare } from "../context/CompareContext";
 import { useAuth } from "../context/AuthContext";
 import StarRating from "./StarRating";
 import ShareButton from "./ShareButton";
+import { getAlertForPlan, toggleAlert } from "../api/notifications.api";
+
+const OPERATOR_HOME = {
+  Jio: "https://www.jio.com/selfcare/plans/mobility/prepaid-plans-list/",
+  Airtel: "https://www.airtel.in/recharge/prepaid/",
+  VI: "https://www.myvi.in/prepaid/unlimited-calls-and-data-plans",
+  BSNL: "https://bsnl.co.in/en/mobile/recharge",
+};
 
 const PlanCard = ({ plan }) => {
   const { isSelected, isFull, togglePlan, openSlotPicker } = useCompare();
   const { user, isFavoritePlan, toggleFavorite } = useAuth();
 
+  const [alerting, setAlerting] = useState(false);
+  const [busy, setBusy] = useState(false);
+
   const selected = isSelected(plan._id);
   const favorite = isFavoritePlan(plan._id);
+
+  useEffect(() => {
+    if (!user) {
+      setAlerting(false);
+      return undefined;
+    }
+    let cancelled = false;
+    getAlertForPlan(plan._id)
+      .then(({ data }) => {
+        if (!cancelled) setAlerting(Boolean(data.alert));
+      })
+      .catch(() => {
+        if (!cancelled) setAlerting(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, plan._id]);
+
+  const handleAlertToggle = async () => {
+    if (!user || busy) return;
+    setBusy(true);
+    try {
+      const { data } = await toggleAlert(plan._id);
+      setAlerting(Boolean(data.isActive));
+    } catch {
+      // Silent — the button state simply does not change.
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleCompareClick = () => {
     if (selected || !isFull) togglePlan(plan);
     else openSlotPicker(plan);
   };
+
+  const sourceUrl = plan.sourceUrl || OPERATOR_HOME[plan.operator] || "#";
 
   return (
     <article
@@ -26,7 +71,6 @@ const PlanCard = ({ plan }) => {
       }`}
     >
       <Link to={`/plans/${plan._id}`}>
-        {/* Hero Section */}
         <div className="border-b border-white/10 p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -53,12 +97,33 @@ const PlanCard = ({ plan }) => {
                   ₹{plan.costPerGB || "--"}/GB
                 </p>
               </div>
-              <ShareButton planId={plan._id} operator={plan.operator} price={plan.price} />
+              <div className="flex items-center gap-1.5">
+                {user && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAlertToggle();
+                    }}
+                    disabled={busy}
+                    aria-label={alerting ? "Stop alerting me" : "Alert me on changes"}
+                    title={alerting ? "Alerting you on changes" : "Alert me on changes"}
+                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition ${
+                      alerting
+                        ? "border-[#58c28d]/40 bg-[#58c28d]/15 text-[#58c28d]"
+                        : "border-white/10 bg-[#262626] text-zinc-400 hover:border-[#58c28d]/30 hover:text-white"
+                    } disabled:opacity-60`}
+                  >
+                    {alerting ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                  </button>
+                )}
+                <ShareButton planId={plan._id} operator={plan.operator} price={plan.price} />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Yearly Cost Block */}
         <div className="p-4 pb-0 sm:p-5 sm:pb-0">
           <div className="rounded-2xl bg-[#262626] p-4">
             <p className="text-xs uppercase tracking-wider text-zinc-500">
@@ -71,7 +136,6 @@ const PlanCard = ({ plan }) => {
           </div>
         </div>
 
-        {/* Benefits */}
         <div className="p-4 sm:p-5">
           <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
             Benefits
@@ -103,7 +167,6 @@ const PlanCard = ({ plan }) => {
         </div>
       </Link>
 
-      {/* Footer */}
       <div className="mt-auto space-y-3 border-t border-white/10 p-4 sm:p-5">
         {user ? (
           <button
@@ -158,6 +221,17 @@ const PlanCard = ({ plan }) => {
             </>
           )}
         </button>
+
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#262626] px-4 py-3 text-xs font-medium text-zinc-400 transition-all duration-300 hover:border-[#58c28d]/30 hover:text-white"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          View on {plan.operator}
+        </a>
       </div>
     </article>
   );

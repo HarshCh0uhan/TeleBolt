@@ -7,10 +7,52 @@ import { PlanSubmission } from "../models/planSubmission.js";
 import { AuditLog } from "../models/auditLog.js";
 import { User } from "../models/user.js";
 import { Review } from "../models/review.js";
+import { Alert } from "../models/alert.js";
+import { Notification } from "../models/notification.js";
 import { logAudit } from "../services/audit.service.js";
 import { PlanSyncRun } from "../models/planSyncRun.js";
 import { runPlanSync } from "../services/planSync.service.js";
 import { DEFAULT_SOURCES, getPlanSource, listPlanSources } from "../services/planSources/index.js";
+
+const FIELD_MESSAGES = {
+    Price: (oldValue, newValue) =>
+        `Price changed from ₹${oldValue} to ₹${newValue}`,
+    ValidityDays: (oldValue, newValue) =>
+        `Validity changed from ${oldValue} days to ${newValue} days`,
+    DailyData: (oldValue, newValue) =>
+        `Daily data changed from ${oldValue} GB to ${newValue} GB`,
+    TotalData: (oldValue, newValue) =>
+        `Total data changed from ${oldValue} GB to ${newValue} GB`,
+    Sms: (oldValue, newValue) =>
+        `SMS changed from ${oldValue} to ${newValue} per day`,
+};
+
+// Fans out to every user who has an active alert on this plan.
+const notifyWatchersOfChange = async (plan, change) => {
+    const alerts = await Alert.find({ plan: plan._id, active: true }).lean()
+    if (alerts.length === 0) return
+
+    const describe = FIELD_MESSAGES[change.field]
+    const body = describe ? describe(change.oldValue, change.newValue) : `${change.field} was updated`
+
+    const docs = alerts.map((alert) => ({
+        user: alert.user,
+        title: `${plan.operator} ₹${plan.price} plan changed`,
+        body,
+        link: `/plans/${plan._id}`,
+        kind: "plan_change",
+        meta: {
+            planId: plan._id,
+            changeId: change._id,
+            field: change.field,
+            oldValue: change.oldValue,
+            newValue: change.newValue,
+        },
+    }))
+
+    await Notification.insertMany(docs)
+    await Alert.updateMany({ plan: plan._id, active: true }, { lastNotifiedAt: new Date() })
+}
 
 export const getAllPlans = async (req, res) => {
      try {
@@ -29,9 +71,9 @@ export const createPlans = async (req, res) => {
     try {
         validatePlans(req.body)
 
-        const {operator, category, price, validityDays, dailyData, 
+        const {operator, category, price, validityDays, dailyData,
         sms, isUnlimitedCalls, isUnlimitedSMS, ottApps, isActive} = req.body;
-            
+
         let totalData = req.body.totalData
         if(dailyData && validityDays){
             totalData = dailyData * validityDays
@@ -117,7 +159,7 @@ export const deletePlans = async (req, res) => {
         if(!mongoose.Types.ObjectId.isValid(planId))
             throw new Error("Invalid Plan ID")
 
-        
+
         const deletePlan = await Plans.findByIdAndDelete(planId);
         if(!deletePlan) throw new Error("Plan does not exist")
 
@@ -149,7 +191,6 @@ export const detectedChanges = async (req, res) => {
     }
 }
 
-// Scalar fields a sync proposal can apply straight onto a plan.
 const APPLICABLE_FIELDS = {
     Price: "price",
     ValidityDays: "validityDays",
@@ -158,7 +199,6 @@ const APPLICABLE_FIELDS = {
     Sms: "sms",
 };
 
-// Turns a NewPlan proposal into a catalogue plan and marks it approved.
 const createPlanFromProposal = async (change, user) => {
     const snapshot = change.snapshot || {}
     const created = await Plans.create({
@@ -175,6 +215,7 @@ const createPlanFromProposal = async (change, user) => {
         isActive: true,
         source: change.source || "manual",
         sourceRef: change.sourceRef || "",
+        sourceUrl: snapshot.sourceUrl || "",
     })
 
     change.status = "Approved"
@@ -196,7 +237,6 @@ export const approveChange = async(req, res) => {
         if(!change) throw new Error("Change does not exist")
         if(change.status !== 'Pending') throw new Error("Change is not in pending state")
 
-        // A brand new pack proposed by the sync service or a contributor.
         if(change.field === 'NewPlan'){
             const created = await createPlanFromProposal(change, req.user)
 
@@ -215,7 +255,6 @@ export const approveChange = async(req, res) => {
 
         const newPlan = await Plans.findByIdAndUpdate(change.planId, {[path]: change.newValue}, {returnDocument: 'after'})
 
-        // Only a real price change with a known previous value is historic.
         if(change.field === 'Price' && change.oldValue != null && change.newValue != null){
             await PriceHistory.create({
                 planId: change.planId,
@@ -227,6 +266,13 @@ export const approveChange = async(req, res) => {
         await DetectedChange.findByIdAndUpdate(detectedChangeId, {status: "Approved"}, {returnDocument: 'after'})
 
         await logAudit({actor: req.user, action: "approve_change", entity: "DetectedChange", entityId: detectedChangeId, details: `${change.field}: ${change.oldValue} → ${change.newValue}`})
+
+        // Fan out to users watching this plan. Failure to notify must not fail the approval.
+        try {
+            await notifyWatchersOfChange(newPlan, change)
+        } catch (err) {
+            console.error("Notify watchers failed: ", err.message)
+        }
 
         res.status(200).json({
             success: true,
@@ -245,12 +291,11 @@ export const rejectChange = async (req, res) => {
         const detectedChangeId = req.params.id
         if(!mongoose.Types.ObjectId.isValid(detectedChangeId))
             throw new Error("Invalid Id")
-        
+
         const change = await DetectedChange.findById(detectedChangeId)
         if(!change) throw new Error("Change does not exist")
         if(change.status !== 'Pending') throw new Error("Change is not in pending state")
 
-        // NewPlan proposals only get a planId once they are approved.
         if (change.planId) {
             const plan = await Plans.findById(change.planId);
             if(!plan) throw new Error("Plan does not exist")
@@ -508,8 +553,6 @@ export const getPlanSyncRuns = async (req, res) => {
     }
 }
 
-// Adds every pending new plan in one go: the first sync can leave dozens of
-// proposals, and approving them one at a time is busy work.
 export const approveAllNewPlans = async (req, res) => {
     try {
         const filter = { field: "NewPlan", status: "Pending" }
@@ -542,8 +585,6 @@ export const approveAllNewPlans = async (req, res) => {
     }
 }
 
-// Discards pending field changes without applying them, so a noisy batch can be
-// cleared in one step. New-plan proposals are never touched here.
 export const rejectPendingChanges = async (req, res) => {
     try {
         const fields = Array.isArray(req.body?.fields) && req.body.fields.length > 0
@@ -576,13 +617,6 @@ export const rejectPendingChanges = async (req, res) => {
     }
 }
 
-/**
- * Deletes a chosen set of plans, or the whole catalogue when `all` is true.
- *
- * Deleting plans on their own would leave dangling references, so this also
- * clears their price history, drops pending proposals that point at them
- * (decided ones stay as history) and pulls them from every user's saved plans.
- */
 export const deletePlansBulk = async (req, res) => {
     try {
         const { ids, all } = req.body || {}
@@ -602,7 +636,7 @@ export const deletePlansBulk = async (req, res) => {
 
         const { deletedCount } = await Plans.deleteMany({ _id: { $in: targetIds } })
 
-        const [history, proposals, favourites, reviews] = await Promise.all([
+        const [history, proposals, favourites, reviews, alerts] = await Promise.all([
             PriceHistory.deleteMany({ planId: { $in: targetIds } }),
             DetectedChange.deleteMany({ planId: { $in: targetIds }, status: "Pending" }),
             User.updateMany(
@@ -610,6 +644,7 @@ export const deletePlansBulk = async (req, res) => {
                 { $pull: { favoritePlans: { $in: targetIds } } }
             ),
             Review.deleteMany({ plan: { $in: targetIds } }),
+            Alert.deleteMany({ plan: { $in: targetIds } }),
         ])
 
         await logAudit({
@@ -619,7 +654,8 @@ export const deletePlansBulk = async (req, res) => {
             details:
                 `${deleteAll ? "deleted ALL plans" : `bulk deleted ${deletedCount} plan(s)`}` +
                 `; ${history.deletedCount} price history row(s), ${proposals.deletedCount} pending proposal(s), ` +
-                `${favourites.modifiedCount} saved-plan list(s) updated, ${reviews.deletedCount} review(s) removed`,
+                `${favourites.modifiedCount} saved-plan list(s) updated, ${reviews.deletedCount} review(s), ` +
+                `${alerts.deletedCount} alert(s) removed`,
         })
 
         res.status(200).json({

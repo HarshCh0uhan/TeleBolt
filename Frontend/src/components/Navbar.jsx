@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../assets/TeleBolt Logo.png";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,7 +22,6 @@ const Navbar = () => {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#1f1f1f]/95 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-16 items-center justify-between gap-3">
-          {/* Logo */}
           <Link to="/" className="flex min-w-0 items-center gap-3">
             <img src={logo} alt="TeleBolt" className="h-8 w-auto object-contain" />
             <span className="hidden sm:block text-lg font-semibold text-white">
@@ -29,7 +29,6 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden shrink-0 items-center gap-6 lg:flex xl:gap-8">
             <NavLink to="/coverage" className={navLinkClass}>
               Coverage
@@ -45,6 +44,7 @@ const Navbar = () => {
                 <NavLink to="/profile" className={navLinkClass}>
                   Profile
                 </NavLink>
+                <NotificationBell />
                 <button onClick={logoutUser} className={logoutButtonClass}>
                   Logout
                 </button>
@@ -61,7 +61,6 @@ const Navbar = () => {
             )}
           </nav>
 
-          {/* Mobile menu button */}
           <button
             type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -95,7 +94,6 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
         {isMenuOpen && (
           <nav
             id="mobile-nav"
@@ -114,6 +112,10 @@ const Navbar = () => {
                   <NavLink to="/profile" className={navLinkClass} onClick={closeMenu}>
                     Profile
                   </NavLink>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#262626] px-4 py-3">
+                    <span className="text-sm text-zinc-300">Notifications</span>
+                    <NotificationBell />
+                  </div>
                   <button
                     onClick={logoutUser}
                     className="w-full rounded-2xl bg-[#58c28d] px-4 py-3 font-semibold text-black transition hover:brightness-110"
