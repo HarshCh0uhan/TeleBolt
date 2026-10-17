@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import StarRating from "./StarRating";
 import ShareButton from "./ShareButton";
 import { getAlertForPlan, toggleAlert } from "../api/notifications.api";
+import { BSNL_CIRCLE_NOTE_SHORT } from "../utils/bsnlInfo";
 
 const OPERATOR_HOME = {
   Jio: "https://www.jio.com/selfcare/plans/mobility/prepaid-plans-list/",
@@ -87,6 +88,11 @@ const PlanCard = ({ plan }) => {
               <p className="mt-1 text-sm text-zinc-400">
                 {plan.validityDays} Days Validity
               </p>
+              {plan.operator === "BSNL" && (
+                <p className="mt-0.5 text-[11px] text-zinc-500">
+                  {BSNL_CIRCLE_NOTE_SHORT}
+                </p>
+              )}
             </div>
 
             <div className="flex shrink-0 flex-col items-end gap-2">
