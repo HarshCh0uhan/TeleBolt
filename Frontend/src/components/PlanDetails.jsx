@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import ReviewSection from "./ReviewSection";
 import ShareButton from "./ShareButton";
 import { getAlertForPlan, toggleAlert } from "../api/notifications.api";
+import { BSNL_CIRCLE_NOTE_LONG } from "../utils/bsnlInfo";
 
 const OPERATOR_HOME = {
   Jio: "https://www.jio.com/selfcare/plans/mobility/prepaid-plans-list/",
@@ -104,6 +105,12 @@ const PlanDetails = () => {
             <p className="mt-2 text-zinc-400">
               {plan.validityDays} Days Validity
             </p>
+
+            {plan.operator === "BSNL" && (
+              <p className="mt-2 text-xs text-zinc-500">
+                {BSNL_CIRCLE_NOTE_LONG}
+              </p>
+            )}
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
               {user ? (

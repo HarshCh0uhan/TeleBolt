@@ -35,7 +35,16 @@ const PLAN_TABS = new Set([
     "Combo",
 ]);
 
-const DEFAULT_CIRCLES = [];
+// BSNL sells plans per circle — there is no national catalogue. TeleBolt is
+// committed to the Madhya Pradesh circle on purpose: the same five-rupee plan
+// can differ by circle, and the dedupe-by-id logic below would silently keep
+// whichever circle fetched first. Rather than imply a national catalogue we
+// don't have, we commit to one circle and label it in the UI.
+//
+// Overriding BSNL_CIRCLES is still supported for anyone who wants a different
+// circle, but at this point in the project's life the choice is deliberate and
+// the UI says so.
+const DEFAULT_CIRCLES = ["Madhya Pradesh"];
 const RETRY_DELAY_MS = 1200;
 
 const circlesToTry = () => {
@@ -181,9 +190,9 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
 
     if (wantedCircles.length === 0) {
         throw new SourceNotConfiguredError(
-            "BSNL source is disabled: no circles configured. Set the BSNL_CIRCLES " +
-                "env var to a comma-separated list of Indian telecom circles " +
-                '(for example "Madhya Pradesh,Maharashtra") to enable BSNL plans.'
+            "BSNL source has no circles configured. Either leave BSNL_CIRCLES unset " +
+                "(defaults to Madhya Pradesh) or set it to a comma-separated list of " +
+                'Indian telecom circles (for example "Madhya Pradesh,Maharashtra").'
         );
     }
     const configuredCookie = process.env.BSNL_PROXY_COOKIE;
@@ -307,7 +316,7 @@ export const fetchBsnlPlans = async ({ circles, cookie, timeoutMs = 30000 } = {}
         if (plans.length === 0) {
             throw new SourcePayloadError(
                 `BSNL returned no usable prepaid plans for ${wantedCircles.join(", ")}. Some circles ` +
-                    "(Delhi, Tamil Nadu) answer 'No recharge plans found' - pick another via BSNL_CIRCLES."
+                    "(Delhi, Tamil Nadu) answer 'No recharge plans found' - set BSNL_CIRCLES to a working circle."
             );
         }
 

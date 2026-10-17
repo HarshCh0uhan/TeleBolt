@@ -64,7 +64,8 @@ FRONTEND_URL=http://localhost:5173
 # VI_PLANS_URL=https://www.myvi.in/prepaid/unlimited-calls-and-data-plans
 
 # BSNL mints its own anonymous session, so nothing is required here.
-# Circles use BSNL's full names; Delhi and Tamil Nadu answer "no plans".
+# BSNL already defaults to the Madhya Pradesh circle; set BSNL_CIRCLES to
+# override with full circle names (Delhi and Tamil Nadu answer "no plans").
 # BSNL_CIRCLES=Madhya Pradesh,Maharashtra,Karnataka,Gujarat
 # Only needed if BSNL rotates the passphrase in their bundle:
 # BSNL_PASSPHRASE=
@@ -235,7 +236,7 @@ admin "Run sync now" ───┼─→ source adapters ─→ normalise ─→ 
 |---|---|---|
 | **Vi** (`vi-sync`) | ✅ live | `myvi.in` renders its whole prepaid catalogue into the Next.js flight payload, so `self.__next_f.push([1,"…"])` chunks contain the plan list as JSON. Each record carries `ITEM_ID`, `UNIT_COST`, `VALIDITY_ATTR`, `DATA_LINE_1`, `DATAUSAGE_ATTR` and `SMS_LINE_1`. A dry run currently reads **88 usable plans** in ~1.5 s. |
 | **Jio** (`jio-sync`) | ✅ live | Jio publishes the whole catalogue as plain JSON — **one unauthenticated GET**, no session, headers or encryption: `/api/jio-mdmdata-service/mdmdata/recharge/plans?productType=MOBILITY&billingType=1`. It returns 17 categories of `planCategories[].subCategories[].plans[]`; each plan has `id`, `amount`, `description`, `planName` and a `misc.subscriptions[]` list. A dry run reads **62 usable plans** in ~250 ms. |
-| **BSNL** (`bsnl-sync`) | ✅ live | BSNL's recharge page hands an anonymous `bsnl_session` cookie to anyone who loads it, and that is all its plan API needs — **no login, no mobile number, no captcha**. Bodies must be AES-encrypted (CryptoJS/OpenSSL) and responses come back encrypted too; both live in `planSources/cryptoJs.js`. A dry run reads **9 usable plans** in ~1.6 s (single circle). |
+| **BSNL** (`bsnl-sync`) | ✅ live | BSNL's recharge page hands an anonymous `bsnl_session` cookie to anyone who loads it, and that is all its plan API needs — **no login, no mobile number, no captcha**. Bodies must be AES-encrypted (CryptoJS/OpenSSL) and responses come back encrypted too; both live in `planSources/cryptoJs.js`. A dry run reads **9 usable plans** in ~1.6 s for the default Madhya Pradesh circle. |
 | **Airtel** (`airtel-sync`) | ✅ live | Airtel's own site is a pure JS app, so TeleBolt scrapes **Bajaj Finserv's server-rendered recharge tables** at `bajajfinserv.in/airtel-prepaid-mobile-recharge`. The page exposes multiple HTML tables with Price, Validity, Data, Calls and Extra Benefit columns. A generic table parser extracts ~39 usable plans in ~300 ms. International roaming packs are filtered out. |
 
 Together the four sources fetch **~198 plans** per run.
@@ -265,9 +266,13 @@ find and are worth knowing:
   the reason — it never fails the run — and `scripts/plan-sync-run.mjs bsnl-sync` will sync BSNL from any
   machine that can reach them, writing to the same database.
 
-Delhi and Tamil Nadu currently answer `"No recharge plans found"`; Madhya Pradesh, Maharashtra,
-Karnataka and Gujarat each return 59–61 rows, mostly the same national catalogue. Set `BSNL_CIRCLES`
-to change which are pulled.
+BSNL sells plans **per circle** — there is no national catalogue. TeleBolt is committed to the
+**Madhya Pradesh** circle on purpose: the same plan can differ between circles, and the
+dedupe-by-id logic in `bsnl.source.js` keeps whichever circle fetched first. Rather than imply a
+national catalogue we don't have, the default is Madhya Pradesh and every BSNL plan is labelled
+with its circle in the UI. Delhi and Tamil Nadu currently answer `"No recharge plans found"`;
+Madhya Pradesh, Maharashtra, Karnataka and Gujarat each return 59–61 rows, mostly the same plans.
+Set `BSNL_CIRCLES` to pull a different circle.
 
 **How Airtel works.** Airtel's own recharge page (`airtel.in/recharge/prepaid/`) is a React SPA with
 no public API, so TeleBolt scrapes **Bajaj Finserv's BBPS portal** which publishes the same plans as
@@ -450,7 +455,8 @@ ADMIN_EMAIL=...
 EMAIL=...
 EMAIL_PASS=...
 # optional
-BSNL_CIRCLES=Madhya Pradesh,Maharashtra,Karnataka,Gujarat
+# BSNL already defaults to Madhya Pradesh; set BSNL_CIRCLES to override.
+# BSNL_CIRCLES=Madhya Pradesh,Maharashtra,Karnataka,Gujarat
 JIO_EXCLUDE_CATEGORIES=Top-up Voucher,International Roaming,ISD
 SYNC_CRON=0 3 * * *
 SYNC_TIMEZONE=Asia/Kolkata
