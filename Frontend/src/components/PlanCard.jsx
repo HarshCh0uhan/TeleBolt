@@ -23,12 +23,11 @@ const PlanCard = ({ plan }) => {
 
   const selected = isSelected(plan._id);
   const favorite = isFavoritePlan(plan._id);
+  // Derived: a guest is never alerting, regardless of what `alerting` holds.
+  const showAlerting = Boolean(user) && alerting;
 
   useEffect(() => {
-    if (!user) {
-      setAlerting(false);
-      return undefined;
-    }
+    if (!user) return undefined;
     let cancelled = false;
     getAlertForPlan(plan._id)
       .then(({ data }) => {
@@ -107,15 +106,15 @@ const PlanCard = ({ plan }) => {
                       handleAlertToggle();
                     }}
                     disabled={busy}
-                    aria-label={alerting ? "Stop alerting me" : "Alert me on changes"}
-                    title={alerting ? "Alerting you on changes" : "Alert me on changes"}
+                    aria-label={showAlerting ? "Stop alerting me" : "Alert me on changes"}
+                    title={showAlerting ? "Alerting you on changes" : "Alert me on changes"}
                     className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition ${
-                      alerting
+                      showAlerting
                         ? "border-[#58c28d]/40 bg-[#58c28d]/15 text-[#58c28d]"
                         : "border-white/10 bg-[#262626] text-zinc-400 hover:border-[#58c28d]/30 hover:text-white"
                     } disabled:opacity-60`}
                   >
-                    {alerting ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                    {showAlerting ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                   </button>
                 )}
                 <ShareButton planId={plan._id} operator={plan.operator} price={plan.price} />

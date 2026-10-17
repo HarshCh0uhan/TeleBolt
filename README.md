@@ -113,6 +113,14 @@ PATCH  /api/auth/me                - Update username / email / password
 GET    /api/auth/favorites         - Saved plans for the session user
 POST   /api/auth/favorites/:planId - Save / unsave a plan
 DELETE /api/auth/favorites/:planId - Remove a saved plan
+GET    /api/alerts                 - Plans the user is following for change alerts
+POST   /api/alerts/:planId         - Follow / unfollow a plan (toggles)
+DELETE /api/alerts/:planId         - Stop following a plan
+GET    /api/notifications          - Recent notifications + unread count
+GET    /api/notifications/unread-count - Just the unread count (used by the bell poll)
+POST   /api/notifications/read-all - Mark every notification as read
+POST   /api/notifications/:id/read - Mark one as read
+DELETE /api/notifications/:id      - Dismiss a notification
 POST   /api/plans/submit           - Suggest a plan for admin review
 ```
 
@@ -155,6 +163,12 @@ GET    /api/admin/plan-sync/runs         - Plan sync history
 - **Filters** — operator, price, validity, data allowance, category and OTT benefits.
 - **Accounts** — register, log in, update your profile and change your password.
 - **Saved plans** — bookmark plans from the catalog or a plan detail page and revisit them from your profile.
+- **Change alerts** — follow a plan and get an in-app notification the moment an
+  admin approves a price, validity, data or SMS change to it. The bell in the navbar
+  polls every 60 seconds and shows an unread badge; a full history lives in the same
+  dropdown.
+- **View on operator site** — every plan card and detail page has a direct link to
+  the operator's own prepaid listing page, so you can check the plan for yourself.
 - **Suggest a plan** — submit a missing plan; an admin reviews it before it goes live.
 - **Works on any screen** — the layout is mobile-first and verified down to a 360px phone and up through
   768–1024px tablets. See [Responsive layout](#responsive-layout) for the breakpoint contract.
@@ -187,6 +201,9 @@ installed.
 - **Detected changes** — review queue for everything the sync service finds, plus a **Run sync now** button,
   the last run's per-source report, and bulk actions (**Add all N new plans**, **Reject all N pending changes**)
   so a first sync of ~50 proposals is one click instead of fifty.
+- **Sync summary email** — after every plan sync that finds anything new, an email
+  summarising per-source counts is sent to `ADMIN_EMAIL`, with a deep link straight
+  to the detected-changes page. Silent when nothing changed.
 - **Pending reviews** — one queue for detected changes *and* community submissions.
 - **Contributions** — submissions by status plus a per-contributor summary.
 - **Analytics** — operator/category distribution, community stats and recent activity.
