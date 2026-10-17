@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, X, CheckCheck, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useNotifications } from "../context/NotificationsContext";
+import { useNotifications } from "../context/useNotifications";
 
 const formatWhen = (iso) => {
   const then = new Date(iso).getTime();

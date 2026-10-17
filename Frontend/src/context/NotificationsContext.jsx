@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import {
   getMyNotifications,
@@ -8,11 +8,13 @@ import {
   dismissNotification as dismissApi,
 } from "../api/notifications.api";
 
-const NotificationsContext = createContext(null);
+export const NotificationsContext = createContext(null);
 
 // How often the bell checks the server. 60s is enough for plan-change data and
 // gentle enough that the free Render tier is not woken constantly.
 const POLL_MS = 60 * 1000;
+
+const noop = async () => {};
 
 export const NotificationsProvider = ({ children }) => {
   const { user } = useAuth();
@@ -22,10 +24,7 @@ export const NotificationsProvider = ({ children }) => {
   const pollRef = useRef(null);
 
   const refreshUnread = useCallback(async () => {
-    if (!user) {
-      setUnreadCount(0);
-      return;
-    }
+    if (!user) return;
     try {
       const { data } = await getUnreadCount();
       setUnreadCount(data.unreadCount || 0);
@@ -84,12 +83,10 @@ export const NotificationsProvider = ({ children }) => {
     }
   }, [user, refreshUnread]);
 
+  // Poll only while the user is logged in. The guest case has no interval and no
+  // state reset — consumers derive "logged out" from the context value below.
   useEffect(() => {
-    if (!user) {
-      setUnreadCount(0);
-      setItems([]);
-      return undefined;
-    }
+    if (!user) return undefined;
 
     refreshUnread();
 
@@ -109,17 +106,27 @@ export const NotificationsProvider = ({ children }) => {
     };
   }, [user, refreshUnread]);
 
+  // Derived: a guest never sees unread items or old notifications, without ever
+  // having to reset the underlying state inside an effect.
+  const value = useMemo(() => {
+    if (!user) {
+      return {
+        unreadCount: 0,
+        items: [],
+        loading: false,
+        loadList: noop,
+        markAllRead: noop,
+        markRead: noop,
+        dismiss: noop,
+        refreshUnread: noop,
+      };
+    }
+    return { unreadCount, items, loading, loadList, markAllRead, markRead, dismiss, refreshUnread };
+  }, [user, unreadCount, items, loading, loadList, markAllRead, markRead, dismiss, refreshUnread]);
+
   return (
-    <NotificationsContext.Provider
-      value={{ unreadCount, items, loading, loadList, markAllRead, markRead, dismiss, refreshUnread }}
-    >
+    <NotificationsContext.Provider value={value}>
       {children}
     </NotificationsContext.Provider>
   );
-};
-
-export const useNotifications = () => {
-  const ctx = useContext(NotificationsContext);
-  if (!ctx) throw new Error("useNotifications must be used inside a NotificationsProvider");
-  return ctx;
 };

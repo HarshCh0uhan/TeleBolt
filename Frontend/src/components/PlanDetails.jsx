@@ -37,10 +37,7 @@ const PlanDetails = () => {
   }, [planid]);
 
   useEffect(() => {
-    if (!user || !plan?._id) {
-      setAlerting(false);
-      return undefined;
-    }
+    if (!user || !plan?._id) return undefined;
     let cancelled = false;
     getAlertForPlan(plan._id)
       .then(({ data }) => {
@@ -66,6 +63,9 @@ const PlanDetails = () => {
       setAlertBusy(false);
     }
   };
+
+  // Derived: guest or missing plan is never alerting.
+  const showAlerting = Boolean(user) && Boolean(plan) && alerting;
 
   if (!plan) {
     return (
@@ -135,13 +135,13 @@ const PlanDetails = () => {
                   onClick={handleAlertToggle}
                   disabled={alertBusy}
                   className={`inline-flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold transition disabled:opacity-60 ${
-                    alerting
+                    showAlerting
                       ? "border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea]"
                       : "border-white/10 bg-[#262626] text-zinc-300 hover:border-[#58c28d]/30 hover:text-white"
                   }`}
                 >
-                  {alerting ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-                  {alerting ? "Alerting you" : "Alert me"}
+                  {showAlerting ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                  {showAlerting ? "Alerting you" : "Alert me"}
                 </button>
               )}
 
