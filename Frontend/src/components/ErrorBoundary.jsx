@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -10,7 +8,7 @@ export class ErrorBoundary extends React.Component {
     this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
 
@@ -34,7 +32,7 @@ export class ErrorBoundary extends React.Component {
             </div>
             <h1 className="text-2xl font-semibold text-white mb-2">Something went wrong</h1>
             <p className="text-zinc-400 mb-6">
-              We caught an unexpected error. The development team has been notified.
+              We caught an unexpected error. Try again, or go back to the home page.
             </p>
             {import.meta.env.DEV && error && (
               <details className="text-left bg-[#1f1f1f] rounded-xl p-4 mb-6 text-xs text-zinc-500 max-h-64 overflow-auto">
@@ -48,14 +46,14 @@ export class ErrorBoundary extends React.Component {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#58c28d] text-sm font-semibold text-[#181818] transition hover:brightness-110"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#58c28d] text-sm font-semibold text-[#181818] transition hover:brightness-110"
               >
                 <RefreshCw className="h-4 w-4" />
                 Try Again
               </button>
               <Link
                 to="/"
-                className="flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-[#1f1f1f] text-sm font-medium text-zinc-300 transition hover:border-[#58c28d]/30 hover:text-white"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-[#1f1f1f] text-sm font-medium text-zinc-300 transition hover:border-[#58c28d]/30 hover:text-white"
               >
                 <Home className="h-4 w-4" />
                 Go Home

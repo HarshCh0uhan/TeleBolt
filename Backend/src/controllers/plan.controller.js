@@ -5,7 +5,21 @@ import { yearlyPlan } from "../utils/yearlyPlan.js";
 import { validatePlans } from "../utils/validations.js";
 import { rankPlans, findOtherPlans, RANKING_FORMATS, DEFAULT_FORMAT } from "../utils/ranking.js";
 import { parseSearchQuery } from "../utils/searchQuery.js";
+import { verifyToken } from "../utils/jwt.js";
 import mongoose from "mongoose"
+
+// The plan endpoints are public, so there is no req.user. This reads the auth
+// cookie on its own, only to let an admin open a deactivated plan (the admin edit
+// form needs that). Anything wrong with the token simply means "not an admin".
+const isAdminRequest = (req) => {
+    try {
+        const token = req.cookies?.token;
+        if (!token) return false;
+        return verifyToken(token)?.role === "admin";
+    } catch {
+        return false;
+    }
+}
 
 // Shared by getPlans and getRankings so a filter means the same thing on both.
 // Returns the Mongo filter plus how the free-text search was understood.
@@ -90,6 +104,10 @@ export const getSinglePlan = async (req, res) => {
         const planData = await Plans.findById(planId)
 
         if(!planData) throw new Error("Plan does not exist")
+
+        // A deactivated plan is hidden from the public catalogue, so it must not be
+        // reachable by guessing or keeping its link either. Admins still see it.
+        if(planData.isActive === false && !isAdminRequest(req)) throw new Error("Plan does not exist")
 
         const plansWithYearly = yearlyPlan(planData)
 

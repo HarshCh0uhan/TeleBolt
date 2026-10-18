@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import SuggestPlan from './pages/SuggestPlan';
+import NotFound from './pages/NotFound';
 import Dashboard from './pages/admin/Dashboard';
 import Plans from './pages/admin/Plans';
 import PlanForm from './pages/admin/PlanForm';
@@ -39,6 +40,7 @@ function App() {
         <Route path="/register-admin" element={<Register isAdminRegister />} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/suggest-plan" element={<ProtectedRoute><SuggestPlan /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
       </Route>
 
       {/* Admin Routes */}
