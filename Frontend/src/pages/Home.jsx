@@ -14,6 +14,7 @@ import SlotPickerSheet from "../components/SlotPickerSheet";
 import { getRankings, getRankingFormats } from "../api/plans.api";
 import { DEFAULT_FILTERS, toApiParams } from "../utils/filterConfig";
 import { useCompare, PODIUM_SIZE } from "../context/CompareContext";
+import { useCanDrag } from "../hooks/useCanDrag";
 
 export default function Home() {
   const [formats, setFormats] = useState([]);
@@ -35,6 +36,7 @@ export default function Home() {
   const q = (searchParams.get("q") || "").trim();
 
   const { resetTo, slots } = useCompare();
+  const canDrag = useCanDrag();
 
   useEffect(() => {
     getRankingFormats()
@@ -132,8 +134,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      {/* Open-arrow — shown only while the drawer is closed */}
-      {showArrow && !drawerOpen && (
+      {/* Open-arrow — desktop drag-and-drop panel only, shown while it is closed */}
+      {canDrag && showArrow && !drawerOpen && (
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
@@ -164,7 +166,7 @@ export default function Home() {
         }
       />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-28">
+      <main className="mx-auto max-w-7xl px-4 py-5 pb-28 sm:py-6">
         {/* Search summary */}
         {q && (
           <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#1f1f1f] px-4 py-3 text-sm">
@@ -184,7 +186,7 @@ export default function Home() {
             <button
               type="button"
               onClick={clearSearch}
-              className="ml-auto inline-flex items-center gap-1 rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
+              className="ml-auto inline-flex items-center gap-1 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
             >
               Clear search
               <X className="h-3.5 w-3.5" />
@@ -193,7 +195,7 @@ export default function Home() {
         )}
 
         {/* Podium */}
-        <div ref={podiumRef} className="scroll-mt-20">
+        <div ref={podiumRef} className="scroll-mt-32 lg:scroll-mt-20">
           {initialLoad ? (
             <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: PODIUM_SIZE }).map((_, i) => (
@@ -212,7 +214,7 @@ export default function Home() {
         )}
 
         {!loading && !error && rankings.length === 0 && (
-          <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f] p-12 text-center">
+          <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f] p-8 text-center sm:p-12">
             {q ? (
               <>
                 <p className="font-medium text-zinc-400">No plans match “{q}”</p>
@@ -236,14 +238,14 @@ export default function Home() {
 
         {/* Tiers */}
         {tiers.map((tier) => (
-          <section key={tier.key} className="mt-10">
+          <section key={tier.key} className="mt-8 sm:mt-10">
             <div className="mb-4 flex items-center gap-3">
               <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
                 {tier.name}
               </h2>
               <span className="text-xs text-zinc-600">{tier.plans.length}</span>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {tier.plans.map((plan) => (
                 <DraggablePlanCard
                   key={plan._id}
@@ -256,7 +258,7 @@ export default function Home() {
         ))}
 
         {otherPlans.length > 0 && (
-          <section className="mt-10 border-t border-white/10 pt-8">
+          <section className="mt-8 border-t border-white/10 pt-8 sm:mt-10">
             <div className="mb-4">
               <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
                 Other Plans
@@ -265,7 +267,7 @@ export default function Home() {
                 Plans that don't fit any recommendation category — shown by lowest price.
               </p>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {otherPlans.map((plan) => (
                 <DraggablePlanCard
                   key={plan._id}

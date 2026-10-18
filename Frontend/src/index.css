@@ -1,7 +1,21 @@
 @import "tailwindcss";
 
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, sans-serif; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+/*
+ * iOS Safari zooms the whole page when an input under 16px gets focus. Utility
+ * classes such as text-sm are 14px, so on phones every text field is forced to
+ * 16px here. Sliders, checkboxes, radios and file inputs are left alone.
+ */
+@media (max-width: 639px) {
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
 
 /*
  * Brand scrollbar.

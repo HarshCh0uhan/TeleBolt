@@ -21,7 +21,7 @@ const Register = ({ isAdminRegister = false }) => {
     if (!loading && user) {
       navigate(user.role === 'admin' ? '/admin' : '/')
     }
-  }, [user, loading])
+  }, [user, loading, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,7 +43,7 @@ const Register = ({ isAdminRegister = false }) => {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-black px-4 py-8 text-white">
+    <div className="flex min-h-[calc(100dvh-7.5rem)] items-center justify-center bg-[#181818] px-4 py-8 text-white lg:min-h-[calc(100dvh-4rem)]">
       <div className="w-full max-w-md">
         <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-8 md:p-10">
           {/* Logo */}
@@ -104,13 +104,13 @@ const Register = ({ isAdminRegister = false }) => {
               <input
                 id="username"
                 type="text"
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
                 placeholder="Enter your username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-14 w-full rounded-2xl border border-white/10 bg-[#262626] px-4 text-white placeholder:text-zinc-500 outline-none transition-all"
-                style={{
-                  borderColor: "rgba(255,255,255,0.08)",
-                }}
               />
             </div>
 
@@ -126,6 +126,10 @@ const Register = ({ isAdminRegister = false }) => {
               <input
                 id="email"
                 type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -145,6 +149,7 @@ const Register = ({ isAdminRegister = false }) => {
               <input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 placeholder="Create a password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -165,6 +170,7 @@ const Register = ({ isAdminRegister = false }) => {
                 <input
                   id="adminSecret"
                   type="password"
+                  autoComplete="off"
                   placeholder="Enter administrator secret key"
                   value={adminSecretKey}
                   onChange={(e) => setAdminSecretKey(e.target.value)}
@@ -174,7 +180,7 @@ const Register = ({ isAdminRegister = false }) => {
             )}
 
             {/* Error Area */}
-            <div className="min-h-6">
+            <div className="min-h-6" role="alert">
               {error && (
                 <p className="text-sm font-medium text-red-400">{error}</p>
               )}

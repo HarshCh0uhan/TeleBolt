@@ -16,7 +16,7 @@ const Login = () => {
     if (!loading && user) {
       navigate(user.role === 'admin' ? '/admin' : '/')
     }
-  }, [user, loading])
+  }, [user, loading, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +33,7 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-black px-4 py-8 text-white">
+    <div className="flex min-h-[calc(100dvh-7.5rem)] items-center justify-center bg-[#181818] px-4 py-8 text-white lg:min-h-[calc(100dvh-4rem)]">
       <div className="w-full max-w-md">
         <div className="rounded-3xl border border-white/10 bg-[#1f1f1f] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 md:p-10">
           {/* Logo */}
@@ -69,6 +69,10 @@ const Login = () => {
               <input
                 id="email"
                 type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -87,6 +91,7 @@ const Login = () => {
               <input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -95,7 +100,7 @@ const Login = () => {
             </div>
 
             {/* Error Area (reserved space to prevent layout shift) */}
-            <div className="min-h-6">
+            <div className="min-h-6" role="alert">
               {error && (
                 <p className="text-sm text-red-400 font-medium">{error}</p>
               )}
