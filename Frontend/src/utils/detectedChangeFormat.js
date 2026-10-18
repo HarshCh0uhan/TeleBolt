@@ -11,7 +11,9 @@ export const FIELD_LABELS = {
 
 export const SOURCE_LABELS = {
   'vi-sync': 'Vi sync',
+  'jio-sync': 'Jio sync',
   'bsnl-sync': 'BSNL sync',
+  'airtel-sync': 'Airtel sync',
   manual: 'Manual',
 };
 

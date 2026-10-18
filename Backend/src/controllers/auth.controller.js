@@ -6,6 +6,23 @@ import { generateToken } from "../utils/jwt.js";
 import {validateRegister, validateLogin, validateProfileUpdate} from "../utils/validations.js"
 import { yearlyPlan } from "../utils/yearlyPlan.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+// One definition for the auth cookie. A browser only removes a cookie when the
+// clearing Set-Cookie carries the same Secure / SameSite / path attributes it was
+// set with, so login, register and logout must all use these.
+const cookieBase = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "None" : "Lax",
+    path: "/",
+};
+
+const sessionCookie = {
+    ...cookieBase,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 
 export const register = async(req, res) => {
     
@@ -27,12 +44,7 @@ export const register = async(req, res) => {
 
         const token = generateToken(userData)
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",    
-            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",  
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        }).status(201).json({
+        res.cookie("token", token, sessionCookie).status(201).json({
             success: true,
             message: "User registered successfully"
         })
@@ -65,12 +77,7 @@ export const registerAdmin = async (req, res) => {
 
         const token = generateToken(admin)
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        }).status(201).json({
+        res.cookie("token", token, sessionCookie).status(201).json({
             success: true,
             message: "Register Successful"
         })
@@ -98,12 +105,7 @@ export const login = async(req, res) => {
 
         const token = generateToken(userData);
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        }).status(200).json({
+        res.cookie("token", token, sessionCookie).status(200).json({
             success: true,
             message: "User Login Successfully"
         })
@@ -114,9 +116,7 @@ export const login = async(req, res) => {
 }
 
 export const logout = async (req, res) => {
-    res.clearCookie('token', {
-        path: "/"
-    }).status(200).json({
+    res.clearCookie("token", cookieBase).status(200).json({
         success: true,
         message: "Logout Successful"
     })
