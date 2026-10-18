@@ -4,10 +4,8 @@ import {
   Layers3,
   RadioTower,
   RotateCcw,
-  Search,
   SlidersHorizontal,
   Sparkles,
-  X,
 } from "lucide-react";
 import {
   CATEGORIES,
@@ -188,37 +186,10 @@ export default function FilterBar({ filters, onApply, onClear, leadingSlot = nul
     onClear();
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    onApply(draft);
-    setOpenName(null);
-  };
-
   return (
     <div ref={rootRef} className="relative z-30 border-b border-white/10 bg-[#181818]">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
         {leadingSlot}
-
-        <form onSubmit={handleSearchSubmit} className="relative min-w-0 flex-1 sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          <input
-            type="text"
-            value={draft.search}
-            onChange={(e) => update({ search: e.target.value })}
-            placeholder="Search Jio, 299, 2 GB…"
-            className="w-full rounded-xl border border-white/10 bg-[#1f1f1f] py-2 pl-9 pr-9 text-sm text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-[#58c28d]/40"
-          />
-          {draft.search ? (
-            <button
-              type="button"
-              onClick={() => update({ search: "" })}
-              className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-zinc-400 transition hover:text-white"
-              aria-label="Clear search"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
-        </form>
 
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-400">
           <SlidersHorizontal className="h-4 w-4 text-[#58c28d]" />

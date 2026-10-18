@@ -3,6 +3,12 @@ import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
 import { getPriceHistory } from '../api/plans.api';
 
+const shortDate = (value) =>
+  new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
+
+const longDate = (value) =>
+  new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
 const PriceHistoryChart = ({ planId }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +23,7 @@ const PriceHistoryChart = ({ planId }) => {
         const { data } = await getPriceHistory(planId);
         setHistory(data.history);
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError('Failed to load price history');
         setLoading(false);
       }
@@ -55,12 +61,17 @@ const PriceHistoryChart = ({ planId }) => {
     );
   }
 
-  // --- Chart data ---
-  const points = history.map((entry) => ({
-    date: new Date(entry.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }),
-    fullDate: new Date(entry.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
-    price: entry.newPrice,
-  }));
+  // --- Chart data (oldest first, starting from the original price) ---
+  const ordered = [...history].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+  const points = [
+    { date: 'Start', fullDate: 'Original price', price: ordered[0].oldPrice },
+    ...ordered.map((entry) => ({
+      date: shortDate(entry.createdAt),
+      fullDate: longDate(entry.createdAt),
+      price: entry.newPrice,
+    })),
+  ];
 
   const prices = points.map((p) => p.price);
   const minPrice = Math.min(...prices);
@@ -71,13 +82,12 @@ const PriceHistoryChart = ({ planId }) => {
   // SVG dimensions
   const svgWidth = 600;
   const svgHeight = 240;
-  const paddingX = 45;
+  const paddingX = 48;
   const paddingTop = 30;
   const paddingBottom = 35;
   const graphWidth = svgWidth - paddingX * 2;
   const graphHeight = svgHeight - paddingTop - paddingBottom;
 
-  // Scale functions
   const getX = (index) => {
     if (points.length === 1) return svgWidth / 2;
     return paddingX + (index / (points.length - 1)) * graphWidth;
@@ -87,14 +97,22 @@ const PriceHistoryChart = ({ planId }) => {
     return paddingTop + graphHeight - ((price - minPrice) / priceRange) * graphHeight;
   };
 
-  // Build SVG path
   const linePath = points
     .map((point, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(point.price)}`)
     .join(' ');
 
-  // Gradient area under the line
   const areaPath =
     `${linePath} L ${getX(points.length - 1)} ${paddingTop + graphHeight} L ${getX(0)} ${paddingTop + graphHeight} Z`;
+
+  // Thin the date labels so they never overlap on a narrow screen.
+  const labelStep = Math.ceil(points.length / 5);
+  const showLabel = (i) =>
+    i === points.length - 1 || (i % labelStep === 0 && points.length - 1 - i >= labelStep / 2);
+
+  const tooltipLeft =
+    hoveredIndex !== null
+      ? Math.min(88, Math.max(12, (getX(hoveredIndex) / svgWidth) * 100))
+      : 50;
 
   return (
     <motion.div
@@ -122,7 +140,6 @@ const PriceHistoryChart = ({ planId }) => {
       {/* SVG Line Graph */}
       <div className="relative w-full min-w-0">
         <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="h-auto w-full">
-          {/* Gradient definition */}
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#58c28d" stopOpacity="0.25" />
@@ -130,7 +147,6 @@ const PriceHistoryChart = ({ planId }) => {
             </linearGradient>
           </defs>
 
-          {/* Horizontal grid lines with price labels */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
             const y = paddingTop + ratio * graphHeight;
             const price = maxPrice - ratio * priceRange;
@@ -145,14 +161,13 @@ const PriceHistoryChart = ({ planId }) => {
                   strokeOpacity="0.06"
                   strokeDasharray="5 5"
                 />
-                <text x={paddingX - 10} y={y + 4} textAnchor="end" className="text-[10px] fill-zinc-500">
+                <text x={paddingX - 8} y={y + 5} textAnchor="end" fontSize="14" fill="#71717a">
                   ₹{Math.round(price)}
                 </text>
               </g>
             );
           })}
 
-          {/* Area under the line */}
           <motion.path
             d={areaPath}
             fill="url(#areaGradient)"
@@ -161,7 +176,6 @@ const PriceHistoryChart = ({ planId }) => {
             transition={{ duration: 0.8 }}
           />
 
-          {/* The line */}
           <motion.path
             d={linePath}
             fill="none"
@@ -174,58 +188,67 @@ const PriceHistoryChart = ({ planId }) => {
             transition={{ duration: 1.2, ease: 'easeInOut' }}
           />
 
-          {/* Data points */}
           {points.map((point, i) => (
-            <motion.circle
-              key={i}
-              cx={getX(i)}
-              cy={getY(point.price)}
-              r={hoveredIndex === i ? 7 : 4}
-              fill={hoveredIndex === i ? '#58c28d' : '#181818'}
-              stroke="#58c28d"
-              strokeWidth="2"
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 + i * 0.1, duration: 0.3 }}
-              onMouseEnter={() => setHoveredIndex(i)}
-              onMouseLeave={() => setHoveredIndex(null)}
-              className="cursor-pointer"
-              style={{ filter: hoveredIndex === i ? 'drop-shadow(0 0 6px rgba(88,194,141,0.6))' : 'none' }}
-            />
+            <g key={i}>
+              <motion.circle
+                cx={getX(i)}
+                cy={getY(point.price)}
+                r={hoveredIndex === i ? 7 : 5}
+                fill={hoveredIndex === i ? '#58c28d' : '#181818'}
+                stroke="#58c28d"
+                strokeWidth="2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 + i * 0.1, duration: 0.3 }}
+                style={{
+                  pointerEvents: 'none',
+                  filter: hoveredIndex === i ? 'drop-shadow(0 0 6px rgba(88,194,141,0.6))' : 'none',
+                }}
+              />
+              {/* Larger invisible target so a finger can hit it */}
+              <circle
+                cx={getX(i)}
+                cy={getY(point.price)}
+                r="18"
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => setHoveredIndex(i)}
+              />
+            </g>
           ))}
 
-          {/* Date labels on x-axis */}
-          {points.map((point, i) => (
-            <text
-              key={`date-${i}`}
-              x={getX(i)}
-              y={svgHeight - 8}
-              textAnchor="middle"
-              className="text-[10px] fill-zinc-500"
-            >
-              {point.date}
-            </text>
-          ))}
+          {points.map((point, i) =>
+            showLabel(i) ? (
+              <text
+                key={`date-${i}`}
+                x={getX(i)}
+                y={svgHeight - 8}
+                textAnchor="middle"
+                fontSize="14"
+                fill="#71717a"
+              >
+                {point.date}
+              </text>
+            ) : null
+          )}
         </svg>
-      </div>
 
-      {/* Hover tooltip — positioned absolutely over the chart */}
-      {hoveredIndex !== null && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15 }}
-          className="absolute z-20 pointer-events-none rounded-xl border border-white/10 bg-[#1f1f1f] px-3.5 py-2.5 shadow-xl shadow-black/40"
-          style={{
-            left: `${((getX(hoveredIndex) / svgWidth) * 100).toFixed(1)}%`,
-            top: `${((getY(points[hoveredIndex].price) / svgHeight) * 100).toFixed(1) - 12}%`,
-            transform: 'translate(-50%, -100%)',
-          }}
-        >
-          <p className="text-sm font-semibold text-[#58c28d]">₹{points[hoveredIndex].price}</p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">{points[hoveredIndex].fullDate}</p>
-        </motion.div>
-      )}
+        {hoveredIndex !== null && (
+          <div
+            className="pointer-events-none absolute z-20 rounded-xl border border-white/10 bg-[#1f1f1f] px-3.5 py-2.5 shadow-xl shadow-black/40"
+            style={{
+              left: `${tooltipLeft}%`,
+              top: `${(getY(points[hoveredIndex].price) / svgHeight) * 100}%`,
+              transform: 'translate(-50%, calc(-100% - 12px))',
+            }}
+          >
+            <p className="text-sm font-semibold text-[#58c28d]">₹{points[hoveredIndex].price}</p>
+            <p className="mt-0.5 whitespace-nowrap text-[11px] text-zinc-400">{points[hoveredIndex].fullDate}</p>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 };

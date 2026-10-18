@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { ChevronDown, X } from "lucide-react";
 
 import FilterBar from "../components/FilterBar";
 import RankingPodium from "../components/RankingPodium";
@@ -20,6 +21,7 @@ export default function Home() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [rankings, setRankings] = useState([]);
   const [otherPlans, setOtherPlans] = useState([]);
+  const [interpretation, setInterpretation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -28,6 +30,9 @@ export default function Home() {
   const [podiumVisible, setPodiumVisible] = useState(true);
   const requestId = useRef(0);
   const podiumRef = useRef(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const q = (searchParams.get("q") || "").trim();
 
   const { resetTo, slots } = useCompare();
 
@@ -45,12 +50,13 @@ export default function Home() {
     setLoading(true);
     setError(null);
 
-    getRankings({ ...toApiParams(filters), format })
+    getRankings({ ...toApiParams(filters), format, ...(q ? { q } : {}) })
       .then(({ data }) => {
         if (id !== requestId.current) return;
         const list = data.rankings || [];
         setRankings(list);
         setOtherPlans(data.otherPlans || []);
+        setInterpretation(q ? data.search || null : null);
         resetTo(list.slice(0, 3));
       })
       .catch((err) => {
@@ -62,12 +68,13 @@ export default function Home() {
         );
         setRankings([]);
         setOtherPlans([]);
+        setInterpretation(null);
         resetTo([]);
       })
       .finally(() => {
         if (id === requestId.current) setLoading(false);
       });
-  }, [format, filters, resetTo]);
+  }, [format, filters, q, resetTo]);
 
   useEffect(() => {
     const handler = () => {
@@ -98,6 +105,8 @@ export default function Home() {
     podiumRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const clearSearch = () => setSearchParams({}, { replace: true });
+
   // A plan sitting in a podium slot must not also appear in the tier list below.
   const podiumIds = useMemo(
     () => new Set(slots.filter(Boolean).map((p) => p._id)),
@@ -118,6 +127,8 @@ export default function Home() {
 
   const initialLoad = loading && rankings.length === 0;
   const barVisible = !podiumVisible && slots.some(Boolean);
+  const chips = interpretation?.chips || [];
+  const ignored = interpretation?.ignored || [];
 
   return (
     <div className="min-h-screen bg-[#181818]">
@@ -154,6 +165,33 @@ export default function Home() {
       />
 
       <main className="mx-auto max-w-7xl px-4 py-6 pb-28">
+        {/* Search summary */}
+        {q && (
+          <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#1f1f1f] px-4 py-3 text-sm">
+            <span className="text-zinc-400">Results for</span>
+            <span className="break-all font-medium text-white">“{q}”</span>
+            {chips.map((chip, i) => (
+              <span
+                key={`${chip}-${i}`}
+                className="rounded-full border border-[#58c28d]/25 bg-[#58c28d]/10 px-2.5 py-1 text-xs font-medium text-[#dff6ea]"
+              >
+                {chip}
+              </span>
+            ))}
+            {ignored.length > 0 && chips.length > 0 && (
+              <span className="text-xs text-zinc-500">ignored: {ignored.join(", ")}</span>
+            )}
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="ml-auto inline-flex items-center gap-1 rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
+            >
+              Clear search
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Podium */}
         <div ref={podiumRef} className="scroll-mt-20">
           {initialLoad ? (
@@ -175,10 +213,24 @@ export default function Home() {
 
         {!loading && !error && rankings.length === 0 && (
           <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f] p-12 text-center">
-            <p className="font-medium text-zinc-400">No plans match this category</p>
-            <p className="mt-2 text-sm text-zinc-500">
-              Try a different category or widen the budget and validity ranges.
-            </p>
+            {q ? (
+              <>
+                <p className="font-medium text-zinc-400">No plans match “{q}”</p>
+                <p className="mt-2 text-sm text-zinc-500">
+                  {interpretation?.matchNothing
+                    ? `Could not understand: ${ignored.join(", ")}. `
+                    : ""}
+                  Try fewer words, for example “jio 299” or “2gb hotstar”.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium text-zinc-400">No plans match this category</p>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Try a different category or widen the budget and validity ranges.
+                </p>
+              </>
+            )}
           </div>
         )}
 

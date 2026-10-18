@@ -63,7 +63,7 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-white/10 bg-[#1f1f1f] shadow-2xl shadow-black/50">
+        <div className="fixed left-2 right-2 top-16 z-50 overflow-hidden rounded-2xl border border-white/10 bg-[#1f1f1f] shadow-2xl shadow-black/50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem]">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <span className="text-sm font-semibold text-white">Notifications</span>
             {unreadCount > 0 && (
@@ -78,7 +78,7 @@ const NotificationBell = () => {
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto scrollbar-brand">
+          <div className="max-h-[60vh] overflow-y-auto scrollbar-brand sm:max-h-80">
             {loading && items.length === 0 ? (
               <div className="flex items-center justify-center gap-2 py-8 text-xs text-zinc-500">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -100,7 +100,7 @@ const NotificationBell = () => {
                   <button
                     type="button"
                     onClick={() => handleClick(n)}
-                    className="w-full pr-6 text-left"
+                    className="w-full pr-8 text-left"
                   >
                     <div className="flex items-start gap-2">
                       {!n.read && (
@@ -122,7 +122,7 @@ const NotificationBell = () => {
                       dismiss(n._id);
                     }}
                     aria-label="Dismiss"
-                    className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-lg text-zinc-500 opacity-0 transition hover:text-white group-hover:opacity-100"
+                    className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-zinc-500 transition hover:text-white sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
