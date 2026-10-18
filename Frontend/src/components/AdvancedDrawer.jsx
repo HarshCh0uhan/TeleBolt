@@ -62,6 +62,9 @@ const DrawerSlot = ({ plan, index, onRemove, isHover }) => {
   );
 };
 
+// This panel exists so a plan can be dragged into a slot from far down the page.
+// Drag-and-drop only works with a mouse, so touch devices never see the panel:
+// they use the plan's own "Add to Compare" button and the filter bottom sheet.
 const AdvancedDrawer = ({
   open,
   onClose,
@@ -74,6 +77,7 @@ const AdvancedDrawer = ({
 }) => {
   const { slots, removeFromSlot, assignToSlot, draggingPlan, setDraggingPlan } = useCompare();
   const [hoverIndex, setHoverIndex] = React.useState(null);
+  const canDrag = useCanDrag();
 
   const handleDrop = (index) => (e) => {
     e.preventDefault();
@@ -94,6 +98,8 @@ const AdvancedDrawer = ({
     e.preventDefault();
     if (hoverIndex === index) setHoverIndex(null);
   };
+
+  if (!canDrag) return null;
 
   return (
     <div

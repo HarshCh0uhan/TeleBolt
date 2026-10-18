@@ -1,5 +1,5 @@
 import React from "react";
-import { Crown, Medal, Award, Minus, ChevronDown, Phone, MessageSquare } from "lucide-react";
+import { Crown, Medal, Award, Minus, ChevronDown, Phone, MessageSquare, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCompare } from "../context/CompareContext";
 import { useCanDrag } from "../hooks/useCanDrag";
@@ -35,6 +35,8 @@ const SlotCard = ({ plan, index, onRemove }) => {
   const [expanded, setExpanded] = React.useState(false);
 
   const rechargesPerYear = plan.validityDays ? Math.ceil(365 / plan.validityDays) : null;
+  const reasons = Array.isArray(plan.reasons) ? plan.reasons.slice(0, 3) : [];
+  const hasScore = typeof plan.score === "number";
 
   return (
     <motion.div
@@ -51,6 +53,9 @@ const SlotCard = ({ plan, index, onRemove }) => {
         <span className="rounded-full bg-[#58c28d]/10 px-2.5 py-0.5 text-xs font-medium text-[#58c28d]">
           {plan.operator}
         </span>
+        {hasScore && (
+          <span className="text-[11px] text-zinc-500">Score {Math.round(plan.score * 100)}</span>
+        )}
         <div className="ml-auto flex items-center gap-1">
           <ShareButton
             planId={plan._id}
@@ -77,6 +82,20 @@ const SlotCard = ({ plan, index, onRemove }) => {
           {plan.validityDays} days validity
         </p>
 
+        {reasons.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {reasons.map((reason) => (
+              <span
+                key={reason}
+                className="inline-flex items-center gap-1 rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-0.5 text-[10px] font-medium text-[#dff6ea]"
+              >
+                <Sparkles className="h-2.5 w-2.5 shrink-0 text-[#58c28d]" />
+                {reason}
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="mt-3 grid grid-cols-3 gap-1.5">
           <div className="rounded-lg bg-[#262626] px-2 py-2">
             <p className="text-[9px] uppercase tracking-wider text-zinc-500">Data</p>
@@ -102,7 +121,7 @@ const SlotCard = ({ plan, index, onRemove }) => {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#262626] py-2 text-[11px] font-medium text-zinc-400 transition hover:border-[#58c28d]/30 hover:text-white"
+          className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-[#262626] text-[11px] font-medium text-zinc-400 transition hover:border-[#58c28d]/30 hover:text-white"
         >
           {expanded ? "Show less" : "Show more"}
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
