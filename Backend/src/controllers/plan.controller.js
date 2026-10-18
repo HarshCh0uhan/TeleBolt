@@ -4,12 +4,14 @@ import { PlanSubmission } from "../models/planSubmission.js";
 import { yearlyPlan } from "../utils/yearlyPlan.js";
 import { validatePlans } from "../utils/validations.js";
 import { rankPlans, findOtherPlans, RANKING_FORMATS, DEFAULT_FORMAT } from "../utils/ranking.js";
+import { parseSearchQuery } from "../utils/searchQuery.js";
 import mongoose from "mongoose"
 
 // Shared by getPlans and getRankings so a filter means the same thing on both.
+// Returns the Mongo filter plus how the free-text search was understood.
 const buildPlanFilter = (query) => {
     const {operator, category, minPrice, maxPrice, minValidity, maxValidity, ottApps,
-        dailyData, minData, maxData, search} = query;
+        dailyData, minData, maxData} = query;
 
     const filter = { isActive: true };
 
@@ -33,39 +35,34 @@ const buildPlanFilter = (query) => {
         if(maxData) filter.totalData.$lte = Number(maxData)
     }
 
-    // Free-text search: match operator name, or a numeric value that could be
-    // price / total data / daily data / validity. Uses $or with $regex.
-    if (search && String(search).trim()) {
-        const term = String(search).trim();
-        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const regex = new RegExp(escaped, "i");
-        const asNumber = Number(term);
-        const or = [{ operator: regex }];
-        if (Number.isFinite(asNumber)) {
-            or.push(
-                { price: asNumber },
-                { totalData: asNumber },
-                { dailyData: asNumber },
-                { validityDays: asNumber }
-            );
-        }
-        filter.$or = or;
+    // Free-text search ("jio 299 plan", "vi 2.5gb with hotstar"). Every part the
+    // parser recognises becomes an AND clause, so it narrows the UI filters.
+    let interpretation = { chips: [], ignored: [], matchNothing: false };
+    const searchText = query.q ?? query.search;
+    if (searchText && String(searchText).trim()) {
+        const parsed = parseSearchQuery(String(searchText));
+        interpretation = {
+            chips: parsed.chips,
+            ignored: parsed.ignored,
+            matchNothing: parsed.matchNothing,
+        };
+        if (parsed.clauses.length > 0) filter.$and = parsed.clauses;
     }
 
-    return filter;
+    return { filter, interpretation };
 }
 
 export const getPlans = async (req, res) => {
     try {
         const { page = 1, limit = 12 } = req.query;
-        const filter = buildPlanFilter(req.query);
+        const { filter } = buildPlanFilter(req.query);
 
         const pageNum = Math.max(1, Number(page));
         const limitNum = Math.min(50, Math.max(1, Number(limit)));
         const skip = (pageNum - 1) * limitNum;
 
         const [plansData, total] = await Promise.all([
-            Plans.find(filter).skip(skip).limit(limitNum).lean(),
+            Plans.find(filter).sort({ price: 1, _id: 1 }).skip(skip).limit(limitNum).lean(),
             Plans.countDocuments(filter)
         ]);
 
@@ -171,7 +168,7 @@ export const getRankingFormats = (req, res) => {
 export const getRankings = async (req, res) => {
     try {
         const { format, ottApps: ottQuery, limit } = req.query;
-        const filter = buildPlanFilter(req.query);
+        const { filter, interpretation } = buildPlanFilter(req.query);
 
         const plansData = await Plans.find(filter).lean();
 
@@ -188,6 +185,8 @@ export const getRankings = async (req, res) => {
 
         const capped = limit ? rankings.slice(0, Math.max(1, Number(limit))) : rankings;
 
+        const hasSearch = Boolean(String(req.query.q ?? req.query.search ?? "").trim());
+
         res.status(200).json({
             success: true,
             message: "Rankings fetched successfully",
@@ -195,6 +194,7 @@ export const getRankings = async (req, res) => {
             total: rankings.length,
             rankings: capped,
             otherPlans,
+            search: hasSearch ? interpretation : null,
         })
     } catch (err) {
         console.error("Error: ", err.message);
