@@ -21,7 +21,6 @@ export default function Home() {
   const [format, setFormat] = useState("best-value");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [rankings, setRankings] = useState([]);
-  const [otherPlans, setOtherPlans] = useState([]);
   const [interpretation, setInterpretation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,7 +56,6 @@ export default function Home() {
         if (id !== requestId.current) return;
         const list = data.rankings || [];
         setRankings(list);
-        setOtherPlans(data.otherPlans || []);
         setInterpretation(q ? data.search || null : null);
         resetTo(list.slice(0, 3));
       })
@@ -69,7 +67,6 @@ export default function Home() {
             : "Could not load rankings."
         );
         setRankings([]);
-        setOtherPlans([]);
         setInterpretation(null);
         resetTo([]);
       })
@@ -256,28 +253,6 @@ export default function Home() {
             </div>
           </section>
         ))}
-
-        {otherPlans.length > 0 && (
-          <section className="mt-8 border-t border-white/10 pt-8 sm:mt-10">
-            <div className="mb-4">
-              <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-                Other Plans
-              </h2>
-              <p className="mt-1 text-xs text-zinc-600">
-                Plans that don't fit any recommendation category — shown by lowest price.
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-              {otherPlans.map((plan) => (
-                <DraggablePlanCard
-                  key={plan._id}
-                  plan={plan}
-                  onDragStart={handleDragStart}
-                />
-              ))}
-            </div>
-          </section>
-        )}
       </main>
 
       <MobilePodiumBar visible={barVisible} onView={scrollToPodium} />

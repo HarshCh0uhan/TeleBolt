@@ -3,7 +3,7 @@ import { PriceHistory } from "../models/priceHistory.js";
 import { PlanSubmission } from "../models/planSubmission.js";
 import { yearlyPlan } from "../utils/yearlyPlan.js";
 import { validatePlans } from "../utils/validations.js";
-import { rankPlans, findOtherPlans, RANKING_FORMATS, DEFAULT_FORMAT } from "../utils/ranking.js";
+import { rankPlans, RANKING_FORMATS, DEFAULT_FORMAT } from "../utils/ranking.js";
 import { parseSearchQuery } from "../utils/searchQuery.js";
 import { verifyToken } from "../utils/jwt.js";
 import mongoose from "mongoose"
@@ -199,8 +199,6 @@ export const getRankings = async (req, res) => {
             ottApps: requestedOtt,
         });
 
-        const otherPlans = findOtherPlans(plansData, { ottApps: requestedOtt });
-
         const capped = limit ? rankings.slice(0, Math.max(1, Number(limit))) : rankings;
 
         const hasSearch = Boolean(String(req.query.q ?? req.query.search ?? "").trim());
@@ -211,7 +209,6 @@ export const getRankings = async (req, res) => {
             format: format || DEFAULT_FORMAT,
             total: rankings.length,
             rankings: capped,
-            otherPlans,
             search: hasSearch ? interpretation : null,
         })
     } catch (err) {
