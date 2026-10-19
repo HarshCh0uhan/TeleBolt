@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rankPlans, findOtherPlans, RANKING_FORMATS } from "../src/utils/ranking.js";
+import { rankPlans, RANKING_FORMATS } from "../src/utils/ranking.js";
 
 const base = {
   isActive: true,
@@ -30,11 +30,6 @@ test("plans without unlimited calls are excluded from every format", () => {
     const ranked = rankPlans(all, { formatId: format.id });
     assert.ok(!ranked.some((p) => p._id === "e"), `${format.id} leaked noCalls`);
   }
-});
-
-test("plans without calls are not in otherPlans either", () => {
-  const other = findOtherPlans(all);
-  assert.ok(!other.some((p) => p._id === "e"));
 });
 
 test("every format's weights sum to 1", () => {
@@ -173,22 +168,10 @@ test("one extreme outlier does not flatten the scores of everyone else", () => {
   assert.ok(rest[0].score - rest[rest.length - 1].score > 0.2);
 });
 
-test("otherPlans contains only plans that fail every category gate", () => {
-  const withNoData = { ...base, _id: "z", operator: "Jio", price: 200, validityDays: 30, dailyData: null, totalData: null };
-  const other = findOtherPlans([...all, withNoData]);
-  assert.deepEqual(ids(other), ["z"]);
-});
-
-test("otherPlans is empty when every plan qualifies for at least one category", () => {
-  const qualified = [cheapShort, midMonthly, longTerm];
-  assert.deepEqual(findOtherPlans(qualified), []);
-});
-
 test("empty input returns empty for every format", () => {
   for (const format of RANKING_FORMATS) {
     assert.deepEqual(rankPlans([], { formatId: format.id }), []);
   }
-  assert.deepEqual(findOtherPlans([]), []);
 });
 
 test("unknown format id falls back to the default format", () => {

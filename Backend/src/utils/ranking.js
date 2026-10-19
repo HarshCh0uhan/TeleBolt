@@ -265,22 +265,3 @@ export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {
 
   return scored.map((row) => row.plan);
 };
-
-/**
- * Plans that pass the global gate but fail every category gate. Unscored,
- * sorted by lowest upfront price. `formats` is overridable only so the check
- * script can exercise the path.
- * Only formats with a non-null gate count as "category gates". Formats with
- * no gate (gate: null) accept all plans that pass the global gate.
- */
-export const findOtherPlans = (plans, { ottApps = [], formats = RANKING_FORMATS } = {}) => {
-  const gatedFormats = formats.filter((f) => f.gate !== null);
-  return plans
-    .filter(
-      (plan) =>
-        passesGlobalGate(plan) &&
-        !gatedFormats.some((format) => passesCategoryGate(format, plan, ottApps))
-    )
-    .map((plan) => yearlyPlan(plan))
-    .sort((a, b) => a.price - b.price);
-};
