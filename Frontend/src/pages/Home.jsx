@@ -14,7 +14,6 @@ import SlotPickerSheet from "../components/SlotPickerSheet";
 import { getRankings, getRankingFormats } from "../api/plans.api";
 import { DEFAULT_FILTERS, toApiParams } from "../utils/filterConfig";
 import { useCompare, PODIUM_SIZE } from "../context/CompareContext";
-import { useCanDrag } from "../hooks/useCanDrag";
 
 export default function Home() {
   const [formats, setFormats] = useState([]);
@@ -30,12 +29,12 @@ export default function Home() {
   const [podiumVisible, setPodiumVisible] = useState(true);
   const requestId = useRef(0);
   const podiumRef = useRef(null);
+  const prevFormatRef = useRef(format);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const q = (searchParams.get("q") || "").trim();
 
   const { resetTo, slots } = useCompare();
-  const canDrag = useCanDrag();
 
   useEffect(() => {
     getRankingFormats()
@@ -57,7 +56,12 @@ export default function Home() {
         const list = data.rankings || [];
         setRankings(list);
         setInterpretation(q ? data.search || null : null);
-        resetTo(list.slice(0, 3));
+        // Reset the podium only when the format changed. A filter-only change
+        // leaves whatever arrangement the user has made intact.
+        if (prevFormatRef.current !== format) {
+          resetTo(list.slice(0, 3));
+          prevFormatRef.current = format;
+        }
       })
       .catch((err) => {
         if (id !== requestId.current) return;
@@ -106,7 +110,6 @@ export default function Home() {
 
   const clearSearch = () => setSearchParams({}, { replace: true });
 
-  // A plan sitting in a podium slot must not also appear in the tier list below.
   const podiumIds = useMemo(
     () => new Set(slots.filter(Boolean).map((p) => p._id)),
     [slots]
@@ -131,8 +134,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      {/* Open-arrow — desktop drag-and-drop panel only, shown while it is closed */}
-      {canDrag && showArrow && !drawerOpen && (
+      {/* Scroll arrow — opens the drawer. Not gated on canDrag: filter UI in
+          the drawer is useful on every device, and drag works on desktop. */}
+      {showArrow && !drawerOpen && (
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
@@ -164,7 +168,6 @@ export default function Home() {
       />
 
       <main className="mx-auto max-w-7xl px-4 py-5 pb-28 sm:py-6">
-        {/* Search summary */}
         {q && (
           <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#1f1f1f] px-4 py-3 text-sm">
             <span className="text-zinc-400">Results for</span>
@@ -191,7 +194,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Podium */}
         <div ref={podiumRef} className="scroll-mt-32 lg:scroll-mt-20">
           {initialLoad ? (
             <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -233,7 +235,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Tiers */}
         {tiers.map((tier) => (
           <section key={tier.key} className="mt-8 sm:mt-10">
             <div className="mb-4 flex items-center gap-3">

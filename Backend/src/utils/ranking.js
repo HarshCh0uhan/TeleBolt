@@ -1,53 +1,7 @@
 import { yearlyPlan } from "./yearlyPlan.js";
+import { RANKING_FORMATS, DEFAULT_FORMAT } from "./rankingFormats.js";
 
-// Every format's weights sum to 1. Signals are all scaled to 0..1, so a score is
-// always 0..1 and a score means the same thing in every format.
-//   costPerGB    rupees per GB over the plan's life (lower is better)
-//   costPerDay   rupees per day of validity (lower is better)
-//   dataPerDay   total GB divided by validity days (higher is better)
-//   dailyData    the plan's GB/day quota (higher is better)
-//   validityDays days of validity (higher is better)
-//   ottMatch     share of the picked OTT apps included, or how many OTTs it bundles
-//   rating       Bayesian average of user reviews on a fixed 1..5 scale
-export const RANKING_FORMATS = [
-  {
-    id: "best-value",
-    label: "Best Value",
-    blurb: "Cheapest data per GB, with cost per day and data per day as correctors.",
-    gate: null,
-    weights: { costPerGB: 0.55, costPerDay: 0.15, dataPerDay: 0.15, rating: 0.1, validityDays: 0.05 },
-  },
-  {
-    id: "long-term",
-    label: "Long Term",
-    blurb: "Long validity packs so you recharge less often.",
-    gate: null,
-    weights: { validityDays: 0.45, costPerDay: 0.3, costPerGB: 0.15, rating: 0.1 },
-  },
-  {
-    id: "entertainment",
-    label: "Entertainment",
-    blurb: "Plans that bundle the OTT subscriptions you care about.",
-    gate: "ott",
-    weights: { ottMatch: 0.5, costPerGB: 0.2, costPerDay: 0.15, rating: 0.1, validityDays: 0.05 },
-  },
-  {
-    id: "budget",
-    label: "Budget",
-    blurb: "Cheapest to run per day, with meaningful data.",
-    gate: "data",
-    weights: { costPerDay: 0.55, dataPerDay: 0.25, rating: 0.1, costPerGB: 0.1 },
-  },
-  {
-    id: "heavy-data",
-    label: "Heavy Data",
-    blurb: "Big daily quotas for streaming and hotspot use.",
-    gate: "daily-data",
-    weights: { dailyData: 0.5, costPerGB: 0.25, costPerDay: 0.1, rating: 0.1, validityDays: 0.05 },
-  },
-];
-
-export const DEFAULT_FORMAT = "best-value";
+export { RANKING_FORMATS, DEFAULT_FORMAT };
 
 export const findFormat = (id) =>
   RANKING_FORMATS.find((f) => f.id === id) || RANKING_FORMATS[0];
@@ -60,8 +14,6 @@ export const passesCategoryGate = (format, plan, selectedOtt = []) => {
   switch (format.gate) {
     case "ott": {
       const apps = plan.ottApps || [];
-      // Same meaning as the OTT filter: any of the picked apps qualifies. Plans
-      // that match more of them score higher through the ottMatch signal.
       if (selectedOtt.length > 0) return selectedOtt.some((app) => apps.includes(app));
       return apps.length > 0;
     }
@@ -81,7 +33,6 @@ const toPositive = (v) => {
 
 const round4 = (value) => Math.round(value * 10000) / 10000;
 
-// Linear-interpolated quantile of an ascending array.
 const quantile = (sorted, q) => {
   const pos = (sorted.length - 1) * q;
   const lo = Math.floor(pos);
@@ -89,11 +40,6 @@ const quantile = (sorted, q) => {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 };
 
-// Scales one signal to 0..1 across the candidates. Missing values score 0.
-// Rupee and day signals are log-scaled first. With enough plans, genuine
-// outliers (beyond Tukey's fences) are clipped so one absurd plan cannot
-// flatten everyone else. If every plan has the same value the signal is
-// neutral (0.5) and cannot affect the order.
 const normalize = (values, { lowerIsBetter = false, log = false } = {}) => {
   const transformed = values.map((raw) => {
     const v = toPositive(raw);
@@ -133,8 +79,6 @@ const totalGbOf = (plan) => {
   return daily && days ? daily * days : null;
 };
 
-// Exact per-plan metrics. No yearly multiplier: rounding a plan up to whole
-// recharges per year penalised plans whose validity does not divide 365.
 const metricsOf = (plan) => {
   const price = toPositive(plan.price);
   const days = toPositive(plan.validityDays);
@@ -157,8 +101,6 @@ const ottMatchScore = (plan, selectedOtt) => {
   return Math.min(apps.length, 3) / 3;
 };
 
-// A plan with no reviews sits at a neutral 3.5. A few reviews barely move it;
-// many reviews decide it. Fixed 1..5 scale, so an unrated catalogue stays neutral.
 const RATING_PRIOR_COUNT = 5;
 const RATING_PRIOR_MEAN = 3.5;
 
@@ -202,12 +144,6 @@ const buildReasons = (format, signals, index, plan, selectedOtt) => {
   });
 };
 
-/**
- * Ranks plans for one category: global gate, category gate, then scoring.
- * Runs over the whole set before any pagination so "top 3" is never "top 3 of
- * a page". Every returned plan carries `score` (0..1), `scoreBreakdown` (each
- * signal's contribution) and `reasons` (short human-readable highlights).
- */
 export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {}) => {
   const format = findFormat(formatId);
 
@@ -255,7 +191,6 @@ export const rankPlans = (plans, { formatId = DEFAULT_FORMAT, ottApps = [] } = {
   scored.sort((a, b) => {
     const scoreDiff = b.raw - a.raw;
     if (Math.abs(scoreDiff) > 1e-9) return scoreDiff;
-    // Tie-breakers: cheaper per day, then cheaper upfront, then a stable id order.
     const perDay = (a.costPerDay ?? 1e9) - (b.costPerDay ?? 1e9);
     if (perDay !== 0) return perDay;
     const upfront = (a.plan.price ?? 0) - (b.plan.price ?? 0);
