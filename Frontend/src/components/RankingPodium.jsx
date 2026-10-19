@@ -1,5 +1,5 @@
 import React from "react";
-import { Crown, Medal, Award, Minus, ChevronDown, Phone, MessageSquare, Sparkles } from "lucide-react";
+import { Crown, Medal, Award, Minus, ChevronDown, Phone, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCompare } from "../context/CompareContext";
 import { useCanDrag } from "../hooks/useCanDrag";
@@ -35,7 +35,6 @@ const SlotCard = ({ plan, index, onRemove }) => {
   const [expanded, setExpanded] = React.useState(false);
 
   const rechargesPerYear = plan.validityDays ? Math.ceil(365 / plan.validityDays) : null;
-  const reasons = Array.isArray(plan.reasons) ? plan.reasons.slice(0, 3) : [];
   const hasScore = typeof plan.score === "number";
 
   return (
@@ -81,20 +80,6 @@ const SlotCard = ({ plan, index, onRemove }) => {
         <p className="mt-0.5 text-xs text-zinc-400">
           {plan.validityDays} days validity
         </p>
-
-        {reasons.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {reasons.map((reason) => (
-              <span
-                key={reason}
-                className="inline-flex items-center gap-1 rounded-full border border-[#58c28d]/20 bg-[#58c28d]/10 px-2 py-0.5 text-[10px] font-medium text-[#dff6ea]"
-              >
-                <Sparkles className="h-2.5 w-2.5 shrink-0 text-[#58c28d]" />
-                {reason}
-              </span>
-            ))}
-          </div>
-        )}
 
         <div className="mt-3 grid grid-cols-3 gap-1.5">
           <div className="rounded-lg bg-[#262626] px-2 py-2">
