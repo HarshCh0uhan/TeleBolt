@@ -1,70 +1,118 @@
 import { useRef, useState } from "react";
 import PlanCard from "./PlanCard";
 import { useCompare } from "../context/CompareContext";
-import { useCanDrag } from "../hooks/useCanDrag";
 
-// Drag is desktop-only. On touch devices the browser fires dragstart on a long
-// press, which would pop the drawer open unexpectedly. Those devices use the
-// plan's own "Add to Compare" button instead.
+// Pointer events instead of HTML5 drag. Works on mouse, trackpad, stylus and
+// touch without any media-query gating. `touch-action: none` on the wrapper
+// prevents the browser from stealing the gesture for scroll — the user can
+// still scroll by starting their touch anywhere that is not a card.
 const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
+  const { setDraggingPlan, assignToSlot } = useCompare();
   const [dragging, setDragging] = useState(false);
-  const wrapperRef = useRef(null);
-  const { setDraggingPlan } = useCompare();
-  const canDrag = useCanDrag();
+  const cardRef = useRef(null);
+  const ghostRef = useRef(null);
 
-  const handleDragStart = (e) => {
-    if (!canDrag) {
-      e.preventDefault();
-      return;
-    }
+  const beginDrag = (clientX, clientY) => {
+    const card = cardRef.current;
+    if (!card) return;
 
-    const card = wrapperRef.current?.querySelector("article");
+    const rect = card.getBoundingClientRect();
+    const ghost = document.createElement("div");
+    ghost.style.cssText = `
+      position: fixed;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.85;
+      transform: scale(0.6);
+      transform-origin: top left;
+      will-change: left, top;
+    `;
+    ghost.appendChild(card.cloneNode(true));
+    document.body.appendChild(ghost);
 
-    if (card) {
-      const clone = card.cloneNode(true);
-      const width = card.offsetWidth || 280;
-      clone.style.width = `${width}px`;
-      clone.style.transformOrigin = "top left";
-      clone.style.transform = "scale(0.4)";
-      clone.style.position = "absolute";
-      clone.style.top = "-10000px";
-      clone.style.left = "-10000px";
-      clone.style.pointerEvents = "none";
-      clone.style.opacity = "0.96";
-      document.body.appendChild(clone);
+    ghost.style.left = `${clientX - (rect.width * 0.6) / 2}px`;
+    ghost.style.top = `${clientY - (rect.height * 0.6) / 2}px`;
 
-      // getBoundingClientRect reflects the post-transform size, so half of it
-      // puts the cursor at the visual centre of the scaled clone.
-      const rect = clone.getBoundingClientRect();
-      const offsetX = Math.max(1, Math.round(rect.width / 2));
-      const offsetY = Math.max(1, Math.round(rect.height / 2));
-      e.dataTransfer.setDragImage(clone, offsetX, offsetY);
-
-      setTimeout(() => clone.remove(), 0);
-    }
-
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", plan._id);
-
+    ghostRef.current = { el: ghost, offsetX: (rect.width * 0.6) / 2, offsetY: (rect.height * 0.6) / 2 };
     setDragging(true);
     setDraggingPlan(plan);
     onDragStart?.(plan);
   };
 
-  const handleDragEnd = () => {
+  const moveDrag = (clientX, clientY) => {
+    const g = ghostRef.current;
+    if (!g) return;
+    g.el.style.left = `${clientX - g.offsetX}px`;
+    g.el.style.top = `${clientY - g.offsetY}px`;
+  };
+
+  const finishDrag = (clientX, clientY) => {
+    const g = ghostRef.current;
+    if (g) {
+      const target = document.elementFromPoint(clientX, clientY);
+      const slotEl = target?.closest("[data-podium-slot]");
+      if (slotEl) {
+        const idx = Number(slotEl.dataset.podiumSlot);
+        if (Number.isInteger(idx)) assignToSlot(plan, idx);
+      }
+      g.el.remove();
+    }
+    ghostRef.current = null;
     setDragging(false);
     setDraggingPlan(null);
     onDragEnd?.(plan);
   };
 
+  const handlePointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.target.closest("button, a, input, textarea, select, [role='button']")) return;
+
+    const pointerId = e.pointerId;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let active = false;
+
+    const onMove = (ev) => {
+      if (ev.pointerId !== pointerId) return;
+      if (!active) {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        if (Math.hypot(dx, dy) < 8) return;
+        active = true;
+        beginDrag(startX, startY);
+      }
+      if (active) {
+        ev.preventDefault();
+        moveDrag(ev.clientX, ev.clientY);
+      }
+    };
+
+    const finish = (ev) => {
+      if (ev.pointerId !== pointerId) return;
+      if (active) finishDrag(ev.clientX, ev.clientY);
+      cleanup();
+    };
+
+    const cleanup = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", finish);
+      document.removeEventListener("pointercancel", finish);
+    };
+
+    document.addEventListener("pointermove", onMove, { passive: false });
+    document.addEventListener("pointerup", finish);
+    document.addEventListener("pointercancel", finish);
+  };
+
   return (
     <div
-      ref={wrapperRef}
-      draggable={canDrag}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
+      ref={cardRef}
+      onPointerDown={handlePointerDown}
+      style={{ touchAction: "none" }}
       className={`transition-opacity duration-150 ${
-        dragging ? "cursor-grabbing opacity-0" : canDrag ? "cursor-grab" : ""
+        dragging ? "cursor-grabbing opacity-40" : "cursor-grab"
       }`}
     >
       <PlanCard plan={plan} />

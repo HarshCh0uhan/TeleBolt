@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Database, TrendingUp, ArrowRight, ArrowLeftRight, Check, Plus, Heart, Bell, BellRing, ExternalLink } from "lucide-react";
-import { useCompare } from "../context/CompareContext";
+import { Database, TrendingUp, Heart, Bell, BellRing, ExternalLink } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import StarRating from "./StarRating";
 import ShareButton from "./ShareButton";
@@ -16,15 +15,12 @@ const OPERATOR_HOME = {
 };
 
 const PlanCard = ({ plan }) => {
-  const { isSelected, isFull, togglePlan, openSlotPicker } = useCompare();
   const { user, isFavoritePlan, toggleFavorite } = useAuth();
 
   const [alerting, setAlerting] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const selected = isSelected(plan._id);
   const favorite = isFavoritePlan(plan._id);
-  // Derived: a guest is never alerting, regardless of what `alerting` holds.
   const showAlerting = Boolean(user) && alerting;
 
   useEffect(() => {
@@ -55,21 +51,10 @@ const PlanCard = ({ plan }) => {
     }
   };
 
-  const handleCompareClick = () => {
-    if (selected || !isFull) togglePlan(plan);
-    else openSlotPicker(plan);
-  };
-
   const sourceUrl = plan.sourceUrl || OPERATOR_HOME[plan.operator] || "#";
 
   return (
-    <article
-      className={`group flex flex-col overflow-hidden rounded-3xl border bg-[#1f1f1f] transition-all duration-300 hover:-translate-y-1 ${
-        selected
-          ? "border-[#58c28d]/50 ring-1 ring-[#58c28d]/30"
-          : "border-white/10 hover:border-[#58c28d]/30"
-      }`}
-    >
+    <article className="group flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#1f1f1f] transition-all duration-300 hover:-translate-y-1 hover:border-[#58c28d]/30">
       <Link to={`/plans/${plan._id}`}>
         <div className="border-b border-white/10 p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
@@ -195,37 +180,6 @@ const PlanCard = ({ plan }) => {
             Login to Save
           </Link>
         )}
-
-        <button
-          type="button"
-          onClick={handleCompareClick}
-          aria-pressed={selected}
-          className={`group/btn flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
-            selected
-              ? "border border-[#58c28d]/40 bg-[#58c28d]/15 text-[#dff6ea] hover:bg-[#58c28d]/25"
-              : isFull
-                ? "border border-[#58c28d]/30 bg-[#58c28d]/10 text-[#dff6ea] hover:bg-[#58c28d]/20"
-                : "bg-[#58c28d] text-[#181818] hover:bg-[#6dd9a0]"
-          }`}
-        >
-          {selected ? (
-            <>
-              <Check className="h-4 w-4" />
-              Selected for Compare
-            </>
-          ) : isFull ? (
-            <>
-              <ArrowLeftRight className="h-4 w-4" />
-              Swap into Podium
-            </>
-          ) : (
-            <>
-              <Plus className="h-4 w-4" />
-              Add to Compare
-              <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
-            </>
-          )}
-        </button>
 
         <a
           href={sourceUrl}

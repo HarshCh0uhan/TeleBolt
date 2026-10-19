@@ -2,7 +2,6 @@ import React from "react";
 import { Crown, Medal, Award, Minus, ChevronDown, Phone, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCompare } from "../context/CompareContext";
-import { useCanDrag } from "../hooks/useCanDrag";
 import ShareButton from "./ShareButton";
 
 const SLOT_STYLES = {
@@ -56,12 +55,7 @@ const SlotCard = ({ plan, index, onRemove }) => {
           <span className="text-[11px] text-zinc-500">Score {Math.round(plan.score * 100)}</span>
         )}
         <div className="ml-auto flex items-center gap-1">
-          <ShareButton
-            planId={plan._id}
-            operator={plan.operator}
-            price={plan.price}
-            compact
-          />
+          <ShareButton planId={plan._id} operator={plan.operator} price={plan.price} compact />
           <button
             type="button"
             onClick={() => onRemove(index)}
@@ -74,12 +68,8 @@ const SlotCard = ({ plan, index, onRemove }) => {
       </div>
 
       <div className="p-4">
-        <p className="break-words text-3xl font-bold tracking-tight text-white">
-          ₹{plan.price}
-        </p>
-        <p className="mt-0.5 text-xs text-zinc-400">
-          {plan.validityDays} days validity
-        </p>
+        <p className="break-words text-3xl font-bold tracking-tight text-white">₹{plan.price}</p>
+        <p className="mt-0.5 text-xs text-zinc-400">{plan.validityDays} days validity</p>
 
         <div className="mt-3 grid grid-cols-3 gap-1.5">
           <div className="rounded-lg bg-[#262626] px-2 py-2">
@@ -153,9 +143,7 @@ const SlotCard = ({ plan, index, onRemove }) => {
               </div>
               <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2">
                 <span className="text-xs text-zinc-400">Recharges needed</span>
-                <span className="text-xs font-medium text-white">
-                  {rechargesPerYear ?? "—"}
-                </span>
+                <span className="text-xs font-medium text-white">{rechargesPerYear ?? "—"}</span>
               </div>
               {plan.ottApps?.length > 0 && (
                 <div className="rounded-xl border border-white/5 bg-[#262626]/50 px-3 py-2">
@@ -173,82 +161,32 @@ const SlotCard = ({ plan, index, onRemove }) => {
   );
 };
 
-const EmptySlot = ({ index, isHover }) => {
-  const canDrag = useCanDrag();
-
-  return (
-    <div
-      className={`flex h-full min-h-[180px] flex-col items-center justify-center rounded-2xl border border-dashed bg-[#1f1f1f]/60 p-4 text-center transition-all duration-200 ${
-        isHover ? "border-[#58c28d]/60 ring-2 ring-[#58c28d]/40" : "border-white/15"
-      }`}
-    >
-      <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">
-        Slot {index + 1}
-      </p>
-      <p className="mt-2 text-xs leading-5 text-zinc-500">
-        {canDrag ? "Drag a plan here" : "Tap Add to Compare on any plan"}
-      </p>
-    </div>
-  );
-};
+const EmptySlot = ({ index }) => (
+  <div className="flex h-full min-h-[180px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-[#1f1f1f]/60 p-4 text-center transition-all duration-200">
+    <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-500">Slot {index + 1}</p>
+    <p className="mt-2 text-xs leading-5 text-zinc-500">Drag a plan here</p>
+  </div>
+);
 
 const RankingPodium = () => {
-  const { slots, removeFromSlot, assignToSlot, draggingPlan, setDraggingPlan } = useCompare();
-  const [hoverIndex, setHoverIndex] = React.useState(null);
-
-  const handleDrop = (index) => (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (draggingPlan) assignToSlot(draggingPlan, index);
-    setDraggingPlan(null);
-    setHoverIndex(null);
-  };
-
-  const handleDragOver = (index) => (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-    if (hoverIndex !== index) setHoverIndex(index);
-  };
-
-  const handleDragLeave = (index) => (e) => {
-    e.preventDefault();
-    if (hoverIndex === index) setHoverIndex(null);
-  };
+  const { slots, removeFromSlot } = useCompare();
 
   return (
     <div className="mx-auto max-w-4xl">
       <div className="-mx-4 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto px-4 pb-3 scrollbar-brand sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
-        {slots.map((plan, index) => {
-          const dropProps = {
-            onDragOver: handleDragOver(index),
-            onDragEnter: handleDragOver(index),
-            onDragLeave: handleDragLeave(index),
-            onDrop: handleDrop(index),
-          };
-
-          if (plan) {
-            return (
-              <div
-                key={`slot-${index}-${plan._id}`}
-                className="w-[82%] shrink-0 snap-center sm:w-auto sm:shrink"
-                {...dropProps}
-              >
-                <SlotCard plan={plan} index={index} onRemove={removeFromSlot} />
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={`empty-${index}`}
-              className="w-[82%] shrink-0 snap-center sm:w-auto sm:shrink"
-              {...dropProps}
-            >
-              <EmptySlot index={index} isHover={hoverIndex === index} />
-            </div>
-          );
-        })}
+        {slots.map((plan, index) => (
+          <div
+            key={plan ? `slot-${index}-${plan._id}` : `empty-${index}`}
+            data-podium-slot={index}
+            className="w-[82%] shrink-0 snap-center sm:w-auto sm:shrink"
+          >
+            {plan ? (
+              <SlotCard plan={plan} index={index} onRemove={removeFromSlot} />
+            ) : (
+              <EmptySlot index={index} />
+            )}
+          </div>
+        ))}
       </div>
       <p className="mt-1 text-center text-[11px] text-zinc-600 sm:hidden">Swipe to see all slots</p>
     </div>

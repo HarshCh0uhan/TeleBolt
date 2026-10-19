@@ -29,7 +29,11 @@ export default function Home() {
   const [podiumVisible, setPodiumVisible] = useState(true);
   const requestId = useRef(0);
   const podiumRef = useRef(null);
-  const prevFormatRef = useRef(format);
+  // null means "we have not loaded any rankings yet". Comparing against null
+  // guarantees the podium seeds from the very first fetch. Comparing against
+  // `format` (the old code) meant first load never reset, so the podium stayed
+  // empty forever.
+  const prevFormatRef = useRef(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const q = (searchParams.get("q") || "").trim();
@@ -56,8 +60,6 @@ export default function Home() {
         const list = data.rankings || [];
         setRankings(list);
         setInterpretation(q ? data.search || null : null);
-        // Reset the podium only when the format changed. A filter-only change
-        // leaves whatever arrangement the user has made intact.
         if (prevFormatRef.current !== format) {
           resetTo(list.slice(0, 3));
           prevFormatRef.current = format;
@@ -134,8 +136,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      {/* Scroll arrow — opens the drawer. Not gated on canDrag: filter UI in
-          the drawer is useful on every device, and drag works on desktop. */}
       {showArrow && !drawerOpen && (
         <button
           type="button"
