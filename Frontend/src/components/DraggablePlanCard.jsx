@@ -4,13 +4,15 @@ import PlanCard from "./PlanCard";
 import { useCompare } from "../context/CompareContext";
 
 /**
- * Drag is initiated from the small grip handle only. The card body remains
- * scrollable: `touch-action: pan-y` on the wrapper lets the browser handle
- * vertical pans, while the grip handle opts out with `touch-action: none`.
+ * Drag is mouse-only. `touch-action: pan-y` on the wrapper lets the browser
+ * handle vertical pans on touch, and the grip handle opts out with
+ * `touch-action: none` so a tap is captured before the browser scrolls.
  *
- * Tapping the handle (no drag) toggles the plan in the podium — the mobile
- * equivalent of a drag, since dragging from a scrolled-down card cannot reach
- * the podium at the top of the page.
+ * On touch, the grip is a TAP target: it calls togglePlan(plan) directly. That
+ * is the mobile equivalent of dragging, since dragging on a phone cannot reach
+ * the podium at the top of the page. Touch drag is deliberately disabled — it
+ * used to fire onDragStart (which opened the nav drawer) with nothing to drop
+ * onto, and it broke the drawer layout on the way.
  *
  * On desktop (pointerType === "mouse") the whole card still supports dragging,
  * so existing muscle memory keeps working.
@@ -76,8 +78,11 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
   };
 
   const startDrag = (e) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
+    // Reset the flag first so a prior desktop drag cannot suppress a later tap.
     dragOccurredRef.current = false;
+
+    // Drag only from a mouse. Touch and pen use tap-to-toggle (see handleClick).
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
 
     const pointerId = e.pointerId;
     const startX = e.clientX;
@@ -117,7 +122,7 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     document.addEventListener("pointercancel", finish);
   };
 
-  // Mouse users can still grab the whole card. Touch users must use the handle.
+  // Mouse users can grab the whole card. Touch users must use the grip handle.
   const handleCardPointerDown = (e) => {
     if (e.pointerType !== "mouse" || e.button !== 0) return;
     if (e.target.closest("button, a, input, textarea, select, [role='button']")) return;
@@ -125,12 +130,15 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
   };
 
   const handleHandlePointerDown = (e) => {
+    // Pointerdown is used so touch-action: none applies on the handle.
+    // startDrag itself ignores non-mouse, so touch goes straight to click.
     startDrag(e);
   };
 
   const handleHandleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // On desktop, a click that followed a real drag should not toggle.
     if (dragOccurredRef.current) return;
     togglePlan(plan);
   };
@@ -147,8 +155,8 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
         type="button"
         onPointerDown={handleHandlePointerDown}
         onClick={handleHandleClick}
-        aria-label="Drag or tap to add to podium"
-        title="Drag or tap to add to podium"
+        aria-label="Tap to toggle in podium"
+        title="Tap to toggle in podium (drag with mouse on desktop)"
         style={{ touchAction: "none" }}
         className={`absolute right-1.5 top-1.5 z-10 grid h-7 w-7 place-items-center rounded-lg border border-white/20 bg-black/55 text-white/85 backdrop-blur transition hover:text-white sm:h-8 sm:w-8 ${
           dragging ? "opacity-0" : ""
