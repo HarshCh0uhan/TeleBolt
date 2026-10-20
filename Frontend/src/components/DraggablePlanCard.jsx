@@ -1,16 +1,26 @@
 import { useRef, useState } from "react";
+import { GripVertical } from "lucide-react";
 import PlanCard from "./PlanCard";
 import { useCompare } from "../context/CompareContext";
 
-// Pointer events instead of HTML5 drag. Works on mouse, trackpad, stylus and
-// touch without any media-query gating. `touch-action: none` on the wrapper
-// prevents the browser from stealing the gesture for scroll — the user can
-// still scroll by starting their touch anywhere that is not a card.
+/**
+ * Drag is initiated from the small grip handle only. The card body remains
+ * scrollable: `touch-action: pan-y` on the wrapper lets the browser handle
+ * vertical pans, while the grip handle opts out with `touch-action: none`.
+ *
+ * Tapping the handle (no drag) toggles the plan in the podium — the mobile
+ * equivalent of a drag, since dragging from a scrolled-down card cannot reach
+ * the podium at the top of the page.
+ *
+ * On desktop (pointerType === "mouse") the whole card still supports dragging,
+ * so existing muscle memory keeps working.
+ */
 const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
-  const { setDraggingPlan, assignToSlot } = useCompare();
+  const { setDraggingPlan, assignToSlot, togglePlan } = useCompare();
   const [dragging, setDragging] = useState(false);
   const cardRef = useRef(null);
   const ghostRef = useRef(null);
+  const dragOccurredRef = useRef(false);
 
   const beginDrag = (clientX, clientY) => {
     const card = cardRef.current;
@@ -65,9 +75,9 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     onDragEnd?.(plan);
   };
 
-  const handlePointerDown = (e) => {
+  const startDrag = (e) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    if (e.target.closest("button, a, input, textarea, select, [role='button']")) return;
+    dragOccurredRef.current = false;
 
     const pointerId = e.pointerId;
     const startX = e.clientX;
@@ -81,6 +91,7 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
         const dy = ev.clientY - startY;
         if (Math.hypot(dx, dy) < 8) return;
         active = true;
+        dragOccurredRef.current = true;
         beginDrag(startX, startY);
       }
       if (active) {
@@ -106,16 +117,45 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     document.addEventListener("pointercancel", finish);
   };
 
+  // Mouse users can still grab the whole card. Touch users must use the handle.
+  const handleCardPointerDown = (e) => {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    if (e.target.closest("button, a, input, textarea, select, [role='button']")) return;
+    startDrag(e);
+  };
+
+  const handleHandlePointerDown = (e) => {
+    startDrag(e);
+  };
+
+  const handleHandleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dragOccurredRef.current) return;
+    togglePlan(plan);
+  };
+
   return (
     <div
       ref={cardRef}
-      onPointerDown={handlePointerDown}
-      style={{ touchAction: "none" }}
-      className={`transition-opacity duration-150 ${
-        dragging ? "cursor-grabbing opacity-40" : "cursor-grab"
-      }`}
+      onPointerDown={handleCardPointerDown}
+      className="relative"
+      style={{ touchAction: "pan-y" }}
     >
       <PlanCard plan={plan} />
+      <button
+        type="button"
+        onPointerDown={handleHandlePointerDown}
+        onClick={handleHandleClick}
+        aria-label="Drag or tap to add to podium"
+        title="Drag or tap to add to podium"
+        style={{ touchAction: "none" }}
+        className={`absolute right-1.5 top-1.5 z-10 grid h-7 w-7 place-items-center rounded-lg border border-white/20 bg-black/55 text-white/85 backdrop-blur transition hover:text-white sm:h-8 sm:w-8 ${
+          dragging ? "opacity-0" : ""
+        }`}
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 };

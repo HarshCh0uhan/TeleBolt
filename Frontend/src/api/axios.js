@@ -10,10 +10,13 @@ const baseURL =
     import.meta.env.VITE_API_URL ||
     (import.meta.env.DEV ? import.meta.env.VITE_LOCALHOST_URL : "/api")
 
+// Render's free tier spins down after ~15 minutes idle and can take 60s+
+// to wake. A 30s timeout meant the first request after a cold start always
+// failed, so the podium came back empty. 90s covers a cold start with margin.
 const api = axios.create({
     baseURL,
     withCredentials: true,
-    timeout: 30000,
+    timeout: 90000,
 })
 
 api.interceptors.request.use(
@@ -63,7 +66,7 @@ api.interceptors.response.use(
         if (!error.response) {
             const friendly = new Error(
                 error.code === "ECONNABORTED"
-                    ? "Request timed out. Please try again."
+                    ? "Request timed out. The server may be waking up — please try again."
                     : "Network error. Please check your connection."
             )
             friendly.code = error.code
