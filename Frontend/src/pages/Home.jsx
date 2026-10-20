@@ -37,8 +37,6 @@ export default function Home() {
   const [podiumVisible, setPodiumVisible] = useState(true);
   const requestId = useRef(0);
   const podiumRef = useRef(null);
-  // null means "we have not loaded any rankings yet". Comparing against null
-  // guarantees the podium seeds from the very first fetch.
   const prevFormatRef = useRef(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -111,7 +109,12 @@ export default function Home() {
   }, []);
 
   const handleDragStart = () => {
-    setDrawerOpen(true);
+    // The desktop AdvancedDrawer hosts the podium slots and only renders at
+    // lg+. On mobile the podium itself and the bottom MobilePodiumBar are the
+    // drop targets, so opening the nav drawer would be wrong.
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
+      setDrawerOpen(true);
+    }
   };
 
   const scrollToPodium = () => {
@@ -144,7 +147,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
-      {/* Desktop-only quick filter panel trigger */}
       {showArrow && !drawerOpen && (
         <button
           type="button"
@@ -158,7 +160,6 @@ export default function Home() {
         </button>
       )}
 
-      {/* Advanced drawer is desktop-only now; mobile has the nav drawer */}
       <div className="hidden lg:block">
         <AdvancedDrawer
           open={drawerOpen}
@@ -172,7 +173,6 @@ export default function Home() {
         />
       </div>
 
-      {/* Filter bar is desktop-only now; mobile filters live in the nav drawer */}
       <div className="hidden sm:block">
         <FilterBar
           filters={filters}
@@ -213,9 +213,9 @@ export default function Home() {
 
         <div ref={podiumRef} className="scroll-mt-32 lg:scroll-mt-20">
           {initialLoad ? (
-            <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mx-auto grid max-w-4xl gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
               {Array.from({ length: PODIUM_SIZE }).map((_, i) => (
-                <div key={i} className="h-56 rounded-2xl bg-[#262626] animate-pulse sm:h-96" />
+                <div key={i} className="h-24 rounded-xl bg-[#262626] animate-pulse sm:h-56" />
               ))}
             </div>
           ) : (

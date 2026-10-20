@@ -51,9 +51,7 @@ const SlotCard = ({ plan, index, onRemove }) => {
         <span className="rounded-full bg-[#58c28d]/10 px-2 py-0.5 text-[10px] font-medium text-[#58c28d]">
           {plan.operator}
         </span>
-        {hasScore && (
-          <span className="text-[9px] text-zinc-500">{Math.round(plan.score * 100)}</span>
-        )}
+        {hasScore && <span className="text-[9px] text-zinc-500">{Math.round(plan.score * 100)}</span>}
         <div className="ml-auto flex items-center gap-1">
           <ShareButton planId={plan._id} operator={plan.operator} price={plan.price} compact />
           <button
@@ -67,11 +65,21 @@ const SlotCard = ({ plan, index, onRemove }) => {
         </div>
       </div>
 
-      <div className="p-2.5">
-        <p className="break-words text-xl font-bold tracking-tight text-white">₹{plan.price}</p>
-        <p className="mt-0.5 text-[10px] text-zinc-400">{plan.validityDays} days</p>
+      <div className="p-2">
+        <div className="flex items-baseline gap-2">
+          <span className="text-lg font-bold tracking-tight text-white">₹{plan.price}</span>
+          <span className="text-[10px] text-zinc-400">{plan.validityDays} days</span>
+        </div>
 
-        <div className="mt-2 grid grid-cols-3 gap-1">
+        {/* Mobile: inline metrics line */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] sm:hidden">
+          <span className="text-zinc-300">{plan.totalData ? `${plan.totalData} GB` : "—"}</span>
+          <span className="text-[#58c28d]">{plan.costPerGB ? `₹${plan.costPerGB}/GB` : "—"}</span>
+          <span className="text-zinc-300">{plan.yearlyCost ? `₹${plan.yearlyCost}/yr` : "—"}</span>
+        </div>
+
+        {/* sm+: boxed metrics, unchanged layout */}
+        <div className="mt-2 hidden grid-cols-3 gap-1 sm:grid">
           <div className="rounded bg-[#262626] px-1.5 py-1">
             <p className="text-[8px] uppercase tracking-wider text-zinc-500">Data</p>
             <p className="mt-0.5 truncate text-[10px] font-semibold text-white">
@@ -96,7 +104,7 @@ const SlotCard = ({ plan, index, onRemove }) => {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mt-2 flex h-7 w-full items-center justify-center gap-1 rounded-lg border border-white/10 bg-[#262626] text-[10px] font-medium text-zinc-400 transition hover:border-[#58c28d]/30 hover:text-white"
+          className="mt-1.5 flex h-6 w-full items-center justify-center gap-1 rounded-md border border-white/10 bg-[#262626] text-[10px] font-medium text-zinc-400 transition hover:border-[#58c28d]/30 hover:text-white sm:mt-2 sm:h-7"
         >
           {expanded ? "Show less" : "Show more"}
           <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
@@ -162,9 +170,9 @@ const SlotCard = ({ plan, index, onRemove }) => {
 };
 
 const EmptySlot = ({ index }) => (
-  <div className="flex h-full min-h-[130px] flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-[#1f1f1f]/60 p-3 text-center transition-all duration-200">
+  <div className="flex h-full min-h-[70px] flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-[#1f1f1f]/60 p-2 text-center transition-all duration-200 sm:min-h-[130px] sm:p-3">
     <p className="text-[9px] uppercase tracking-[0.24em] text-zinc-500">Slot {index + 1}</p>
-    <p className="mt-1 text-[10px] leading-4 text-zinc-500">Drag a plan here</p>
+    <p className="mt-0.5 text-[10px] leading-4 text-zinc-500 sm:mt-1">Drag a plan here</p>
   </div>
 );
 
@@ -173,12 +181,11 @@ const RankingPodium = () => {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="-mx-4 flex snap-x snap-mandatory items-start gap-2 overflow-x-auto px-4 pb-3 scrollbar-brand sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {slots.map((plan, index) => (
           <div
             key={plan ? `slot-${index}-${plan._id}` : `empty-${index}`}
             data-podium-slot={index}
-            className="w-[60%] shrink-0 snap-center sm:w-auto sm:shrink"
           >
             {plan ? (
               <SlotCard plan={plan} index={index} onRemove={removeFromSlot} />
@@ -188,7 +195,6 @@ const RankingPodium = () => {
           </div>
         ))}
       </div>
-      <p className="mt-1 text-center text-[10px] text-zinc-600 sm:hidden">Swipe to see all slots</p>
     </div>
   );
 };
