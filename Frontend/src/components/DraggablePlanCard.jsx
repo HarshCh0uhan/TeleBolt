@@ -1,24 +1,24 @@
 import { useRef, useState } from "react";
-import { GripVertical } from "lucide-react";
 import PlanCard from "./PlanCard";
 import { useCompare } from "../context/CompareContext";
 
+const DRAG_THRESHOLD_PX = 8;
+const LONG_PRESS_MS = 350;
+
 /**
- * Drag is mouse-only. `touch-action: pan-y` on the wrapper lets the browser
- * handle vertical pans on touch, and the grip handle opts out with
- * `touch-action: none` so a tap is captured before the browser scrolls.
+ * No visible drag handle. Drag activation:
+ *   - Mouse: pointerdown anywhere on the card body (not on a button/link), 8px threshold.
+ *   - Touch: long-press 350ms without moving, then drag.
+ * If the finger moves more than 8px before the long-press fires, the gesture
+ * becomes a scroll and drag is cancelled. The card keeps its normal Link
+ * behaviour for plain taps.
  *
- * On touch, the grip is a TAP target: it calls togglePlan(plan) directly. That
- * is the mobile equivalent of dragging, since dragging on a phone cannot reach
- * the podium at the top of the page. Touch drag is deliberately disabled — it
- * used to fire onDragStart (which opened the nav drawer) with nothing to drop
- * onto, and it broke the drawer layout on the way.
- *
- * On desktop (pointerType === "mouse") the whole card still supports dragging,
- * so existing muscle memory keeps working.
+ * Drop targets, checked in this order at pointerup/touchend:
+ *   1. [data-podium-slot]        — the visible podium cards
+ *   2. [data-mobile-podium-drop] — the floating MobilePodiumBar at the bottom
  */
 const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
-  const { setDraggingPlan, assignToSlot, togglePlan } = useCompare();
+  const { setDraggingPlan, assignToSlot, slots } = useCompare();
   const [dragging, setDragging] = useState(false);
   const cardRef = useRef(null);
   const ghostRef = useRef(null);
@@ -47,7 +47,11 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     ghost.style.left = `${clientX - (rect.width * 0.6) / 2}px`;
     ghost.style.top = `${clientY - (rect.height * 0.6) / 2}px`;
 
-    ghostRef.current = { el: ghost, offsetX: (rect.width * 0.6) / 2, offsetY: (rect.height * 0.6) / 2 };
+    ghostRef.current = {
+      el: ghost,
+      offsetX: (rect.width * 0.6) / 2,
+      offsetY: (rect.height * 0.6) / 2,
+    };
     setDragging(true);
     setDraggingPlan(plan);
     onDragStart?.(plan);
@@ -65,9 +69,13 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     if (g) {
       const target = document.elementFromPoint(clientX, clientY);
       const slotEl = target?.closest("[data-podium-slot]");
+      const barEl = target?.closest("[data-mobile-podium-drop]");
       if (slotEl) {
         const idx = Number(slotEl.dataset.podiumSlot);
         if (Number.isInteger(idx)) assignToSlot(plan, idx);
+      } else if (barEl) {
+        const emptyIdx = slots.findIndex((p) => !p);
+        assignToSlot(plan, emptyIdx === -1 ? 0 : emptyIdx);
       }
       g.el.remove();
     }
@@ -77,12 +85,14 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     onDragEnd?.(plan);
   };
 
-  const startDrag = (e) => {
-    // Reset the flag first so a prior desktop drag cannot suppress a later tap.
-    dragOccurredRef.current = false;
+  const isInteractive = (el) =>
+    el?.closest("button, a, input, textarea, select, [role='button']");
 
-    // Drag only from a mouse. Touch and pen use tap-to-toggle (see handleClick).
+  // Mouse: whole card draggable, 8px threshold.
+  const handlePointerDown = (e) => {
     if (e.pointerType !== "mouse" || e.button !== 0) return;
+    if (isInteractive(e.target)) return;
+    dragOccurredRef.current = false;
 
     const pointerId = e.pointerId;
     const startX = e.clientX;
@@ -92,9 +102,7 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     const onMove = (ev) => {
       if (ev.pointerId !== pointerId) return;
       if (!active) {
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
-        if (Math.hypot(dx, dy) < 8) return;
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD_PX) return;
         active = true;
         dragOccurredRef.current = true;
         beginDrag(startX, startY);
@@ -109,6 +117,11 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
       if (ev.pointerId !== pointerId) return;
       if (active) finishDrag(ev.clientX, ev.clientY);
       cleanup();
+      // Reset after click fires so a click that lands right after the drag is
+      // suppressed once, and the next click works normally.
+      setTimeout(() => {
+        dragOccurredRef.current = false;
+      }, 0);
     };
 
     const cleanup = () => {
@@ -122,48 +135,83 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     document.addEventListener("pointercancel", finish);
   };
 
-  // Mouse users can grab the whole card. Touch users must use the grip handle.
-  const handleCardPointerDown = (e) => {
-    if (e.pointerType !== "mouse" || e.button !== 0) return;
-    if (e.target.closest("button, a, input, textarea, select, [role='button']")) return;
-    startDrag(e);
+  // Touch: long-press 350ms to activate drag. Movement > 8px before the timer
+  // fires cancels drag and lets the browser scroll normally.
+  const handleTouchStart = (e) => {
+    if (isInteractive(e.target)) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    dragOccurredRef.current = false;
+
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    let active = false;
+    let cancelled = false;
+
+    const longPressTimer = setTimeout(() => {
+      if (cancelled) return;
+      active = true;
+      dragOccurredRef.current = true;
+      beginDrag(startX, startY);
+    }, LONG_PRESS_MS);
+
+    const onMove = (ev) => {
+      const t = ev.touches[0];
+      if (!t) return;
+      if (!active) {
+        if (Math.hypot(t.clientX - startX, t.clientY - startY) > DRAG_THRESHOLD_PX) {
+          cancelled = true;
+          clearTimeout(longPressTimer);
+        }
+      } else {
+        ev.preventDefault();
+        moveDrag(t.clientX, t.clientY);
+      }
+    };
+
+    const onEnd = (ev) => {
+      if (active) {
+        const t = ev.changedTouches[0];
+        if (t) finishDrag(t.clientX, t.clientY);
+      }
+      cleanup();
+      setTimeout(() => {
+        dragOccurredRef.current = false;
+      }, 0);
+    };
+
+    const cleanup = () => {
+      clearTimeout(longPressTimer);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+    };
+
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onEnd);
   };
 
-  const handleHandlePointerDown = (e) => {
-    // Pointerdown is used so touch-action: none applies on the handle.
-    // startDrag itself ignores non-mouse, so touch goes straight to click.
-    startDrag(e);
-  };
-
-  const handleHandleClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // On desktop, a click that followed a real drag should not toggle.
-    if (dragOccurredRef.current) return;
-    togglePlan(plan);
+  // Suppress a click that lands right after a drag so the Link does not navigate.
+  const handleClick = (e) => {
+    if (dragOccurredRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   return (
     <div
       ref={cardRef}
-      onPointerDown={handleCardPointerDown}
-      className="relative"
+      onPointerDown={handlePointerDown}
+      onTouchStart={handleTouchStart}
+      onClick={handleClick}
+      className={`relative select-none transition-opacity duration-150 ${
+        dragging ? "opacity-40" : "cursor-grab"
+      }`}
       style={{ touchAction: "pan-y" }}
     >
       <PlanCard plan={plan} />
-      <button
-        type="button"
-        onPointerDown={handleHandlePointerDown}
-        onClick={handleHandleClick}
-        aria-label="Tap to toggle in podium"
-        title="Tap to toggle in podium (drag with mouse on desktop)"
-        style={{ touchAction: "none" }}
-        className={`absolute right-1.5 top-1.5 z-10 grid h-7 w-7 place-items-center rounded-lg border border-white/20 bg-black/55 text-white/85 backdrop-blur transition hover:text-white sm:h-8 sm:w-8 ${
-          dragging ? "opacity-0" : ""
-        }`}
-      >
-        <GripVertical className="h-3.5 w-3.5" />
-      </button>
     </div>
   );
 };

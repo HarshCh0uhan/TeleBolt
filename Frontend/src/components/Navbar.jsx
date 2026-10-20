@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Search, X, LogOut, Map, ShieldCheck, Lightbulb, User as UserIcon } from "lucide-react";
+import { Search, X, ArrowLeft, LogOut, Map, ShieldCheck, Lightbulb, User as UserIcon } from "lucide-react";
 import logo from "../assets/TeleBolt Logo.png";
 import { useAuth } from "../context/AuthContext";
 import { useFilters } from "../context/FiltersContext";
@@ -16,13 +16,14 @@ import {
   countActive,
 } from "../utils/filterConfig";
 
-const SearchInput = ({ value, onChange, onSubmit, onClear, className = "" }) => (
+const SearchInput = ({ value, onChange, onSubmit, onClear, autoFocus, className = "" }) => (
   <form onSubmit={onSubmit} role="search" className={`relative ${className}`}>
     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
     <input
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      autoFocus={autoFocus}
       enterKeyHint="search"
       autoComplete="off"
       aria-label="Search plans"
@@ -79,6 +80,8 @@ const Navbar = () => {
     setDraft(filters);
   }
 
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   const onHome = pathname === "/" || pathname === "/plans";
   const urlQ = searchParams.get("q") || "";
 
@@ -101,7 +104,7 @@ const Navbar = () => {
     return () => clearTimeout(timer);
   }, [value, urlQ, onHome, setSearchParams]);
 
-  // Lock background scroll while the drawer is open.
+  // Lock background scroll while the nav drawer is open.
   useEffect(() => {
     if (!drawerOpen) return undefined;
     const previous = document.body.style.overflow;
@@ -114,12 +117,21 @@ const Navbar = () => {
     };
   }, [drawerOpen, setDrawerOpen]);
 
+  // ESC closes the mobile search overlay.
+  useEffect(() => {
+    if (!mobileSearchOpen) return undefined;
+    const onKey = (e) => e.key === "Escape" && setMobileSearchOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileSearchOpen]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const next = value.trim();
     if (onHome) setSearchParams(next ? { q: next } : {});
     else navigate(next ? `/?q=${encodeURIComponent(next)}` : "/");
     setDrawerOpen(false);
+    setMobileSearchOpen(false);
   };
 
   const handleClear = () => {
@@ -173,7 +185,7 @@ const Navbar = () => {
 
   const activeFilterCount = countActive(draft);
 
-  // Portal the drawer to <body> so its `fixed inset-0` is anchored to the
+  // Portal the nav drawer to <body> so its `fixed inset-0` is anchored to the
   // viewport, not the <header> (which has backdrop-blur-sm and therefore acts
   // as a containing block for fixed descendants).
   const drawer = (
@@ -196,7 +208,6 @@ const Navbar = () => {
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-4">
           <div className="flex items-center gap-2">
             <img src={logo} alt="" className="h-8 w-auto" />
@@ -212,17 +223,7 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Scrollable content */}
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-brand">
-          <div className="border-b border-white/10 px-4 py-3">
-            <SearchInput
-              value={value}
-              onChange={setValue}
-              onSubmit={handleSubmit}
-              onClear={handleClear}
-            />
-          </div>
-
           <nav className="space-y-1 border-b border-white/10 p-3">
             {drawerNavItems.map((item) => {
               const Icon = item.icon;
@@ -419,7 +420,6 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Footer: account or auth */}
         <div className="shrink-0 border-t border-white/10 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           {user ? (
             <div className="space-y-2">
@@ -428,9 +428,7 @@ const Navbar = () => {
                   {(user.username || "U").trim().charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-white">
-                    {user.username}
-                  </div>
+                  <div className="truncate text-sm font-medium text-white">{user.username}</div>
                   <div className="truncate text-[11px] text-zinc-500">{user.email}</div>
                 </div>
               </div>
@@ -468,6 +466,33 @@ const Navbar = () => {
     </div>
   );
 
+  // Slide-down search overlay. Fixed at top-0, same height as the header row,
+  // so it covers the header without pushing page content down. The page below
+  // keeps updating live because typing feeds the existing debounced URL writer.
+  const mobileSearchOverlay = (
+    <div className="fixed inset-x-0 top-0 z-[70] border-b border-white/10 bg-[#1f1f1f] shadow-xl lg:hidden">
+      <div className="flex h-16 items-center gap-2 px-2">
+        <button
+          type="button"
+          onClick={() => setMobileSearchOpen(false)}
+          aria-label="Close search"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-zinc-300 transition hover:bg-white/5"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="flex-1">
+          <SearchInput
+            value={value}
+            onChange={setValue}
+            onSubmit={handleSubmit}
+            onClear={handleClear}
+            autoFocus
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#1f1f1f]/95 backdrop-blur-sm">
@@ -478,7 +503,6 @@ const Navbar = () => {
               <span className="hidden sm:block text-lg font-semibold text-white">TeleBolt</span>
             </Link>
 
-            {/* Desktop search */}
             <SearchInput
               value={value}
               onChange={setValue}
@@ -517,8 +541,15 @@ const Navbar = () => {
               )}
             </nav>
 
-            {/* Mobile: bell + hamburger */}
             <div className="flex shrink-0 items-center gap-1 lg:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileSearchOpen(true)}
+                aria-label="Search plans"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-zinc-300 transition hover:bg-white/5"
+              >
+                <Search className="h-5 w-5" />
+              </button>
               {user && <NotificationBell />}
               <button
                 type="button"
@@ -534,15 +565,11 @@ const Navbar = () => {
               </button>
             </div>
           </div>
-
-          {/* Mobile search row */}
-          <div className="pb-3 lg:hidden">
-            <SearchInput value={value} onChange={setValue} onSubmit={handleSubmit} onClear={handleClear} />
-          </div>
         </div>
       </header>
 
       {createPortal(drawer, document.body)}
+      {mobileSearchOpen && createPortal(mobileSearchOverlay, document.body)}
     </>
   );
 };
