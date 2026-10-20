@@ -50,9 +50,7 @@ export default function Home() {
         if (Array.isArray(data.formats) && data.formats.length > 0) setFormats(data.formats);
         if (data.defaultFormat) setFormat(data.defaultFormat);
       })
-      .catch(() => {
-        // Keep the fallback format list from FiltersContext.
-      });
+      .catch(() => {});
   }, [setFormats, setFormat]);
 
   useEffect(() => {
@@ -109,9 +107,9 @@ export default function Home() {
   }, []);
 
   const handleDragStart = () => {
-    // The desktop AdvancedDrawer hosts the podium slots and only renders at
-    // lg+. On mobile the podium itself and the bottom MobilePodiumBar are the
-    // drop targets, so opening the nav drawer would be wrong.
+    // AdvancedDrawer (which holds the drop slots on desktop) only renders at
+    // lg+. On mobile the podium itself and the MobilePodiumBar are the drop
+    // targets. Opening the nav drawer on touch would be wrong.
     if (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
       setDrawerOpen(true);
     }

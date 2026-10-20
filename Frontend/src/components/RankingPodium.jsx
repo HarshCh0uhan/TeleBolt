@@ -71,14 +71,12 @@ const SlotCard = ({ plan, index, onRemove }) => {
           <span className="text-[10px] text-zinc-400">{plan.validityDays} days</span>
         </div>
 
-        {/* Mobile: inline metrics line */}
         <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] sm:hidden">
           <span className="text-zinc-300">{plan.totalData ? `${plan.totalData} GB` : "—"}</span>
           <span className="text-[#58c28d]">{plan.costPerGB ? `₹${plan.costPerGB}/GB` : "—"}</span>
           <span className="text-zinc-300">{plan.yearlyCost ? `₹${plan.yearlyCost}/yr` : "—"}</span>
         </div>
 
-        {/* sm+: boxed metrics, unchanged layout */}
         <div className="mt-2 hidden grid-cols-3 gap-1 sm:grid">
           <div className="rounded bg-[#262626] px-1.5 py-1">
             <p className="text-[8px] uppercase tracking-wider text-zinc-500">Data</p>

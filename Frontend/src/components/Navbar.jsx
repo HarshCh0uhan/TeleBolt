@@ -72,7 +72,6 @@ const Navbar = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { filters, setFilters, format, setFormat, formats, drawerOpen, setDrawerOpen } = useFilters();
 
-  // Draft filters so the drawer respects Apply/Clear like the desktop FilterBar.
   const [draft, setDraft] = useState(filters);
   const [prevFilters, setPrevFilters] = useState(filters);
   if (prevFilters !== filters) {
@@ -93,7 +92,6 @@ const Navbar = () => {
     if (urlQ !== value.trim()) setValue(urlQ);
   }
 
-  // On the home page results update as you type; elsewhere Enter navigates.
   useEffect(() => {
     if (!onHome) return undefined;
     if (value.trim() === urlQ.trim()) return undefined;
@@ -104,7 +102,6 @@ const Navbar = () => {
     return () => clearTimeout(timer);
   }, [value, urlQ, onHome, setSearchParams]);
 
-  // Lock background scroll while the nav drawer is open.
   useEffect(() => {
     if (!drawerOpen) return undefined;
     const previous = document.body.style.overflow;
@@ -117,7 +114,6 @@ const Navbar = () => {
     };
   }, [drawerOpen, setDrawerOpen]);
 
-  // ESC closes the mobile search overlay.
   useEffect(() => {
     if (!mobileSearchOpen) return undefined;
     const onKey = (e) => e.key === "Escape" && setMobileSearchOpen(false);
@@ -185,9 +181,6 @@ const Navbar = () => {
 
   const activeFilterCount = countActive(draft);
 
-  // Portal the nav drawer to <body> so its `fixed inset-0` is anchored to the
-  // viewport, not the <header> (which has backdrop-blur-sm and therefore acts
-  // as a containing block for fixed descendants).
   const drawer = (
     <div
       className={`fixed inset-0 z-[60] lg:hidden ${
@@ -466,9 +459,7 @@ const Navbar = () => {
     </div>
   );
 
-  // Slide-down search overlay. Fixed at top-0, same height as the header row,
-  // so it covers the header without pushing page content down. The page below
-  // keeps updating live because typing feeds the existing debounced URL writer.
+  // Slide-down search overlay covering only the header row.
   const mobileSearchOverlay = (
     <div className="fixed inset-x-0 top-0 z-[70] border-b border-white/10 bg-[#1f1f1f] shadow-xl lg:hidden">
       <div className="flex h-16 items-center gap-2 px-2">
