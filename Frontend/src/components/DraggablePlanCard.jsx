@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PlanCard from "./PlanCard";
 import { useCompare } from "../context/CompareContext";
 
@@ -7,13 +7,15 @@ const LONG_PRESS_MS = 350;
 
 /**
  * No visible drag handle. Drag activation:
- *   - Mouse: pointerdown anywhere on the card body (not on a button/link), 8px threshold.
- *   - Touch: long-press 350ms without moving, then drag.
- * If the finger moves more than 8px before the long-press fires, the gesture
- * becomes a scroll and drag is cancelled. The card keeps its normal Link
- * behaviour for plain taps.
+ *   - Mouse / pen: pointerdown on card body, then move >= 8px.
+ *   - Touch: hold still for 350ms, then drag. Moving > 8px before the
+ *     timer fires cancels drag and lets the browser scroll.
  *
- * Drop targets, checked in this order at pointerup/touchend:
+ * The wrapping <Link> is NOT treated as an interactive element to skip —
+ * otherwise drag would be rejected everywhere on the card body. Instead a
+ * capture-phase click listener suppresses navigation when a drag occurred.
+ *
+ * Drop targets, in order at pointerup / touchend:
  *   1. [data-podium-slot]        — the visible podium cards
  *   2. [data-mobile-podium-drop] — the floating MobilePodiumBar at the bottom
  */
@@ -23,6 +25,23 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
   const cardRef = useRef(null);
   const ghostRef = useRef(null);
   const dragOccurredRef = useRef(false);
+
+  // Suppress the wrapping Link's click when the gesture was a drag.
+  // Capture phase runs before the child Link's click handler and before React's
+  // synthetic onClick, so both native nav and React handlers are blocked.
+  useEffect(() => {
+    const node = cardRef.current;
+    if (!node) return undefined;
+    const onClickCapture = (e) => {
+      if (dragOccurredRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        dragOccurredRef.current = false;
+      }
+    };
+    node.addEventListener("click", onClickCapture, true);
+    return () => node.removeEventListener("click", onClickCapture, true);
+  }, []);
 
   const beginDrag = (clientX, clientY) => {
     const card = cardRef.current;
@@ -85,13 +104,16 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     onDragEnd?.(plan);
   };
 
-  const isInteractive = (el) =>
-    el?.closest("button, a, input, textarea, select, [role='button']");
+  // Only skip actual buttons and form controls. The wrapping <Link> is NOT
+  // skipped — that was the original bug that made drag impossible.
+  const isButtonLike = (el) =>
+    el?.closest("button, input, textarea, select, [role='button']");
 
-  // Mouse: whole card draggable, 8px threshold.
+  // Mouse and pen: immediate drag with 8px threshold.
   const handlePointerDown = (e) => {
-    if (e.pointerType !== "mouse" || e.button !== 0) return;
-    if (isInteractive(e.target)) return;
+    if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+    if (e.button !== 0) return;
+    if (isButtonLike(e.target)) return;
     dragOccurredRef.current = false;
 
     const pointerId = e.pointerId;
@@ -117,11 +139,6 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
       if (ev.pointerId !== pointerId) return;
       if (active) finishDrag(ev.clientX, ev.clientY);
       cleanup();
-      // Reset after click fires so a click that lands right after the drag is
-      // suppressed once, and the next click works normally.
-      setTimeout(() => {
-        dragOccurredRef.current = false;
-      }, 0);
     };
 
     const cleanup = () => {
@@ -135,10 +152,9 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     document.addEventListener("pointercancel", finish);
   };
 
-  // Touch: long-press 350ms to activate drag. Movement > 8px before the timer
-  // fires cancels drag and lets the browser scroll normally.
+  // Touch: long-press 350ms to activate drag.
   const handleTouchStart = (e) => {
-    if (isInteractive(e.target)) return;
+    if (isButtonLike(e.target)) return;
     const touch = e.touches[0];
     if (!touch) return;
     dragOccurredRef.current = false;
@@ -175,9 +191,6 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
         if (t) finishDrag(t.clientX, t.clientY);
       }
       cleanup();
-      setTimeout(() => {
-        dragOccurredRef.current = false;
-      }, 0);
     };
 
     const cleanup = () => {
@@ -192,24 +205,15 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     document.addEventListener("touchcancel", onEnd);
   };
 
-  // Suppress a click that lands right after a drag so the Link does not navigate.
-  const handleClick = (e) => {
-    if (dragOccurredRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-
   return (
     <div
       ref={cardRef}
       onPointerDown={handlePointerDown}
       onTouchStart={handleTouchStart}
-      onClick={handleClick}
       className={`relative select-none transition-opacity duration-150 ${
-        dragging ? "opacity-40" : "cursor-grab"
+        dragging ? "opacity-40" : ""
       }`}
-      style={{ touchAction: "pan-y" }}
+      style={{ touchAction: "pan-y", WebkitTouchCallout: "none" }}
     >
       <PlanCard plan={plan} />
     </div>
