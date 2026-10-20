@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ChevronDown, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import FilterBar from "../components/FilterBar";
 import RankingPodium from "../components/RankingPodium";
@@ -14,25 +14,31 @@ import SlotPickerSheet from "../components/SlotPickerSheet";
 import { getRankings, getRankingFormats } from "../api/plans.api";
 import { DEFAULT_FILTERS, toApiParams } from "../utils/filterConfig";
 import { useCompare, PODIUM_SIZE } from "../context/CompareContext";
+import { useFilters } from "../context/FiltersContext";
 
 export default function Home() {
-  const [formats, setFormats] = useState([]);
-  const [format, setFormat] = useState("best-value");
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const {
+    filters,
+    setFilters,
+    format,
+    setFormat,
+    formats,
+    setFormats,
+    drawerOpen,
+    setDrawerOpen,
+  } = useFilters();
+
   const [rankings, setRankings] = useState([]);
   const [interpretation, setInterpretation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [showArrow, setShowArrow] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [podiumVisible, setPodiumVisible] = useState(true);
   const requestId = useRef(0);
   const podiumRef = useRef(null);
   // null means "we have not loaded any rankings yet". Comparing against null
-  // guarantees the podium seeds from the very first fetch. Comparing against
-  // `format` (the old code) meant first load never reset, so the podium stayed
-  // empty forever.
+  // guarantees the podium seeds from the very first fetch.
   const prevFormatRef = useRef(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -43,11 +49,13 @@ export default function Home() {
   useEffect(() => {
     getRankingFormats()
       .then(({ data }) => {
-        setFormats(data.formats || []);
+        if (Array.isArray(data.formats) && data.formats.length > 0) setFormats(data.formats);
         if (data.defaultFormat) setFormat(data.defaultFormat);
       })
-      .catch(() => setFormats([]));
-  }, []);
+      .catch(() => {
+        // Keep the fallback format list from FiltersContext.
+      });
+  }, [setFormats, setFormat]);
 
   useEffect(() => {
     const id = ++requestId.current;
@@ -70,7 +78,7 @@ export default function Home() {
         setError(
           typeof err?.response?.data === "string"
             ? err.response.data
-            : "Could not load rankings."
+            : err?.message || "Could not load rankings."
         );
         setRankings([]);
         setInterpretation(null);
@@ -136,46 +144,55 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
+      {/* Desktop-only quick filter panel trigger */}
       {showArrow && !drawerOpen && (
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="Open panel"
-          className="fixed left-1/2 top-[72px] z-50 grid h-9 w-9 -translate-x-1/2 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] text-zinc-300 shadow-lg transition-all duration-300 hover:border-[#58c28d]/30 hover:text-white"
+          className="fixed left-1/2 top-[72px] z-50 hidden h-9 w-9 -translate-x-1/2 place-items-center rounded-2xl border border-white/10 bg-[#1f1f1f] text-zinc-300 shadow-lg transition-all duration-300 hover:border-[#58c28d]/30 hover:text-white lg:grid"
         >
-          <ChevronDown className="h-4 w-4" />
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
       )}
 
-      <AdvancedDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        formats={formats}
-        format={format}
-        onFormatChange={setFormat}
-        filters={filters}
-        onApplyFilters={(next) => setFilters(next)}
-        onClearFilters={() => setFilters(DEFAULT_FILTERS)}
-      />
+      {/* Advanced drawer is desktop-only now; mobile has the nav drawer */}
+      <div className="hidden lg:block">
+        <AdvancedDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          formats={formats}
+          format={format}
+          onFormatChange={setFormat}
+          filters={filters}
+          onApplyFilters={(next) => setFilters(next)}
+          onClearFilters={() => setFilters(DEFAULT_FILTERS)}
+        />
+      </div>
 
-      <FilterBar
-        filters={filters}
-        onApply={(next) => setFilters(next)}
-        onClear={() => setFilters(DEFAULT_FILTERS)}
-        leadingSlot={
-          <FormatSelect formats={formats} value={format} onChange={setFormat} />
-        }
-      />
+      {/* Filter bar is desktop-only now; mobile filters live in the nav drawer */}
+      <div className="hidden sm:block">
+        <FilterBar
+          filters={filters}
+          onApply={(next) => setFilters(next)}
+          onClear={() => setFilters(DEFAULT_FILTERS)}
+          leadingSlot={
+            <FormatSelect formats={formats} value={format} onChange={setFormat} />
+          }
+        />
+      </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-5 pb-28 sm:py-6">
+      <main className="mx-auto max-w-7xl px-4 py-4 pb-28 sm:py-6">
         {q && (
-          <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#1f1f1f] px-4 py-3 text-sm">
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#1f1f1f] px-3 py-2.5 text-sm sm:px-4 sm:py-3">
             <span className="text-zinc-400">Results for</span>
             <span className="break-all font-medium text-white">“{q}”</span>
             {chips.map((chip, i) => (
               <span
                 key={`${chip}-${i}`}
-                className="rounded-full border border-[#58c28d]/25 bg-[#58c28d]/10 px-2.5 py-1 text-xs font-medium text-[#dff6ea]"
+                className="rounded-full border border-[#58c28d]/25 bg-[#58c28d]/10 px-2 py-0.5 text-[11px] font-medium text-[#dff6ea] sm:px-2.5 sm:py-1 sm:text-xs"
               >
                 {chip}
               </span>
@@ -186,10 +203,10 @@ export default function Home() {
             <button
               type="button"
               onClick={clearSearch}
-              className="ml-auto inline-flex items-center gap-1 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400"
+              className="ml-auto inline-flex items-center gap-1 rounded-xl border border-white/10 px-2.5 py-1.5 text-[11px] font-medium text-zinc-400 transition hover:border-red-400/30 hover:text-red-400 sm:px-3 sm:py-2 sm:text-xs"
             >
-              Clear search
-              <X className="h-3.5 w-3.5" />
+              Clear
+              <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             </button>
           </div>
         )}
@@ -207,13 +224,13 @@ export default function Home() {
         </div>
 
         {error && (
-          <div className="mt-8 rounded-3xl border border-red-400/20 bg-red-500/10 p-6 text-center text-sm text-red-400">
+          <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/10 p-4 text-center text-sm text-red-400 sm:mt-8 sm:p-6">
             {error}
           </div>
         )}
 
         {!loading && !error && rankings.length === 0 && (
-          <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f] p-8 text-center sm:p-12">
+          <div className="mt-6 rounded-3xl border border-dashed border-white/10 bg-[#1f1f1f] p-6 text-center sm:mt-8 sm:p-12">
             {q ? (
               <>
                 <p className="font-medium text-zinc-400">No plans match “{q}”</p>
@@ -236,14 +253,14 @@ export default function Home() {
         )}
 
         {tiers.map((tier) => (
-          <section key={tier.key} className="mt-8 sm:mt-10">
-            <div className="mb-4 flex items-center gap-3">
-              <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
+          <section key={tier.key} className="mt-6 sm:mt-10">
+            <div className="mb-3 flex items-center gap-3 sm:mb-4">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.28em] text-zinc-500 sm:text-[11px]">
                 {tier.name}
               </h2>
               <span className="text-xs text-zinc-600">{tier.plans.length}</span>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {tier.plans.map((plan) => (
                 <DraggablePlanCard
                   key={plan._id}
