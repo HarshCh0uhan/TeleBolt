@@ -8,6 +8,7 @@ import FilterBar from "../components/FilterBar";
 import RankingPodium from "../components/RankingPodium";
 import AdvancedDrawer from "../components/AdvancedDrawer";
 import DraggablePlanCard from "../components/DraggablePlanCard";
+import DragDropOverlay from "../components/DragDropOverlay";
 import FormatSelect from "../components/FormatSelect";
 import MobilePodiumBar from "../components/MobilePodiumBar";
 import SlotPickerSheet from "../components/SlotPickerSheet";
@@ -106,15 +107,6 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  const handleDragStart = () => {
-    // AdvancedDrawer (which holds the drop slots on desktop) only renders at
-    // lg+. On mobile the podium itself and the MobilePodiumBar are the drop
-    // targets. Opening the nav drawer on touch would be wrong.
-    if (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
-      setDrawerOpen(true);
-    }
-  };
-
   const scrollToPodium = () => {
     podiumRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -145,6 +137,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#181818]">
+      {/* Fixed drop overlay — appears during drag on every viewport. */}
+      <DragDropOverlay />
+
       {showArrow && !drawerOpen && (
         <button
           type="button"
@@ -260,11 +255,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 gap-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
               {tier.plans.map((plan) => (
-                <DraggablePlanCard
-                  key={plan._id}
-                  plan={plan}
-                  onDragStart={handleDragStart}
-                />
+                <DraggablePlanCard key={plan._id} plan={plan} />
               ))}
             </div>
           </section>
