@@ -3,32 +3,34 @@ import PlanCard from "./PlanCard";
 import { useCompare } from "../context/CompareContext";
 
 const DRAG_THRESHOLD_PX = 8;
-const LONG_PRESS_MS = 350;
+const LONG_PRESS_MS = 100;
 
 /**
- * No visible drag handle. Drag activation:
- *   - Mouse / pen: pointerdown on card body, then move >= 8px.
- *   - Touch: hold still for 350ms, then drag. Moving > 8px before the
- *     timer fires cancels drag and lets the browser scroll.
+ * The wrapping <Link> inside PlanCard renders as <a href>. Every modern browser
+ * treats an <a href> as natively draggable — mousedown + move fires a native
+ * HTML5 dragstart, and the browser then swallows the pointer events the custom
+ * drag relies on. That was the reason desktop mouse drag "did nothing".
  *
- * The wrapping <Link> is NOT treated as an interactive element to skip —
- * otherwise drag would be rejected everywhere on the card body. Instead a
- * capture-phase click listener suppresses navigation when a drag occurred.
+ * The fix: preventDefault on the wrapper's dragstart (which cancels the native
+ * drag for the whole subtree, including descendants' <a>) and set
+ * `draggable={false}` so the wrapper itself is never picked up as a drag source.
  *
- * Drop targets, in order at pointerup / touchend:
- *   1. [data-podium-slot]        — the visible podium cards
- *   2. [data-mobile-podium-drop] — the floating MobilePodiumBar at the bottom
+ * Activation:
+ *   - Mouse / pen: pointerdown on the card body, then move >= 8px.
+ *   - Touch: hold still for 100ms, then drag. Movement > 8px before the timer
+ *     fires cancels the drag and lets the browser scroll normally.
+ *
+ * Drop lookup uses `elementsFromPoint` (plural), iterating from top to bottom,
+ * so a ghost clone or child element sitting on top of a slot no longer hides it.
  */
-const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
+const DraggablePlanCard = ({ plan }) => {
   const { setDraggingPlan, assignToSlot, slots } = useCompare();
   const [dragging, setDragging] = useState(false);
   const cardRef = useRef(null);
   const ghostRef = useRef(null);
   const dragOccurredRef = useRef(false);
 
-  // Suppress the wrapping Link's click when the gesture was a drag.
-  // Capture phase runs before the child Link's click handler and before React's
-  // synthetic onClick, so both native nav and React handlers are blocked.
+  // Suppress the wrapping <Link>'s click when the gesture was a real drag.
   useEffect(() => {
     const node = cardRef.current;
     if (!node) return undefined;
@@ -73,7 +75,6 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     };
     setDragging(true);
     setDraggingPlan(plan);
-    onDragStart?.(plan);
   };
 
   const moveDrag = (clientX, clientY) => {
@@ -86,9 +87,24 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
   const finishDrag = (clientX, clientY) => {
     const g = ghostRef.current;
     if (g) {
-      const target = document.elementFromPoint(clientX, clientY);
-      const slotEl = target?.closest("[data-podium-slot]");
-      const barEl = target?.closest("[data-mobile-podium-drop]");
+      // elementsFromPoint (plural) returns every element at the point, top to
+      // bottom. The ghost has pointer-events: none so it is skipped by the
+      // browser, but any other overlapping overlay is not — iterating lets us
+      // find the first element that is inside a drop target.
+      const elements = document.elementsFromPoint(clientX, clientY);
+      let slotEl = null;
+      let barEl = null;
+      for (const el of elements) {
+        if (!slotEl) {
+          const s = el.closest?.("[data-podium-slot]");
+          if (s) slotEl = s;
+        }
+        if (!barEl) {
+          const b = el.closest?.("[data-mobile-podium-drop]");
+          if (b) barEl = b;
+        }
+        if (slotEl || barEl) break;
+      }
       if (slotEl) {
         const idx = Number(slotEl.dataset.podiumSlot);
         if (Number.isInteger(idx)) assignToSlot(plan, idx);
@@ -101,15 +117,11 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     ghostRef.current = null;
     setDragging(false);
     setDraggingPlan(null);
-    onDragEnd?.(plan);
   };
 
-  // Only skip actual buttons and form controls. The wrapping <Link> is NOT
-  // skipped — that was the original bug that made drag impossible.
   const isButtonLike = (el) =>
     el?.closest("button, input, textarea, select, [role='button']");
 
-  // Mouse and pen: immediate drag with 8px threshold.
   const handlePointerDown = (e) => {
     if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
     if (e.button !== 0) return;
@@ -127,7 +139,7 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
         if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD_PX) return;
         active = true;
         dragOccurredRef.current = true;
-        beginDrag(startX, startY);
+        beginDrag(ev.clientX, ev.clientY);
       }
       if (active) {
         ev.preventDefault();
@@ -152,7 +164,6 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
     document.addEventListener("pointercancel", finish);
   };
 
-  // Touch: long-press 350ms to activate drag.
   const handleTouchStart = (e) => {
     if (isButtonLike(e.target)) return;
     const touch = e.touches[0];
@@ -210,6 +221,8 @@ const DraggablePlanCard = ({ plan, onDragStart, onDragEnd }) => {
       ref={cardRef}
       onPointerDown={handlePointerDown}
       onTouchStart={handleTouchStart}
+      onDragStart={(e) => e.preventDefault()}
+      draggable={false}
       className={`relative select-none transition-opacity duration-150 ${
         dragging ? "opacity-40" : ""
       }`}
