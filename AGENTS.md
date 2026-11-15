@@ -286,18 +286,18 @@ git pull --ff-only origin main
 # 8. Refresh the code dump for the web models (see below)
 ```
 
-### Step 8 — refresh `telebolt-full.txt` after every merge
+### Step 8 — refresh the code dump after every merge
 
-`telebolt-full.txt` is a generated dump of the codebase that the web models read. It is
-**gitignored** (see `.gitignore`), so it is never committed — but it must be regenerated after
-every merge to `main` so the web models always see the current code. `repomix` overwrites the old
-file in place, so the old dump is replaced by the new one every run.
+The code dump is a generated copy of the codebase that the web models read. It is never
+committed, and it must be regenerated after every merge to `main` so the web models always see
+the current code. `--split-output 200kb` writes it as ~200 KB plain-text parts
+(`repomix-output*.txt`) in the repo root.
 
 Run this from the repo root after merging (works in Git Bash; in PowerShell the quotes keep the
 patterns literal, which is what repomix wants):
 
 ```bash
-npx repomix --include "**/*.{js,jsx,ts,tsx,css,html,json}" --ignore "**/node_modules/**,**/dist/**,**/build/**,**/.git/**" --output telebolt-full.txt
+npx repomix --include "**/*.{js,jsx,ts,tsx,css,html,json}" --ignore "**/node_modules/**,**/dist/**,**/build/**,**/.git/**" --split-output 200kb --style plain
 ```
 
 ### Branch naming
@@ -406,4 +406,4 @@ here seems necessary, **stop and ask** — never remove or edit it by accident.
 - [ ] `gh pr create --base main`
 - [ ] `gh pr merge <n> --merge --delete-branch`
 - [ ] `git checkout main` + `git pull --ff-only origin main`; branch gone; tree clean
-- [ ] `npx repomix …` re-run so `telebolt-full.txt` matches the new `main`
+- [ ] `npx repomix --split-output 200kb --style plain …` re-run so the code dump matches the new `main`
